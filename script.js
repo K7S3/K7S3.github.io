@@ -625,7 +625,7 @@ function toggleAbstract(event, link) {
     }
 }
 
-// Binary Matrix Animation
+// Binary Matrix Animation with "You are beautiful" message
 const binaryCanvas = document.getElementById('binary-canvas');
 const binaryCtx = binaryCanvas.getContext('2d');
 
@@ -633,18 +633,22 @@ const binaryCtx = binaryCanvas.getContext('2d');
 binaryCanvas.width = window.innerWidth;
 binaryCanvas.height = window.innerHeight;
 
-// Characters for the matrix (binary with special message)
+// Convert "You are beautiful" to binary
+function textToBinary(text) {
+    return text.split('').map(char => {
+        return char.charCodeAt(0).toString(2).padStart(8, '0');
+    }).join(' ');
+}
+
+const secretMessage = "You are beautiful";
+const binaryMessage = textToBinary(secretMessage);
 const binaryChars = '01';
-const messageChars = 'YOU ARE BEAUTIFUL';
 const financeChars = '$€£¥₹';
 const aiChars = 'AI∞∑∏∫≈≠';
 
-// Combine all characters
-const allChars = binaryChars + messageChars + financeChars + aiChars;
-
-// Columns for the matrix effect
+// Matrix settings
 const fontSize = 14;
-const columns = binaryCanvas.width / fontSize;
+const columns = Math.floor(binaryCanvas.width / fontSize);
 
 // Array to store the y position of each column
 const drops = [];
@@ -652,9 +656,10 @@ for (let i = 0; i < columns; i++) {
     drops[i] = Math.random() * -100;
 }
 
-// Special message positions
-const messagePositions = [];
-let messageIndex = 0;
+// Special message display
+let messageDisplayTimer = 0;
+let showingMessage = false;
+let messageOpacity = 0;
 
 // Draw the matrix
 function drawMatrix() {
@@ -663,35 +668,36 @@ function drawMatrix() {
     binaryCtx.fillRect(0, 0, binaryCanvas.width, binaryCanvas.height);
     
     // Set text properties
-    binaryCtx.fillStyle = '#6366f1';
     binaryCtx.font = fontSize + 'px monospace';
     
-    // Draw characters
+    // Draw falling characters
     for (let i = 0; i < drops.length; i++) {
         let char;
+        let color;
         
-        // Occasionally spell out "YOU ARE BEAUTIFUL"
-        if (Math.random() > 0.98 && messageIndex < messageChars.length) {
-            char = messageChars[messageIndex];
-            messageIndex++;
-            binaryCtx.fillStyle = '#a855f7'; // Purple for special message
-        } else if (Math.random() > 0.95) {
+        // Determine character type and color
+        const rand = Math.random();
+        if (rand > 0.95) {
             char = financeChars[Math.floor(Math.random() * financeChars.length)];
-            binaryCtx.fillStyle = '#10b981'; // Green for finance
-        } else if (Math.random() > 0.93) {
+            color = '#10b981'; // Green for finance
+        } else if (rand > 0.92) {
             char = aiChars[Math.floor(Math.random() * aiChars.length)];
-            binaryCtx.fillStyle = '#3b82f6'; // Blue for AI
+            color = '#3b82f6'; // Blue for AI
         } else {
             char = binaryChars[Math.floor(Math.random() * binaryChars.length)];
-            binaryCtx.fillStyle = '#6366f1'; // Default purple
+            color = '#6366f1'; // Default purple
         }
         
+        // Add some glow effect to random characters
+        if (Math.random() > 0.98) {
+            binaryCtx.shadowColor = color;
+            binaryCtx.shadowBlur = 10;
+        } else {
+            binaryCtx.shadowBlur = 0;
+        }
+        
+        binaryCtx.fillStyle = color;
         binaryCtx.fillText(char, i * fontSize, drops[i] * fontSize);
-        
-        // Reset message index
-        if (messageIndex >= messageChars.length) {
-            messageIndex = 0;
-        }
         
         // Move drop down
         if (drops[i] * fontSize > binaryCanvas.height && Math.random() > 0.975) {
@@ -699,13 +705,64 @@ function drawMatrix() {
         }
         drops[i]++;
     }
+    
+    // Display "You are beautiful" message periodically
+    messageDisplayTimer++;
+    if (messageDisplayTimer > 300) { // Show message every ~10 seconds
+        showingMessage = true;
+        messageDisplayTimer = 0;
+    }
+    
+    if (showingMessage) {
+        messageOpacity += 0.02;
+        if (messageOpacity >= 1) {
+            messageOpacity = 1;
+            setTimeout(() => {
+                showingMessage = false;
+                messageOpacity = 0;
+            }, 3000); // Show for 3 seconds
+        }
+        
+        // Display the binary message
+        binaryCtx.shadowBlur = 20;
+        binaryCtx.shadowColor = '#a855f7';
+        binaryCtx.fillStyle = `rgba(168, 85, 247, ${messageOpacity})`;
+        binaryCtx.font = '16px monospace';
+        
+        const centerX = binaryCanvas.width / 2;
+        const centerY = binaryCanvas.height / 2;
+        
+        // Display "You are beautiful" in regular text
+        binaryCtx.textAlign = 'center';
+        binaryCtx.fillText(secretMessage, centerX, centerY - 20);
+        
+        // Display the binary equivalent below
+        binaryCtx.font = '12px monospace';
+        binaryCtx.fillStyle = `rgba(99, 102, 241, ${messageOpacity * 0.8})`;
+        binaryCtx.fillText(binaryMessage, centerX, centerY + 10);
+        
+        // Reset text alignment and font
+        binaryCtx.textAlign = 'left';
+        binaryCtx.font = fontSize + 'px monospace';
+        binaryCtx.shadowBlur = 0;
+    }
 }
 
 // Animate the matrix
-setInterval(drawMatrix, 35);
+setInterval(drawMatrix, 50);
 
 // Resize canvas on window resize
 window.addEventListener('resize', () => {
     binaryCanvas.width = window.innerWidth;
     binaryCanvas.height = window.innerHeight;
+    
+    // Recalculate columns
+    const newColumns = Math.floor(binaryCanvas.width / fontSize);
+    if (newColumns !== columns) {
+        // Adjust drops array
+        drops.length = newColumns;
+        for (let i = columns; i < newColumns; i++) {
+            drops[i] = Math.random() * -100;
+        }
+    }
 }); 
