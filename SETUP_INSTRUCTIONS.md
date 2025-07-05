@@ -8,6 +8,16 @@
    - At least 400x400 pixels
    - High quality JPG format
 
+## Panel Discussion Photos
+
+Add your panel discussion photos:
+1. Save photos as:
+   - `panel-photo-1.jpg` - AI Accelerator Institute panel
+   - `panel-photo-2.jpg` - BattleFin panel
+   - `panel-photo-3.jpg` - Put Data First panel
+2. Photos should be landscape orientation (16:9 or similar)
+3. At least 800x450 pixels for good quality
+
 ## Instagram Photos
 
 Currently using placeholder images. To add real Instagram photos:

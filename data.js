@@ -1,6 +1,6 @@
-// Auto-generated data - Last updated: 2025-07-05T13:09:02.745705
+// Auto-generated data - Last updated: 2025-07-05T13:46:42.611043
 const websiteData = {
-  "lastUpdated": "2025-07-05T13:09:02.745705",
+  "lastUpdated": "2025-07-05T13:46:42.611043",
   "projects": [
     {
       "name": "Synergii",
@@ -53,14 +53,14 @@ const websiteData = {
       "updated_at": "2023-05-25T14:34:33Z"
     },
     {
-      "name": "keshavanseshadri.github.io",
+      "name": "K7S3.github.io",
       "description": "A website for Keshavan",
-      "url": "https://github.com/K7S3/keshavanseshadri.github.io",
+      "url": "https://github.com/K7S3/K7S3.github.io",
       "homepage": null,
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T16:43:03Z"
+      "updated_at": "2025-07-05T17:45:38Z"
     },
     {
       "name": "AutoEHR",
@@ -250,6 +250,13 @@ const websiteData = {
       "title": "Mentoring at Break Through Tech",
       "description": "Started mentoring students to help them get into Tech and AI through Break Through Tech program.",
       "type": "volunteer"
+    },
+    {
+      "date": "Summer 2024",
+      "title": "Cornell Summer Startup Accelerator",
+      "description": "Selected for the prestigious Johnson Summer Startup Accelerator at Cornell University. Co-founded Synergii, which received 1000+ requests within 2 weeks of launch.",
+      "link": "https://eship.cornell.edu/johnson-entrepreneurship-track-academic-courses/johnson-summer-startup-accelerator-2024-cohort-2/",
+      "type": "achievement"
     }
   ]
 };
