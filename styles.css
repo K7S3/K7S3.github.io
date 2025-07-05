@@ -863,10 +863,9 @@ section {
 
 .venture-header h3 {
     font-size: 2rem;
-    background: var(--gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #ffffff;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .venture-status {
@@ -883,18 +882,19 @@ section {
 
 .venture-tagline {
     font-size: 1.2rem;
-    color: var(--text-primary);
+    color: #ffffff;
     margin-bottom: 1rem;
     font-weight: 600;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .venture-description {
-    color: var(--text-secondary);
+    color: #ffffff;
     line-height: 1.8;
     margin-bottom: 1.5rem;
     font-size: 1.05rem;
     opacity: 0.95;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .tech-stack {
@@ -905,12 +905,15 @@ section {
 }
 
 .stack-item {
-    background: rgba(99, 102, 241, 0.2);
-    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
     padding: 0.5rem 1rem;
     border-radius: 25px;
     font-size: 0.9rem;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .venture-achievements {
@@ -924,7 +927,8 @@ section {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--text-secondary);
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .achievement-item i {
