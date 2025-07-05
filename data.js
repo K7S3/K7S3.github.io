@@ -1,6 +1,6 @@
-// Auto-generated data - Last updated: 2025-07-05T14:52:49.637388
+// Auto-generated data - Last updated: 2025-07-05T15:10:59.078616
 const websiteData = {
-  "lastUpdated": "2025-07-05T14:52:49.637388",
+  "lastUpdated": "2025-07-05T15:10:59.078616",
   "projects": [
     {
       "name": "Synergii",
@@ -60,7 +60,7 @@ const websiteData = {
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T18:51:18Z"
+      "updated_at": "2025-07-05T18:55:38Z"
     },
     {
       "name": "AutoEHR",
@@ -279,7 +279,7 @@ const websiteData = {
       "type": "speaking"
     },
     {
-      "date": "May 2025",
+      "date": "October 2025",
       "title": "Panel at Put Data First Conference",
       "description": "Participating as a speaker at the Put Data First conference, discussing the future of data-driven innovation.",
       "link": "https://www.putdatafirst.com/#Speakers",
