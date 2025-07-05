@@ -205,13 +205,29 @@ function createPublicationCard(pub, index) {
     card.setAttribute('data-aos', 'fade-up');
     card.setAttribute('data-aos-delay', index * 100);
     
+    const imageHtml = pub.image ? `
+        <div class="publication-image">
+            <img src="${pub.image}" alt="${pub.title}" />
+        </div>
+    ` : '';
+    
     card.innerHTML = `
-        <h3>${pub.title}</h3>
-        <p class="publication-authors">${pub.authors}</p>
-        <p class="publication-venue">${pub.venue} - ${pub.year}</p>
-        <p class="publication-abstract">${pub.abstract}</p>
-        <div class="publication-links">
-            <a href="${pub.url || pub.link}" target="_blank" class="publication-link">Read More</a>
+        <div class="publication-content">
+            <div class="publication-text">
+                <h3>${pub.title}</h3>
+                <p class="publication-authors">${pub.authors}</p>
+                <p class="publication-venue">${pub.venue} - ${pub.year}</p>
+                <p class="publication-abstract">${pub.abstract}</p>
+                <div class="publication-stats">
+                    <span class="citation-count"><i class="fas fa-quote-right"></i> ${pub.citations || 0} citations</span>
+                </div>
+                <div class="publication-links">
+                    <a href="${pub.url || pub.link}" target="_blank" class="publication-link">
+                        <i class="fas fa-external-link-alt"></i> Read Full Paper
+                    </a>
+                </div>
+            </div>
+            ${imageHtml}
         </div>
     `;
     
@@ -437,16 +453,63 @@ window.addEventListener('scroll', () => {
     lastScrollTop = scrollTop;
 });
 
+// Load news and events
+function loadNews() {
+    let newsData = [];
+    
+    if (typeof websiteData !== 'undefined' && websiteData.news) {
+        newsData = websiteData.news;
+    }
+    
+    const newsContainer = document.getElementById('news-container');
+    newsContainer.innerHTML = '';
+    
+    newsData.forEach((item, index) => {
+        const newsItem = createNewsItem(item, index);
+        newsContainer.appendChild(newsItem);
+    });
+}
+
+function createNewsItem(item, index) {
+    const div = document.createElement('div');
+    div.className = 'news-item';
+    div.setAttribute('data-aos', 'fade-up');
+    div.setAttribute('data-aos-delay', index * 100);
+    
+    const typeIcon = {
+        'speaking': 'fa-microphone',
+        'achievement': 'fa-trophy',
+        'volunteer': 'fa-hands-helping',
+        'default': 'fa-newspaper'
+    };
+    
+    const icon = typeIcon[item.type] || typeIcon.default;
+    
+    div.innerHTML = `
+        <div class="news-header">
+            <div class="news-date">${item.date}</div>
+            <i class="fas ${icon} news-icon"></i>
+        </div>
+        <h3>${item.title}</h3>
+        <p>${item.description}</p>
+        ${item.link ? `<a href="${item.link}" target="_blank" class="news-link">Learn More <i class="fas fa-arrow-right"></i></a>` : ''}
+    `;
+    
+    return div;
+}
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     fetchGitHubProjects();
     fetchPublications();
     loadTimeline();
+    loadNews();
     
     // Refresh data every 30 minutes
     setInterval(() => {
         fetchGitHubProjects();
         fetchPublications();
+        loadNews();
     }, 1800000);
 });
 
