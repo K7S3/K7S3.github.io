@@ -604,20 +604,7 @@ section {
     background: linear-gradient(45deg, #6366f1, #a855f7, #10b981, #f59e0b, #6366f1);
     border-radius: var(--border-radius);
     z-index: -1;
-    animation: gradient-border 4s linear infinite;
     background-size: 400% 400%;
-}
-
-@keyframes gradient-border {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
 }
 
 .venture-header {
