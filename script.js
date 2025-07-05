@@ -229,21 +229,28 @@ function createPublicationCard(pub, index) {
         }
     }
     
+    // Format venue information
+    let venueInfo = pub.venue;
+    if (pub.volume && pub.pages) {
+        venueInfo += ` ${pub.volume}, ${pub.pages}`;
+    }
+    venueInfo += ` (${pub.year})`;
+    
     card.innerHTML = `
         <div class="publication-content">
             <div class="publication-text">
                 <h3>${pub.title}</h3>
                 <p class="publication-authors">${pub.authors}</p>
-                <p class="publication-venue">${pub.venue} - ${pub.year}</p>
-                ${pub.thesis_number ? `<p class="publication-thesis-number">Report No: ${pub.thesis_number}</p>` : ''}
+                <p class="publication-venue">${venueInfo}</p>
+                ${pub.thesis_number ? `<p class="publication-thesis-number">Thesis No: ${pub.thesis_number}</p>` : ''}
                 ${abstractHtml}
                 <div class="publication-stats">
-                    <span class="citation-count"><i class="fas fa-quote-right"></i> ${pub.citations || 0} citations</span>
+                    ${pub.type !== 'thesis' ? `<span class="citation-count"><i class="fas fa-quote-right"></i> ${pub.citations || 0} citations</span>` : ''}
                     ${pub.doi ? `<span class="publication-doi">DOI: ${pub.doi}</span>` : ''}
                 </div>
                 <div class="publication-links">
                     <a href="${pub.url || pub.link}" target="_blank" class="publication-link">
-                        <i class="fas fa-external-link-alt"></i> ${pub.thesis_number ? 'View Thesis' : 'Read Full Paper'}
+                        <i class="fas fa-external-link-alt"></i> ${pub.type === 'thesis' ? 'View Thesis' : 'Read Full Paper'}
                     </a>
                 </div>
             </div>
