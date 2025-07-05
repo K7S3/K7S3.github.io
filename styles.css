@@ -187,7 +187,7 @@ body::before {
 
 .nav-menu {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.2rem;
     align-items: center;
     margin-left: auto;
 }
@@ -385,8 +385,8 @@ body::before {
     font-size: 4.5rem;
     font-weight: 900;
     font-family: 'Inter', sans-serif;
-    margin-bottom: 1rem;
-    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
     letter-spacing: -0.02em;
     text-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
     position: relative;
@@ -432,11 +432,11 @@ body::before {
 }
 
 .hero-subtitle {
-    font-size: 1.6rem;
-    font-weight: 500;
+    font-size: 1.8rem;
+    font-weight: 600;
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
     letter-spacing: -0.01em;
     opacity: 0.9;
 }
@@ -444,10 +444,10 @@ body::before {
 
 
 .hero-description {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-secondary);
-    margin-bottom: 2rem;
-    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
     font-weight: 400;
     max-width: 90%;
 }
@@ -455,7 +455,7 @@ body::before {
 .hero-buttons {
     display: flex;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .btn {
@@ -530,36 +530,9 @@ body::before {
     border: 2px solid transparent;
 }
 
-.resume-download {
-    margin-bottom: 1.5rem;
-}
-
-.resume-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid transparent;
-}
-
-.resume-link:hover {
-    color: var(--text-primary);
-    border-bottom-color: var(--text-primary);
-}
-
-.resume-link i {
-    font-size: 0.8rem;
-    opacity: 0.8;
-}
-
 .social-links {
     display: flex;
-    gap: 0.8rem;
+    gap: 1rem;
 }
 
 .social-link {
