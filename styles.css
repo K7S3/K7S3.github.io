@@ -161,13 +161,14 @@ body::before {
 }
 
 .nav-logo {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 900;
     font-family: 'Inter', sans-serif;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nav-logo:hover {
@@ -186,8 +187,9 @@ body::before {
 
 .nav-menu {
     display: flex;
-    gap: 2rem;
+    gap: 1.2rem;
     align-items: center;
+    margin-left: auto;
 }
 
 .nav-link {
@@ -382,12 +384,14 @@ body::before {
 .hero-title {
     font-size: 4.5rem;
     font-weight: 900;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
     margin-bottom: 1.5rem;
-    line-height: 1.1;
+    line-height: 1.2;
     letter-spacing: -0.02em;
     text-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
     position: relative;
+    color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .hero-title::before {
@@ -412,6 +416,19 @@ body::before {
     background-clip: text;
     animation: gradient-shift 4s ease infinite;
     filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4));
+}
+
+.hero-name {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 6s ease infinite;
+    filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.6));
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    letter-spacing: -0.01em;
 }
 
 .hero-subtitle {
@@ -2368,6 +2385,7 @@ section {
     
     .hero-title {
         font-size: 3.5rem;
+        white-space: normal;
     }
 }
 
@@ -2386,11 +2404,11 @@ section {
     }
     
     .nav-logo {
-        font-size: 1.2rem;
+        font-size: 1.8rem;
     }
     
     .logo-text {
-        font-size: 0.9rem;
+        font-size: 1.8rem;
     }
     
     .nav-mobile-menu .nav-link {
@@ -2415,11 +2433,11 @@ section {
     }
     
     .nav-logo {
-        font-size: 1.4rem;
+        font-size: 1.6rem;
     }
     
     .logo-text {
-        font-size: 1.4rem;
+        font-size: 1.6rem;
     }
     
     .hero {
@@ -2431,6 +2449,7 @@ section {
     
     .hero-title {
         font-size: 2.5rem;
+        white-space: normal;
     }
     
     .hero-subtitle {
