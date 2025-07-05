@@ -57,26 +57,42 @@ def fetch_google_scholar_data():
     # For now, we'll use static data that can be manually updated
     publications = [
         {
-            'title': 'A Computational Study on GPCR Activation Mechanisms: Insights from Adrenaline Binding and G-Protein Dissociation',
+            'title': 'Molecular Dynamics and Machine Learning Study of Adrenaline Dynamics in the Binding Pocket of GPCR',
             'authors': 'Keshavan Seshadri, Marimuthu Krishnan',
             'venue': 'Journal of Chemical Information and Modeling',
             'year': '2023',
-            'abstract': 'G-protein coupled receptors (GPCRs) are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. The binding of the neurotransmitter adrenaline to the β2-adrenergic receptor (β2AR) is known to induce a flight or fight cellular response, but much remains to be understood about binding-induced dynamical changes in β2AR and adrenaline. In this article, we examine the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of β2AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum, which corresponds to the crystal structure of β2AR–adrenaline complex, and a meta-stable state in which the adrenaline is moved slightly deeper into the binding pocket with a different orientation compared to that in the crystal structure.',
-            'citations': 5,
+            'volume': '63 (14)',
+            'pages': '4291-4300',
+            'abstract': 'G-protein coupled receptors (GPCRs) are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. The binding of the neurotransmitter adrenaline to the β2-adrenergic receptor (β2AR) is known to induce a flight or fight cellular response, but much remains to be understood about binding-induced dynamical changes in β2AR and adrenaline. In this article, we examine the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of β2AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum, which corresponds to the crystal structure of β2AR–adrenaline complex, and a meta-stable state in which the adrenaline is moved slightly deeper into the binding pocket with a different orientation compared to that in the crystal structure. The orientational and conformational changes in adrenaline during the transition between these two states and the underlying driving forces of this transition are also explored. Based on the clustering of MD configurations and machine learning-based statistical analyses of time series of relevant collective variables, the structures and stabilizing interactions of these two states of the β2AR–adrenaline complex are also investigated.',
+            'citations': 4,
             'url': 'https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c00401',
             'image': 'images/md-ml-jcim.png',
             'doi': '10.1021/acs.jcim.3c00401'
         },
         {
             'title': 'The 3Dmol.js Learning Environment: A Classroom Response System for 3D Chemical Structures',
-            'authors': 'Keshavan Seshadri, Peng Liu, and David Ryan Koes',
+            'authors': 'K Seshadri, P Liu, DR Koes',
             'venue': 'Journal of Chemical Education',
             'year': '2020',
+            'volume': '97 (10)',
+            'pages': '3872-3876',
             'abstract': 'Classroom response systems are an important tool in many active learning pedagogies. They support real-time feedback on student learning and promote student engagement, even in large classrooms, by allowing instructors to solicit an answer to a question from all students and show the results. Existing classroom response systems are general purpose and not tailored to the specific needs of a chemistry classroom. In particular, it is not easy to deploy molecular representations except as static images. Here we present the 3Dmol.js learning environment, a classroom response system that uses the open-source web-based 3Dmol.js JavaScript framework to provide interactive viewing and querying of 3D molecules. 3Dmol.js is available under a BSD 3-clause open-source license, and the learning-environment features are all available through http://3dmol.csb.pitt.edu/ without any software installation required.',
-            'citations': 12,
+            'citations': 14,
             'url': 'https://pubs.acs.org/doi/10.1021/acs.jchemed.0c00579',
             'image': 'images/3dmol-jchemed.png',
             'doi': '10.1021/acs.jchemed.0c00579'
+        },
+        {
+            'title': 'A Computational Study on GPCR Activation Mechanisms: Insights from Adrenaline Binding and G-Protein Dissociation',
+            'authors': 'Keshavan Seshadri',
+            'venue': 'Master\'s Thesis, IIIT Hyderabad',
+            'year': '2023',
+            'abstract': 'GPCRs are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. This thesis examines the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of β2AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum and a meta-stable state with different orientations. The findings enhance our understanding of GPCR activation and the advancement of new therapies aimed at GPCRs by offering comprehensive insights into conformational changes, energetics, and critical residues involved.',
+            'citations': 0,
+            'url': 'https://web2py.iiit.ac.in/research_centres/publications/download/mastersthesis.pdf.b003dd0b24ed8ba6.7468657369732e706466.pdf',
+            'image': None,
+            'thesis_number': 'IIIT/TH/2023/130',
+            'type': 'thesis'
         }
     ]
     
