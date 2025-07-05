@@ -833,7 +833,7 @@ section {
 }
 
 .venture-card.featured {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.1));
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(59, 130, 246, 0.05), rgba(6, 182, 212, 0.03));
     border: 2px solid rgba(99, 102, 241, 0.4);
     position: relative;
     overflow: hidden;
@@ -851,7 +851,7 @@ section {
     border-radius: var(--border-radius);
     z-index: -1;
     background-size: 400% 400%;
-    opacity: 0.8;
+    opacity: 0.2;
 }
 
 .venture-header {
