@@ -74,6 +74,96 @@ class ComponentLoader {
         }
     }
 
+    // Initialize navbar functionality
+    initializeNavbar() {
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (navbar) {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            }
+        });
+
+        // Mobile menu toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        const navMobileMenu = document.querySelector('.nav-mobile-menu');
+        
+        if (navToggle) {
+            navToggle.addEventListener('click', () => {
+                navToggle.classList.toggle('active');
+                if (navMobileMenu) {
+                    navMobileMenu.classList.toggle('active');
+                }
+                
+                // Prevent body scroll when mobile menu is open
+                document.body.style.overflow = navMobileMenu?.classList.contains('active') ? 'hidden' : 'auto';
+            });
+        }
+
+        // Close mobile menu when clicking on a link
+        const mobileLinks = document.querySelectorAll('.nav-mobile-menu .nav-link');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navToggle?.classList.remove('active');
+                navMobileMenu?.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            });
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navToggle?.contains(e.target) && !navMobileMenu?.contains(e.target)) {
+                navToggle?.classList.remove('active');
+                navMobileMenu?.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                if (href.startsWith('#')) {
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Update active link based on scroll position
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const scrollPos = window.scrollY + 100;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.offsetHeight;
+                const sectionId = section.getAttribute('id');
+                
+                if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${sectionId}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     // Initialize all components
     async initializeComponents() {
         const componentMap = {
@@ -107,6 +197,9 @@ class ComponentLoader {
         if (typeof AOS !== 'undefined') {
             AOS.refresh();
         }
+
+        // Initialize navbar functionality
+        this.initializeNavbar();
 
         // Trigger custom event when all components are loaded
         document.dispatchEvent(new CustomEvent('componentsLoaded'));
