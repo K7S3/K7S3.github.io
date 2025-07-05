@@ -92,8 +92,19 @@
 .hero-content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
     position: relative;
+}
+
+/* Hero Greeting - Above Name */
+.hero-greeting {
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    font-family: var(--font-family-primary);
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+    margin-bottom: -0.5rem;
 }
 
 .hero-content::before {
@@ -490,6 +501,10 @@
         text-align: center;
     }
     
+    .hero-greeting {
+        font-size: 1.5rem;
+    }
+    
     .hero-title {
         font-size: 2.5rem;
     }
@@ -526,6 +541,10 @@
         gap: 2rem;
     }
     
+    .hero-greeting {
+        font-size: 1.3rem;
+    }
+    
     .hero-title {
         font-size: 2rem;
     }
@@ -556,6 +575,10 @@
 }
 
 @media (max-width: 480px) {
+    .hero-greeting {
+        font-size: 1.1rem;
+    }
+    
     .hero-title {
         font-size: 1.8rem;
     }
