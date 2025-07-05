@@ -525,11 +525,52 @@ function createNewsItem(item, index) {
     return div;
 }
 
+// Load education data
+function loadEducation() {
+    let educationData = [];
+    
+    if (typeof websiteData !== 'undefined' && websiteData.education) {
+        educationData = websiteData.education;
+    }
+    
+    const educationContainer = document.getElementById('education-container');
+    educationContainer.innerHTML = '';
+    
+    educationData.forEach((item, index) => {
+        const educationCard = createEducationCard(item, index);
+        educationContainer.appendChild(educationCard);
+    });
+}
+
+function createEducationCard(item, index) {
+    const card = document.createElement('div');
+    card.className = 'education-card';
+    card.setAttribute('data-aos', 'fade-up');
+    card.setAttribute('data-aos-delay', index * 100);
+    
+    const iconClass = item.type === 'bachelors' ? 'fa-university' : 
+                     item.type === 'masters' ? 'fa-graduation-cap' : 'fa-flask';
+    
+    card.innerHTML = `
+        <div class="education-icon">
+            <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="education-content">
+            <h3>${item.institution}</h3>
+            <p class="education-degree">${item.degree}</p>
+            <p class="education-program">${item.program}</p>
+        </div>
+    `;
+    
+    return card;
+}
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     fetchGitHubProjects();
     fetchPublications();
     loadTimeline();
+    loadEducation();
     loadNews();
     
     // Refresh data every 30 minutes

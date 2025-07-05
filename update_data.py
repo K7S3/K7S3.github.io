@@ -143,18 +143,6 @@ def fetch_linkedin_data():
             'type': 'research'
         },
         {
-            'date': '2023',
-            'title': 'Cornell University',
-            'description': 'Master\'s degree in Computer Science from Cornell Tech',
-            'type': 'education'
-        },
-        {
-            'date': '2016 - 2021',
-            'title': 'IIIT Hyderabad',
-            'description': 'Bachelor\'s degree in Computer Science and Computational Natural Sciences',
-            'type': 'education'
-        },
-        {
             'date': 'Jul 2019 - May 2020',
             'title': 'Teaching Assistant - IIIT Hyderabad',
             'description': 'Conducted tutorials for 200+ students in Science courses. Managed 20+ students in molecular dynamics projects.',
@@ -174,19 +162,42 @@ def fetch_linkedin_data():
         }
     ]
     
-    return timeline
+    # Separate education data (no dates needed)
+    education = [
+        {
+            'institution': 'Cornell University',
+            'degree': 'Master\'s in Computer Science',
+            'program': 'Cornell Tech',
+            'type': 'masters'
+        },
+        {
+            'institution': 'IIIT Hyderabad',
+            'degree': 'Bachelor\'s in Computer Science',
+            'program': 'Dual Degree Program',
+            'type': 'bachelors'
+        },
+        {
+            'institution': 'IIIT Hyderabad',
+            'degree': 'Master\'s in Computational Natural Sciences',
+            'program': 'Research Focus: GPCR Dynamics',
+            'type': 'masters'
+        }
+    ]
+    
+    return timeline, education
 
 def update_data_js():
     """Update the data.js file with fetched data"""
     github_projects = fetch_github_data()
     publications = fetch_google_scholar_data()
-    timeline = fetch_linkedin_data()
+    timeline, education = fetch_linkedin_data()
     
     data = {
         'lastUpdated': datetime.now().isoformat(),
         'projects': github_projects,
         'publications': publications,
         'timeline': timeline,
+        'education': education,
         'news': [
             {
                 'date': 'June 2025',

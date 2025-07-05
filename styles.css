@@ -484,6 +484,90 @@ section {
     color: var(--text-secondary);
 }
 
+/* Education Section */
+.education-section {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+}
+
+.education-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.education-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.education-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.education-card:hover::before {
+    opacity: 0.1;
+}
+
+.education-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+}
+
+.education-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.education-card:hover .education-icon {
+    transform: scale(1.1);
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.education-content h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.education-degree {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.education-program {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
 /* Entrepreneurship Section */
 .entrepreneurship-section {
     background: var(--dark-bg);
@@ -1439,6 +1523,21 @@ section {
     
     .timeline-item::before {
         left: -40px !important;
+    }
+    
+    .education-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .education-card {
+        padding: 1.5rem;
+    }
+    
+    .education-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
     }
     
     .publication-content {

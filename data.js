@@ -1,6 +1,6 @@
-// Auto-generated data - Last updated: 2025-07-05T14:32:51.980142
+// Auto-generated data - Last updated: 2025-07-05T14:50:59.095165
 const websiteData = {
-  "lastUpdated": "2025-07-05T14:32:51.980142",
+  "lastUpdated": "2025-07-05T14:50:59.095165",
   "projects": [
     {
       "name": "Synergii",
@@ -60,7 +60,7 @@ const websiteData = {
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T18:26:54Z"
+      "updated_at": "2025-07-05T18:34:24Z"
     },
     {
       "name": "AutoEHR",
@@ -225,18 +225,6 @@ const websiteData = {
       "type": "research"
     },
     {
-      "date": "2023",
-      "title": "Cornell University",
-      "description": "Master's degree in Computer Science from Cornell Tech",
-      "type": "education"
-    },
-    {
-      "date": "2016 - 2021",
-      "title": "IIIT Hyderabad",
-      "description": "Bachelor's degree in Computer Science and Computational Natural Sciences",
-      "type": "education"
-    },
-    {
       "date": "Jul 2019 - May 2020",
       "title": "Teaching Assistant - IIIT Hyderabad",
       "description": "Conducted tutorials for 200+ students in Science courses. Managed 20+ students in molecular dynamics projects.",
@@ -253,6 +241,26 @@ const websiteData = {
       "title": "Associate Researcher - Virtual Labs VLEAD",
       "description": "Developed game-based learning tool for Data Structures used by millions. Delivered workshops to 200+ industry enthusiasts.",
       "type": "research"
+    }
+  ],
+  "education": [
+    {
+      "institution": "Cornell University",
+      "degree": "Master's in Computer Science",
+      "program": "Cornell Tech",
+      "type": "masters"
+    },
+    {
+      "institution": "IIIT Hyderabad",
+      "degree": "Bachelor's in Computer Science",
+      "program": "Dual Degree Program",
+      "type": "bachelors"
+    },
+    {
+      "institution": "IIIT Hyderabad",
+      "degree": "Master's in Computational Natural Sciences",
+      "program": "Research Focus: GPCR Dynamics",
+      "type": "masters"
     }
   ],
   "news": [
