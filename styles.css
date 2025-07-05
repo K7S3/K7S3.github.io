@@ -161,12 +161,13 @@ body::before {
 }
 
 .nav-logo {
-    font-size: 1.4rem;
-    font-weight: 800;
-    font-family: 'Orbitron', monospace;
-    letter-spacing: 0.05em;
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.1em;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 .nav-logo:hover {
@@ -423,18 +424,7 @@ body::before {
     opacity: 0.9;
 }
 
-.hero-passion {
-    font-size: 1.2rem;
-    background: var(--gradient-gold);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-family: 'JetBrains Mono', monospace;
-}
+
 
 .hero-description {
     font-size: 1.2rem;
@@ -2425,11 +2415,11 @@ section {
     }
     
     .nav-logo {
-        font-size: 1rem;
+        font-size: 1.4rem;
     }
     
     .logo-text {
-        font-size: 0.8rem;
+        font-size: 1.4rem;
     }
     
     .hero {
