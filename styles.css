@@ -955,9 +955,9 @@ section {
 }
 
 .venture-link.secondary {
-    background: transparent;
+    background: var(--gradient);
     border: 2px solid var(--primary-color);
-    color: var(--primary-color);
+    color: white;
 }
 
 .venture-link:hover {
