@@ -365,7 +365,7 @@
                 </div>
                 <div class="chatbot-title">
                     <h3>Keshavan's AI Assistant</h3>
-                    <span class="chatbot-status">Online & Ready to Help</span>
+                    <span class="chatbot-status">Powered by Gemini 2.5 Flash</span>
                 </div>
             </div>
             <div class="chatbot-controls">
@@ -382,7 +382,7 @@
         </div>
         <div class="chatbot-input-container">
             <div class="chatbot-input">
-                <input type="text" id="chatbot-input" placeholder="Ask me about Keshavan's projects, experience, or anything else...">
+                <input type="text" id="chatbot-input" placeholder="Ask me about Keshavan's projects, research, experience, or anything else...">
                 <button class="voice-input-btn" onclick="chatbot.startVoiceInput()" title="Voice Input">
                     <i class="fas fa-microphone"></i>
                 </button>
@@ -391,7 +391,7 @@
                 </button>
             </div>
             <div class="chatbot-features">
-                <span class="feature-tag"><i class="fas fa-brain"></i> AI Powered</span>
+                <span class="feature-tag"><i class="fas fa-brain"></i> Gemini 2.5 Flash</span>
                 <span class="feature-tag"><i class="fas fa-microphone"></i> Voice Enabled</span>
                 <span class="feature-tag"><i class="fas fa-magic"></i> Smart Suggestions</span>
             </div>
@@ -404,7 +404,7 @@
             <div class="chatbot-pulse"></div>
         </div>
         <div class="chatbot-notification" id="chatbot-notification">
-            <span>💬 Ask me anything!</span>
+            <span>🤖 Chat with Gemini AI!</span>
         </div>
     </button>
     
@@ -417,6 +417,8 @@
     </footer>
     
     <!-- Scripts -->
+    <!-- Development API Config (remove in production) -->
+    <script src="gemini-config-dev.js"></script>
     <script src="data.js"></script>
     <script src="script.js"></script>
     
