@@ -41,13 +41,13 @@
     }
 }
 
-/* Stunning Color Palette */
+/* Professional Color Palette */
 :root {
     --primary-color: #6366f1;
-    --secondary-color: #8b5cf6;
-    --accent-color: #ec4899;
-    --tertiary-color: #06b6d4;
-    --quaternary-color: #10b981;
+    --secondary-color: #3b82f6;
+    --accent-color: #06b6d4;
+    --tertiary-color: #10b981;
+    --quaternary-color: #8b5cf6;
     --dark-bg: #0a0a0f;
     --light-bg: #1a1a2e;
     --card-bg: #16213e;
@@ -56,9 +56,9 @@
     --text-secondary: #a0a0a0;
     --text-muted: #6b7280;
     --gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    --gradient-rainbow: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899, #06b6d4, #10b981);
+    --gradient-professional: linear-gradient(135deg, #6366f1, #3b82f6, #06b6d4, #10b981);
     --gradient-gold: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
-    --gradient-neon: linear-gradient(135deg, #00ffff, #ff00ff, #ffff00);
+    --gradient-cyan: linear-gradient(135deg, #06b6d4, #0891b2, #0e7490);
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
     --shadow-intense: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -77,9 +77,9 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--dark-bg);
     background-image: 
-        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
     color: var(--text-primary);
     line-height: 1.7;
     overflow-x: hidden;
@@ -161,7 +161,7 @@ body::before {
 }
 
 .logo-text {
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -203,7 +203,7 @@ body::before {
     transform: translateX(-50%);
     width: 0;
     height: 3px;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     border-radius: 2px;
     transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -280,15 +280,15 @@ body::before {
     left: -10px;
     right: -10px;
     bottom: -10px;
-    background: var(--gradient-rainbow);
-    opacity: 0.1;
+    background: var(--gradient-professional);
+    opacity: 0.08;
     filter: blur(20px);
     z-index: -1;
     animation: glow-pulse 4s ease-in-out infinite;
 }
 
 .gradient-text {
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -376,7 +376,7 @@ body::before {
 }
 
 .btn-primary {
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-size: 200% 200%;
     color: white;
     box-shadow: var(--shadow-glow);
@@ -394,15 +394,15 @@ body::before {
     background: var(--glass-bg);
     color: var(--text-primary);
     border: 2px solid;
-    border-image: var(--gradient-rainbow) 1;
+    border-image: var(--gradient-professional) 1;
     backdrop-filter: var(--backdrop-blur);
 }
 
 .btn-secondary:hover {
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     transform: translateY(-8px) scale(1.05);
     animation: none;
-    box-shadow: 0 20px 50px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 20px 50px rgba(99, 102, 241, 0.6);
     border-image: none;
     border: 2px solid transparent;
 }
@@ -438,7 +438,7 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     opacity: 0;
     transition: opacity 0.4s ease;
     border-radius: 50%;
@@ -502,7 +502,7 @@ body::before {
     position: relative;
     z-index: 1;
     border: 6px solid transparent;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-clip: padding-box;
     transition: all 0.4s ease;
     filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.4));
@@ -525,7 +525,7 @@ section {
     font-family: 'Playfair Display', serif;
     text-align: center;
     margin-bottom: 4rem;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -544,7 +544,7 @@ section {
     transform: translateX(-50%);
     width: 100px;
     height: 4px;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     border-radius: 2px;
     animation: gradient-shift 4s ease infinite;
 }
@@ -553,8 +553,10 @@ section {
 .about-section {
     background: var(--light-bg);
     margin-top: 0;
-    padding-top: 120px;
-    scroll-margin-top: 80px;
+    padding-top: 150px;
+    scroll-margin-top: 100px;
+    position: relative;
+    z-index: 1;
 }
 
 .about-content {
@@ -621,7 +623,7 @@ section {
 
 .skill-card i {
     font-size: 3.5rem;
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -639,8 +641,8 @@ section {
 }
 
 .skill-card:nth-child(1) i { color: #6366f1; }
-.skill-card:nth-child(2) i { color: #a855f7; }
-.skill-card:nth-child(3) i { color: #3b82f6; }
+.skill-card:nth-child(2) i { color: #3b82f6; }
+.skill-card:nth-child(3) i { color: #06b6d4; }
 .skill-card:nth-child(4) i { color: #10b981; }
 
 .skill-card h3 {
@@ -729,7 +731,7 @@ section {
 
 /* Education Section */
 .education-section {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
 }
 
 .education-grid {
@@ -831,10 +833,11 @@ section {
 }
 
 .venture-card.featured {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.1));
+    border: 2px solid rgba(99, 102, 241, 0.4);
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(10px);
 }
 
 .venture-card.featured::before {
@@ -844,10 +847,11 @@ section {
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, #6366f1, #a855f7, #10b981, #f59e0b, #6366f1);
+    background: linear-gradient(45deg, #6366f1, #3b82f6, #06b6d4, #10b981, #6366f1);
     border-radius: var(--border-radius);
     z-index: -1;
     background-size: 400% 400%;
+    opacity: 0.8;
 }
 
 .venture-header {
@@ -868,22 +872,29 @@ section {
 .venture-status {
     background: var(--gradient);
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
     font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 .venture-tagline {
     font-size: 1.2rem;
     color: var(--text-primary);
     margin-bottom: 1rem;
-    font-weight: 500;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .venture-description {
     color: var(--text-secondary);
     line-height: 1.8;
     margin-bottom: 1.5rem;
+    font-size: 1.05rem;
+    opacity: 0.95;
 }
 
 .tech-stack {
@@ -1848,14 +1859,14 @@ section {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--gradient-rainbow);
+    background: var(--gradient-professional);
     border-radius: 10px;
     border: 2px solid var(--dark-bg);
     animation: gradient-shift 3s ease infinite;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--gradient-neon);
+    background: var(--gradient-cyan);
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
 }
 
@@ -1877,7 +1888,7 @@ section {
 
 /* AI and Finance themed accents */
 .gradient-text {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #10b981 100%);
+    background: linear-gradient(135deg, #6366f1 0%, #3b82f6 50%, #06b6d4 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
             top: ${y}px;
             width: 4px;
             height: 4px;
-            background: var(--gradient-rainbow);
+                            background: var(--gradient-professional);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
