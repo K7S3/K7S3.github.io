@@ -710,29 +710,201 @@ class AdvancedChatbot {
     }
 
     async generateResponse(message, intent) {
-        const responses = this.getResponsesByIntent(intent, message);
-        const responseText = responses[Math.floor(Math.random() * responses.length)];
+        try {
+            // Try to use edge LLM API (currently disabled, fallback to simple responses)
+            const response = await this.tryEdgeLLM(message, intent);
+            if (response) {
+                return response;
+            }
+        } catch (error) {
+            console.log('Edge LLM unavailable:', error);
+        }
+        
+        // Fallback response when Gemini is unavailable
+        const fallbackResponses = {
+            greeting: "Hello! I'm having a brief connection issue with my AI brain. While I get that sorted, feel free to explore Keshavan's work or contact him directly at keshavanseshadri@gmail.com!",
+            projects: "I'd love to tell you about Keshavan's amazing projects! He recently won the AI Berkeley Hackathon 2025 Grand Prize with ChipChat, and has impressive research tools for GPCR studies. Check out his GitHub for more details!",
+            research: "Keshavan's research focuses on computational biology, particularly GPCR mechanisms that are crucial for drug discovery. His work bridges AI and biology in fascinating ways!",
+            contact: "You can reach Keshavan at keshavanseshadri@gmail.com. He's always excited to discuss AI projects, research collaborations, or startup opportunities!",
+            experience: "Keshavan is a Senior ML Engineer at Prudential Financial, bringing together his Cornell Computer Science background with cutting-edge AI applications in fintech.",
+            skills: "Keshavan's expertise spans Machine Learning (TensorFlow, PyTorch), Full-Stack Development, Computational Biology, and Cloud Technologies - a unique combination perfect for AI-driven solutions!",
+            education: "Keshavan graduated from Cornell University with a Computer Science degree, where he gained deep knowledge in AI, software engineering, and research methodologies.",
+            achievements: "Recent highlights include winning the AI Berkeley Hackathon 2025 Grand Prize, publishing GPCR research, and mentoring through Break Through Tech. Quite impressive!",
+            general: "I'm having a brief connection issue, but I'd love to help you learn about Keshavan! Try asking about his projects, research, or experience, or contact him directly at keshavanseshadri@gmail.com."
+        };
         
         const response = {
-            text: responseText,
+            text: fallbackResponses[intent] || fallbackResponses.general,
             type: 'text',
             suggestions: this.getContextualSuggestions(intent),
             actions: this.getQuickActions(intent)
         };
 
-        // Add rich content based on intent
-        if (intent === 'projects') {
-            response.type = 'rich';
-            response.richContent = this.getProjectsRichContent();
-        } else if (intent === 'contact') {
-            response.type = 'rich';
-            response.richContent = this.getContactRichContent();
-        } else if (intent === 'skills') {
-            response.type = 'rich';
-            response.richContent = this.getSkillsRichContent();
-        }
-
         return response;
+    }
+
+    async tryEdgeLLM(message, intent) {
+        // Google Gemini 2.5 Flash Integration (ENABLED)
+        try {
+            const response = await this.generateWithGemini(message, intent);
+            if (response) {
+                return response;
+            }
+        } catch (error) {
+            console.log('Gemini API error:', error);
+            // Fall through to maintenance message
+        }
+        
+        // Fallback options (disabled while Gemini is active)
+        // Option 1: Browser-based LLM using Transformers.js (client-side)
+        // Option 2: OpenAI API
+        // Option 3: Hugging Face Inference API
+        
+        // For now, return null to use maintenance fallback if Gemini fails
+        return null;
+    }
+    
+    async loadTransformersJS() {
+        // Load Transformers.js for client-side LLM
+        if (typeof transformers === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+            script.type = 'module';
+            document.head.appendChild(script);
+            
+            return new Promise((resolve) => {
+                script.onload = () => {
+                    this.transformersLoaded = true;
+                    resolve();
+                };
+            });
+        }
+    }
+    
+    async generateWithGemini(message, intent) {
+        // Google Gemini 2.5 Flash integration
+        try {
+            // Get API key from environment or global variable
+            const apiKey = window.GEMINI_API_KEY || process.env.GEMINI_API_KEY || this.getGeminiApiKey();
+            
+            if (!apiKey) {
+                console.log('Gemini API key not found');
+                return null;
+            }
+
+            const systemPrompt = this.getSystemPrompt(intent);
+            const prompt = `${systemPrompt}\n\nUser: ${message}\nAssistant:`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 200,
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        },
+                        {
+                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.log('Gemini API error:', errorData);
+                return null;
+            }
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+                const generatedText = data.candidates[0].content.parts[0].text.trim();
+                
+                return {
+                    text: generatedText,
+                    type: 'text',
+                    suggestions: this.getContextualSuggestions(intent),
+                    actions: this.getQuickActions(intent)
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.log('Gemini generation error:', error);
+            return null;
+        }
+    }
+
+    getGeminiApiKey() {
+        // This method can be customized to retrieve the API key securely
+        // For development, you can temporarily set it here
+        // For production, use GitHub secrets or environment variables
+        return null; // Will be set via GitHub Actions or environment
+    }
+
+    getSystemPrompt(intent) {
+        const basePrompt = `You are Keshavan Seshadri's AI assistant. You help visitors learn about his professional background, projects, and achievements.
+
+About Keshavan:
+- Senior ML Engineer at Prudential Financial, working on innovative fintech solutions
+- Cornell University Computer Science graduate
+- Researcher in computational biology, specifically GPCR (G-protein coupled receptor) mechanisms
+- AI Berkeley Hackathon 2025 Grand Prize winner with ChipChat
+- Published researcher with work on protein dynamics and molecular interactions
+- Mentor through Break Through Tech
+- Expert in Machine Learning (TensorFlow, PyTorch), Full-Stack Development, and Cloud Technologies
+
+Guidelines:
+- Keep responses concise (1-3 sentences) and friendly
+- Focus on his professional work, research, and achievements
+- Direct users to contact him at keshavanseshadri@gmail.com for collaborations
+- Be helpful and informative about his background and projects`;
+
+        const intentSpecificPrompts = {
+            projects: `${basePrompt}\n\nFocus on: His award-winning ChipChat project, GPCR research tools, GitHub repositories, and AI applications.`,
+            research: `${basePrompt}\n\nFocus on: His computational biology research, GPCR studies, publications, and intersection of AI with biology.`,
+            contact: `${basePrompt}\n\nFocus on: How to reach him for collaborations, his email, LinkedIn, and professional interests.`,
+            experience: `${basePrompt}\n\nFocus on: His role at Prudential Financial, Cornell education, and career journey.`,
+            skills: `${basePrompt}\n\nFocus on: His technical expertise in ML, full-stack development, computational biology, and cloud technologies.`,
+            education: `${basePrompt}\n\nFocus on: His Cornell Computer Science degree and educational background.`,
+            achievements: `${basePrompt}\n\nFocus on: AI Berkeley Hackathon win, research publications, mentoring work, and career highlights.`
+        };
+
+        return intentSpecificPrompts[intent] || basePrompt;
+    }
+
+    async generateWithTransformers(message) {
+        // Client-side text generation using Transformers.js (legacy fallback)
+        try {
+            return null; // Disabled in favor of Gemini
+        } catch (error) {
+            console.log('Client-side generation error:', error);
+            return null;
+        }
     }
 
     getResponsesByIntent(intent, message) {
@@ -928,13 +1100,13 @@ class AdvancedChatbot {
     showWelcomeMessage() {
         if (this.userProfile.visitCount === 1) {
             setTimeout(() => {
-                this.addMessage("👋 Welcome! I'm Keshavan's AI assistant. I can tell you about his projects, research, experience, and more. What would you like to know?", 'bot');
+                this.addMessage("👋 Welcome! I'm Keshavan's AI assistant, powered by Google Gemini 2.5 Flash. I can help you learn about his projects, research, experience, and more. What would you like to know?", 'bot');
                 this.showSuggestions(["Tell me about his projects", "What's his experience?", "How can I contact him?"]);
             }, 500);
         } else {
             setTimeout(() => {
-                this.addMessage(`🎉 Welcome back! This is your ${this.userProfile.visitCount}${this.getOrdinalSuffix(this.userProfile.visitCount)} visit. What would you like to explore today?`, 'bot');
-                this.showSuggestions(["Latest updates", "Project portfolio", "Contact information"]);
+                this.addMessage(`🎉 Welcome back! This is your ${this.userProfile.visitCount}${this.getOrdinalSuffix(this.userProfile.visitCount)} visit. I'm here to help you explore Keshavan's work and achievements. What interests you today?`, 'bot');
+                this.showSuggestions(["Latest projects", "Research work", "Contact information"]);
             }, 500);
         }
     }
