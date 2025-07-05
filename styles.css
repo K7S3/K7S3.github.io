@@ -215,7 +215,15 @@ body {
 .hero-subtitle {
     font-size: 1.5rem;
     color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.hero-passion {
+    font-size: 1.1rem;
+    color: var(--primary-color);
     margin-bottom: 1.5rem;
+    font-weight: 500;
+    opacity: 0.9;
 }
 
 .hero-description {
@@ -556,6 +564,12 @@ section {
     font-size: 1.2rem;
 }
 
+.venture-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .venture-link {
     display: inline-flex;
     align-items: center;
@@ -568,9 +582,20 @@ section {
     transition: all 0.3s ease;
 }
 
+.venture-link.secondary {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
 .venture-link:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+}
+
+.venture-link.secondary:hover {
+    background: var(--primary-color);
+    color: white;
 }
 
 .entrepreneurship-stats {
@@ -785,6 +810,151 @@ section {
 
 .project-link:hover {
     color: var(--secondary-color);
+}
+
+/* Speaking Engagements Section */
+.speaking-section {
+    background: var(--light-bg);
+    padding: 80px 0;
+}
+
+.speaking-content {
+    display: grid;
+    gap: 3rem;
+}
+
+.featured-video {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.featured-video h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.video-event {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.video-wrapper {
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: gap 0.3s ease;
+}
+
+.video-link:hover {
+    gap: 0.75rem;
+}
+
+.speaking-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.speaking-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.speaking-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+    border-color: var(--primary-color);
+}
+
+.speaking-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.speaking-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.speaking-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.speaking-overlay i {
+    font-size: 2.5rem;
+    color: white;
+}
+
+.speaking-card:hover .speaking-image img {
+    transform: scale(1.1);
+}
+
+.speaking-card:hover .speaking-overlay {
+    opacity: 1;
+}
+
+.speaking-details {
+    padding: 1.5rem;
+}
+
+.speaking-details h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.speaking-topic {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.speaking-date {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.speaking-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: gap 0.3s ease;
+}
+
+.speaking-link:hover {
+    gap: 0.75rem;
 }
 
 /* Instagram Section */

@@ -182,6 +182,13 @@ def update_data_js():
                 'title': 'Mentoring at Break Through Tech',
                 'description': 'Started mentoring students to help them get into Tech and AI through Break Through Tech program.',
                 'type': 'volunteer'
+            },
+            {
+                'date': 'Summer 2024',
+                'title': 'Cornell Summer Startup Accelerator',
+                'description': 'Selected for the prestigious Johnson Summer Startup Accelerator at Cornell University. Co-founded Synergii, which received 1000+ requests within 2 weeks of launch.',
+                'link': 'https://eship.cornell.edu/johnson-entrepreneurship-track-academic-courses/johnson-summer-startup-accelerator-2024-cohort-2/',
+                'type': 'achievement'
             }
         ]
     }
