@@ -105,34 +105,64 @@ def fetch_linkedin_data():
     # For GitHub Pages, we'll use static data that can be manually updated
     timeline = [
         {
-            'date': 'Present',
-            'title': 'Prudential Financial',
-            'description': 'Working on innovative financial technology solutions and AI applications',
+            'date': 'Aug 2024 - Present',
+            'title': 'Senior Machine Learning Engineer - Prudential Financial',
+            'description': 'Developed real-time Table Augmented Generation (TAG) system using AWS, DuckDB, FastAPI, GPT-4. Enhanced prompt management framework for AI agent development. Built automated GenAI API validation system.',
             'type': 'work'
         },
         {
-            'date': '2024',
-            'title': 'Break Through Tech Mentor',
-            'description': 'Mentoring students to help them get into Tech and AI',
-            'type': 'volunteer'
+            'date': 'Nov 2023 - May 2024',
+            'title': 'Technical Founder - Synergii',
+            'description': 'Built AI-based grant discovery platform using RAG, GPT-4, BERT. Captured $34B market opportunity with $85M revenue projections. Secured Cornell Johnson Summer Startup Accelerator spot.',
+            'type': 'work'
+        },
+        {
+            'date': 'Jul 2022 - Dec 2022',
+            'title': 'Software Engineer - BrowserStack',
+            'description': 'Implemented features for Playwright, Puppeteer, and Cypress test frameworks. Contributed to framework maintenance and debugging for "Automate" product.',
+            'type': 'work'
+        },
+        {
+            'date': 'Sep 2021 - Nov 2021',
+            'title': 'AI Developer - Couture.ai',
+            'description': 'Developed GUI platform for training ResNet, Inception, Deep Speech models. Built AI platform for flagging violent/NSFW content in news videos.',
+            'type': 'work'
+        },
+        {
+            'date': 'May 2021 - Sep 2021',
+            'title': 'Mitacs Globalink Researcher - Queen\'s University',
+            'description': 'Worked with Dr. Farnaz Heidar-Zadeh on physics-based ML models to predict quantum-mechanical observables using QM17 dataset.',
+            'type': 'research'
         },
         {
             'date': '2023',
             'title': 'Cornell University',
-            'description': 'Graduated with degree in Computer Science',
+            'description': 'Master\'s degree in Computer Science from Cornell Tech',
             'type': 'education'
         },
         {
-            'date': '2023',
-            'title': 'IIIT Hyderabad Research',
-            'description': 'Published research on GPCR Activation Mechanisms',
+            'date': '2016 - 2021',
+            'title': 'IIIT Hyderabad',
+            'description': 'Bachelor\'s degree in Computer Science and Computational Natural Sciences',
+            'type': 'education'
+        },
+        {
+            'date': 'Jul 2019 - May 2020',
+            'title': 'Teaching Assistant - IIIT Hyderabad',
+            'description': 'Conducted tutorials for 200+ students in Science courses. Managed 20+ students in molecular dynamics projects.',
+            'type': 'teaching'
+        },
+        {
+            'date': 'May 2019 - Aug 2019',
+            'title': 'Google Summer of Code - Open Chemistry',
+            'description': 'Extended 3DMol.js library for active learning. Published in Journal of Chemical Education. Real-time sync for 1000s of users.',
             'type': 'research'
         },
         {
-            'date': '2022',
-            'title': 'LinkedIn Learning',
-            'description': 'Completed SQL: Data Reporting and Analysis certification',
-            'type': 'certification'
+            'date': 'May 2018 - Nov 2018',
+            'title': 'Associate Researcher - Virtual Labs VLEAD',
+            'description': 'Developed game-based learning tool for Data Structures used by millions. Delivered workshops to 200+ industry enthusiasts.',
+            'type': 'research'
         }
     ]
     
@@ -171,12 +201,7 @@ def update_data_js():
                 'link': 'https://www.putdatafirst.com/#Speakers',
                 'type': 'speaking'
             },
-            {
-                'date': 'January 2025',
-                'title': 'Won Grand Prize at AI Berkeley Hackathon',
-                'description': 'Our team built ChipChat, an innovative solution that won the Grand Prize at the 2025 AI Berkeley Hackathon!',
-                'type': 'achievement'
-            },
+
             {
                 'date': 'October 2024',
                 'title': 'Mentoring at Break Through Tech',

@@ -24,6 +24,12 @@ Currently using placeholder images. To add real Instagram photos:
 1. Replace the placeholder URLs in the Instagram section with actual photo URLs
 2. Or use Instagram's API to fetch photos dynamically (requires authentication)
 
+## Resume
+
+Add your resume:
+1. Save your resume as `resume.pdf` in the root directory
+2. The download button in the hero section will automatically link to it
+
 ## Deployment
 
 1. Push all changes to GitHub
