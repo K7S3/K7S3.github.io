@@ -211,19 +211,39 @@ function createPublicationCard(pub, index) {
         </div>
     ` : '';
     
+    // Truncate abstract for display with "Read more" functionality
+    const maxAbstractLength = 300;
+    let abstractHtml = '';
+    if (pub.abstract) {
+        if (pub.abstract.length > maxAbstractLength) {
+            const truncated = pub.abstract.substring(0, maxAbstractLength) + '...';
+            abstractHtml = `
+                <p class="publication-abstract">
+                    <span class="abstract-truncated">${truncated}</span>
+                    <span class="abstract-full" style="display: none;">${pub.abstract}</span>
+                    <a href="#" class="read-more-link" onclick="toggleAbstract(event, this)">Read more</a>
+                </p>
+            `;
+        } else {
+            abstractHtml = `<p class="publication-abstract">${pub.abstract}</p>`;
+        }
+    }
+    
     card.innerHTML = `
         <div class="publication-content">
             <div class="publication-text">
                 <h3>${pub.title}</h3>
                 <p class="publication-authors">${pub.authors}</p>
                 <p class="publication-venue">${pub.venue} - ${pub.year}</p>
-                <p class="publication-abstract">${pub.abstract}</p>
+                ${pub.thesis_number ? `<p class="publication-thesis-number">Report No: ${pub.thesis_number}</p>` : ''}
+                ${abstractHtml}
                 <div class="publication-stats">
                     <span class="citation-count"><i class="fas fa-quote-right"></i> ${pub.citations || 0} citations</span>
+                    ${pub.doi ? `<span class="publication-doi">DOI: ${pub.doi}</span>` : ''}
                 </div>
                 <div class="publication-links">
                     <a href="${pub.url || pub.link}" target="_blank" class="publication-link">
-                        <i class="fas fa-external-link-alt"></i> Read Full Paper
+                        <i class="fas fa-external-link-alt"></i> ${pub.thesis_number ? 'View Thesis' : 'Read Full Paper'}
                     </a>
                 </div>
             </div>
@@ -537,4 +557,107 @@ window.addEventListener('scroll', () => {
     const scrolled = window.pageYOffset;
     const parallax = document.querySelector('.hero');
     parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+});
+
+// Function to toggle abstract display
+function toggleAbstract(event, link) {
+    event.preventDefault();
+    const abstractContainer = link.parentElement;
+    const truncated = abstractContainer.querySelector('.abstract-truncated');
+    const full = abstractContainer.querySelector('.abstract-full');
+    
+    if (full.style.display === 'none') {
+        truncated.style.display = 'none';
+        full.style.display = 'inline';
+        link.textContent = 'Read less';
+    } else {
+        truncated.style.display = 'inline';
+        full.style.display = 'none';
+        link.textContent = 'Read more';
+    }
+}
+
+// Binary Matrix Animation
+const binaryCanvas = document.getElementById('binary-canvas');
+const binaryCtx = binaryCanvas.getContext('2d');
+
+// Make canvas full screen
+binaryCanvas.width = window.innerWidth;
+binaryCanvas.height = window.innerHeight;
+
+// Characters for the matrix (binary with special message)
+const binaryChars = '01';
+const messageChars = 'YOU ARE BEAUTIFUL';
+const financeChars = '$€£¥₹';
+const aiChars = 'AI∞∑∏∫≈≠';
+
+// Combine all characters
+const allChars = binaryChars + messageChars + financeChars + aiChars;
+
+// Columns for the matrix effect
+const fontSize = 14;
+const columns = binaryCanvas.width / fontSize;
+
+// Array to store the y position of each column
+const drops = [];
+for (let i = 0; i < columns; i++) {
+    drops[i] = Math.random() * -100;
+}
+
+// Special message positions
+const messagePositions = [];
+let messageIndex = 0;
+
+// Draw the matrix
+function drawMatrix() {
+    // Add translucent black to create fade effect
+    binaryCtx.fillStyle = 'rgba(10, 10, 20, 0.05)';
+    binaryCtx.fillRect(0, 0, binaryCanvas.width, binaryCanvas.height);
+    
+    // Set text properties
+    binaryCtx.fillStyle = '#6366f1';
+    binaryCtx.font = fontSize + 'px monospace';
+    
+    // Draw characters
+    for (let i = 0; i < drops.length; i++) {
+        let char;
+        
+        // Occasionally spell out "YOU ARE BEAUTIFUL"
+        if (Math.random() > 0.98 && messageIndex < messageChars.length) {
+            char = messageChars[messageIndex];
+            messageIndex++;
+            binaryCtx.fillStyle = '#a855f7'; // Purple for special message
+        } else if (Math.random() > 0.95) {
+            char = financeChars[Math.floor(Math.random() * financeChars.length)];
+            binaryCtx.fillStyle = '#10b981'; // Green for finance
+        } else if (Math.random() > 0.93) {
+            char = aiChars[Math.floor(Math.random() * aiChars.length)];
+            binaryCtx.fillStyle = '#3b82f6'; // Blue for AI
+        } else {
+            char = binaryChars[Math.floor(Math.random() * binaryChars.length)];
+            binaryCtx.fillStyle = '#6366f1'; // Default purple
+        }
+        
+        binaryCtx.fillText(char, i * fontSize, drops[i] * fontSize);
+        
+        // Reset message index
+        if (messageIndex >= messageChars.length) {
+            messageIndex = 0;
+        }
+        
+        // Move drop down
+        if (drops[i] * fontSize > binaryCanvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+        }
+        drops[i]++;
+    }
+}
+
+// Animate the matrix
+setInterval(drawMatrix, 35);
+
+// Resize canvas on window resize
+window.addEventListener('resize', () => {
+    binaryCanvas.width = window.innerWidth;
+    binaryCanvas.height = window.innerHeight;
 }); 

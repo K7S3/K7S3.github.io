@@ -34,33 +34,12 @@ Place these in the root directory:
 - Minimum 800x450 pixels
 - Clear, well-lit photos
 
-### 3. Instagram Photos
-You have two options:
+### 3. Instagram Feed
+**Status:** ✅ COMPLETED - Using Instagram Embed
 
-#### Option A: Direct File Upload (Recommended)
-Create an `images` folder in root directory and add:
-- `instagram-1.jpg`
-- `instagram-2.jpg`
-- `instagram-3.jpg`
-- `instagram-4.jpg`
-- `instagram-5.jpg`
-- `instagram-6.jpg`
+The Instagram section now uses an embedded feed directly from your @k7_original profile. No individual photos needed!
 
-Then update the Instagram section in `index.html`:
-```html
-<img src="images/instagram-1.jpg" alt="Instagram post">
-```
-
-#### Option B: Use External URLs
-Replace the placeholder URLs in the Instagram section with actual URLs from your Instagram posts.
-
-**Photo selection tips:**
-- Mix of professional and personal
-- Show your personality
-- Conference photos
-- Project work
-- Team photos
-- Travel/lifestyle
+The embed automatically shows your latest posts and updates in real-time.
 
 ### 4. Project Screenshots (Optional)
 For better project presentation, add:
@@ -76,21 +55,25 @@ The publication images are already linked from the journal websites, but you can
 ## 📁 Final Directory Structure
 ```
 keshavanseshadri.github.io/
-├── profile-photo.jpg
-├── panel-photo-1.jpg
-├── panel-photo-2.jpg
-├── panel-photo-3.jpg
-├── resume.pdf
-├── images/
-│   ├── instagram-1.jpg
-│   ├── instagram-2.jpg
-│   ├── instagram-3.jpg
-│   ├── instagram-4.jpg
-│   ├── instagram-5.jpg
-│   ├── instagram-6.jpg
-│   ├── synergii-screenshot.png
-│   └── [other project images]
-└── [other files]
+├── profile-photo.jpg ✅
+├── panel-photo-1.jpg (to add)
+├── panel-photo-2.jpg (to add)
+├── panel-photo-3.jpg (to add)
+├── resume.pdf (optional)
+├── index.html ✅
+├── styles.css ✅
+├── script.js ✅
+├── data.js ✅
+├── update_data.py ✅
+├── requirements.txt ✅
+├── README.md ✅
+├── PHOTO_GUIDE.md ✅
+├── .github/
+│   └── workflows/
+│       └── update-data.yml ✅
+└── images/ (optional for project screenshots)
+    ├── synergii-screenshot.png
+    └── [other project images]
 ```
 
 ## 🎨 Image Optimization Tips
@@ -106,4 +89,28 @@ keshavanseshadri.github.io/
 4. Test locally before pushing
 5. Commit and push to GitHub
 
-Your website will look amazing with all these personal touches! 
+Your website will look amazing with all these personal touches!
+
+## 🎯 New Visual Features Added
+
+### Binary Matrix Background
+- Animated binary rain effect with "YOU ARE BEAUTIFUL" message
+- AI and finance symbols (∞, ∑, $, €, £) integrated
+- Subtle opacity for elegant appearance
+
+### Enhanced Animations
+- Gradient borders on featured cards
+- Glowing effects on hover
+- Smooth color transitions
+- AI/Finance themed color scheme
+
+### Instagram Integration
+- Live embedded feed from @k7_original
+- Automatically updates with your latest posts
+- Professional integration with dark theme
+
+### Publication Enhancements
+- Full abstracts with "Read more" functionality
+- DOI numbers displayed
+- Master's thesis included with report number
+- Images auto-loaded from journal sources 

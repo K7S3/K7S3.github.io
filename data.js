@@ -1,6 +1,6 @@
-// Auto-generated data - Last updated: 2025-07-05T13:53:33.313740
+// Auto-generated data - Last updated: 2025-07-05T14:19:53.140670
 const websiteData = {
-  "lastUpdated": "2025-07-05T13:53:33.313740",
+  "lastUpdated": "2025-07-05T14:19:53.140670",
   "projects": [
     {
       "name": "Synergii",
@@ -60,7 +60,7 @@ const websiteData = {
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T17:46:59Z"
+      "updated_at": "2025-07-05T18:02:48Z"
     },
     {
       "name": "AutoEHR",
@@ -159,30 +159,33 @@ const websiteData = {
       "authors": "Keshavan Seshadri, Kalyan C. Tirupula, Kavita Iyer, Naveena Yanamala, and Judith Klein-Seetharaman",
       "venue": "Journal of Chemical Information and Modeling",
       "year": "2023",
-      "abstract": "We present a dynamical model for allosteric communication based on protein contact clusters. Our approach reveals how conformational changes propagate through protein structures, providing insights into the fundamental mechanisms of allostery.",
+      "abstract": "G-protein coupled receptors (GPCRs) are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. The binding of the neurotransmitter adrenaline to the \u03b22-adrenergic receptor (\u03b22AR) is known to induce a flight or fight cellular response, but much remains to be understood about binding-induced dynamical changes in \u03b22AR and adrenaline. In this article, we examine the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of \u03b22AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum, which corresponds to the crystal structure of \u03b22AR\u2013adrenaline complex, and a meta-stable state in which the adrenaline is moved slightly deeper into the binding pocket with a different orientation compared to that in the crystal structure.",
       "citations": 5,
       "url": "https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c00401",
-      "image": "https://pubs.acs.org/cms/10.1021/acs.jcim.3c00401/asset/images/medium/ci3c00401_0007.gif"
+      "image": "images/md-ml-jcim.png",
+      "doi": "10.1021/acs.jcim.3c00401"
     },
     {
-      "title": "Building a Raspberry Pi Spectrophotometer for Undergraduate Chemistry Education",
-      "authors": "Keshavan Seshadri et al.",
+      "title": "The 3Dmol.js Learning Environment: A Classroom Response System for 3D Chemical Structures",
+      "authors": "Keshavan Seshadri, Peng Liu, and David Ryan Koes",
       "venue": "Journal of Chemical Education",
       "year": "2020",
-      "abstract": "We developed a low-cost, Raspberry Pi-based spectrophotometer for undergraduate chemistry education. This DIY instrument provides hands-on learning opportunities while maintaining analytical precision suitable for educational purposes.",
+      "abstract": "Classroom response systems are an important tool in many active learning pedagogies. They support real-time feedback on student learning and promote student engagement, even in large classrooms, by allowing instructors to solicit an answer to a question from all students and show the results. Existing classroom response systems are general purpose and not tailored to the specific needs of a chemistry classroom. In particular, it is not easy to deploy molecular representations except as static images. Here we present the 3Dmol.js learning environment, a classroom response system that uses the open-source web-based 3Dmol.js JavaScript framework to provide interactive viewing and querying of 3D molecules. 3Dmol.js is available under a BSD 3-clause open-source license, and the learning-environment features are all available through http://3dmol.csb.pitt.edu/ without any software installation required.",
       "citations": 12,
       "url": "https://pubs.acs.org/doi/10.1021/acs.jchemed.0c00579",
-      "image": "https://pubs.acs.org/cms/10.1021/acs.jchemed.0c00579/asset/images/medium/ed0c00579_0004.gif"
+      "image": "images/3dmol-jchemed.png",
+      "doi": "10.1021/acs.jchemed.0c00579"
     },
     {
       "title": "A Computational Study on GPCR Activation Mechanisms: Insights from Adrenaline Binding and G-Protein Dissociation",
-      "authors": "Keshavan Seshadri et al.",
-      "venue": "International Institute of Information Technology, Hyderabad",
+      "authors": "Keshavan Seshadri",
+      "venue": "Master's Thesis, IIIT Hyderabad",
       "year": "2023",
-      "abstract": "GPCRs are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics.",
-      "citations": 8,
-      "url": "https://scholar.google.com/citations?user=3M3fxRYAAAAJ",
-      "image": null
+      "abstract": "GPCRs are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. This thesis examines the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of \u03b22AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum and a meta-stable state with different orientations. The findings enhance our understanding of GPCR activation and the advancement of new therapies aimed at GPCRs by offering comprehensive insights into conformational changes, energetics, and critical residues involved.",
+      "citations": 0,
+      "url": "https://web2py.iiit.ac.in/research_centres/publications/download/mastersthesis.pdf.b003dd0b24ed8ba6.7468657369732e706466.pdf",
+      "image": null,
+      "thesis_number": "IIIT/TH/2023/130"
     }
   ],
   "timeline": [
