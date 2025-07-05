@@ -1,16 +1,16 @@
-// Auto-generated data - Last updated: 2025-07-05T14:19:53.140670
+// Auto-generated data - Last updated: 2025-07-05T14:26:22.818338
 const websiteData = {
-  "lastUpdated": "2025-07-05T14:19:53.140670",
+  "lastUpdated": "2025-07-05T14:26:22.818338",
   "projects": [
     {
       "name": "Synergii",
-      "description": "No description available",
+      "description": "An AI-based grant search tool to find the most relevant grants.",
       "url": "https://github.com/K7S3/Synergii",
-      "homepage": null,
+      "homepage": "https://synergii.org/",
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-03-05T13:51:39Z"
+      "updated_at": "2025-07-05T18:23:58Z"
     },
     {
       "name": "3Dmol.js",
@@ -60,7 +60,7 @@ const websiteData = {
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T18:02:48Z"
+      "updated_at": "2025-07-05T18:22:55Z"
     },
     {
       "name": "AutoEHR",
@@ -155,8 +155,8 @@ const websiteData = {
   ],
   "publications": [
     {
-      "title": "Allosteric Communication Mediated by Protein Contact Clusters: A Dynamical Model",
-      "authors": "Keshavan Seshadri, Kalyan C. Tirupula, Kavita Iyer, Naveena Yanamala, and Judith Klein-Seetharaman",
+      "title": "A Computational Study on GPCR Activation Mechanisms: Insights from Adrenaline Binding and G-Protein Dissociation",
+      "authors": "Keshavan Seshadri, Marimuthu Krishnan",
       "venue": "Journal of Chemical Information and Modeling",
       "year": "2023",
       "abstract": "G-protein coupled receptors (GPCRs) are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. The binding of the neurotransmitter adrenaline to the \u03b22-adrenergic receptor (\u03b22AR) is known to induce a flight or fight cellular response, but much remains to be understood about binding-induced dynamical changes in \u03b22AR and adrenaline. In this article, we examine the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of \u03b22AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum, which corresponds to the crystal structure of \u03b22AR\u2013adrenaline complex, and a meta-stable state in which the adrenaline is moved slightly deeper into the binding pocket with a different orientation compared to that in the crystal structure.",
@@ -175,17 +175,6 @@ const websiteData = {
       "url": "https://pubs.acs.org/doi/10.1021/acs.jchemed.0c00579",
       "image": "images/3dmol-jchemed.png",
       "doi": "10.1021/acs.jchemed.0c00579"
-    },
-    {
-      "title": "A Computational Study on GPCR Activation Mechanisms: Insights from Adrenaline Binding and G-Protein Dissociation",
-      "authors": "Keshavan Seshadri",
-      "venue": "Master's Thesis, IIIT Hyderabad",
-      "year": "2023",
-      "abstract": "GPCRs are the most prominent family of membrane proteins that serve as major targets for one-third of the drugs produced. A detailed understanding of the molecular mechanism of drug-induced activation and inhibition of GPCRs is crucial for the rational design of novel therapeutics. This thesis examines the potential of mean force (PMF) for the unbinding of adrenaline from the orthosteric binding site of \u03b22AR and the associated dynamics using umbrella sampling and molecular dynamics (MD) simulations. The calculated PMF reveals a global energy minimum and a meta-stable state with different orientations. The findings enhance our understanding of GPCR activation and the advancement of new therapies aimed at GPCRs by offering comprehensive insights into conformational changes, energetics, and critical residues involved.",
-      "citations": 0,
-      "url": "https://web2py.iiit.ac.in/research_centres/publications/download/mastersthesis.pdf.b003dd0b24ed8ba6.7468657369732e706466.pdf",
-      "image": null,
-      "thesis_number": "IIIT/TH/2023/130"
     }
   ],
   "timeline": [

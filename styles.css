@@ -168,7 +168,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 120px 20px 80px;
+    padding: 120px 20px 40px;
     position: relative;
     overflow: hidden;
 }
@@ -331,7 +331,8 @@ body {
 
 /* Section Styles */
 section {
-    padding: 80px 0;
+    padding: 100px 0;
+    scroll-margin-top: 80px;
 }
 
 .section-title {
@@ -348,6 +349,8 @@ section {
 /* About Section */
 .about-section {
     background: var(--light-bg);
+    margin-top: 0;
+    padding-top: 120px;
 }
 
 .about-content {
@@ -1032,12 +1035,15 @@ section {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 2rem auto;
-    max-width: 600px;
+    margin: 3rem auto;
+    width: 100%;
 }
 
 .instagram-embed-wrapper blockquote {
     margin: 0 auto !important;
+    max-width: 700px !important;
+    min-width: 400px !important;
+    width: 100% !important;
 }
 
 /* Binary Canvas Background */
@@ -1577,10 +1583,11 @@ section {
 
 /* Instagram embed styling */
 .instagram-embed-wrapper {
-    padding: 2rem;
+    padding: 3rem;
     background: rgba(255, 255, 255, 0.02);
     border-radius: var(--border-radius);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Section title enhancements */
