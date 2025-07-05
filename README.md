@@ -2,7 +2,7 @@
 
 A beautiful, interactive personal portfolio website with automatic data updates from GitHub, Google Scholar, and LinkedIn.
 
-🌐 **Live Demo**: [https://keshavanseshadri.github.io](https://keshavanseshadri.github.io)
+🌐 **Live Demo**: [https://k7s3.github.io](https://k7s3.github.io)
 
 ## ✨ Features
 
@@ -26,7 +26,7 @@ A beautiful, interactive personal portfolio website with automatic data updates 
 1. Fork this repository
 2. Enable GitHub Pages in your repository settings
 3. Update the content in `update_data.py` with your information
-4. The site will be live at `https://keshavanseshadri.github.io`
+4. The site will be live at `https://k7s3.github.io`
 
 ## 📁 Project Structure
 
