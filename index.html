@@ -17,8 +17,8 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- Base Styles - loaded first -->
+    <link rel="stylesheet" href="styles/base.css">
     
     <!-- Particles.js -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
@@ -42,318 +42,22 @@
     <!-- Binary Matrix Background -->
     <canvas id="binary-canvas"></canvas>
     
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <span class="logo-text">K7</span>
-            </div>
-            <div class="nav-menu">
-                <a href="#home" class="nav-link">Home</a>
-                <a href="#about" class="nav-link">About</a>
-                <a href="#news" class="nav-link">News</a>
-                <a href="#speaking" class="nav-link">Speaking</a>
-                <a href="#timeline" class="nav-link">Timeline</a>
-                <a href="#education" class="nav-link">Education</a>
-                <a href="#entrepreneurship" class="nav-link">Entrepreneurship</a>
-                <a href="#publications" class="nav-link">Publications</a>
-                <a href="#projects" class="nav-link">Projects</a>
-                <a href="#contact" class="nav-link">Contact</a>
-            </div>
-            <div class="nav-toggle" aria-label="Toggle navigation menu" role="button" tabindex="0">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="nav-mobile-menu">
-        <a href="#home" class="nav-link">Home</a>
-        <a href="#about" class="nav-link">About</a>
-        <a href="#news" class="nav-link">News</a>
-        <a href="#speaking" class="nav-link">Speaking</a>
-        <a href="#timeline" class="nav-link">Timeline</a>
-        <a href="#education" class="nav-link">Education</a>
-        <a href="#entrepreneurship" class="nav-link">Entrepreneurship</a>
-        <a href="#publications" class="nav-link">Publications</a>
-        <a href="#projects" class="nav-link">Projects</a>
-        <a href="#contact" class="nav-link">Contact</a>
-    </div>
+    <!-- Component Containers -->
+    <div id="header-container"></div>
+    <div id="hero-container"></div>
+    <div id="about-container"></div>
+    <div id="timeline-container"></div>
+    <div id="education-container"></div>
+    <div id="entrepreneurship-container"></div>
+    <div id="publications-container"></div>
+    <div id="projects-container"></div>
+    <div id="speaking-container"></div>
+    <div id="news-container"></div>
+    <div id="contact-container"></div>
+    <div id="chatbot-container"></div>
+    <div id="footer-container"></div>
     
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title" data-aos="fade-up">
-                Hi, I'm <span class="hero-name gradient-text">Keshavan Seshadri</span>
-            </h1>
-            <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="100">
-                AI Researcher • Software Engineer • Entrepreneur
-            </p>
-            <div class="hero-description" data-aos="fade-up" data-aos-delay="150">
-                <p>🚀 Senior ML Engineer at Prudential Financial</p>
-                <p>Cornell Tech & IIIT Hyderabad Alumni • Building the Future with AI</p>
-            </div>
-            <div class="hero-buttons" data-aos="fade-up" data-aos-delay="200">
-                <a href="#contact" class="btn btn-primary">Get in Touch</a>
-                <a href="#projects" class="btn btn-secondary">View Projects</a>
-                <a href="resume.pdf" download class="btn btn-secondary">
-                    <i class="fas fa-download"></i> Download Resume
-                </a>
-            </div>
-            <div class="social-links" data-aos="fade-up" data-aos-delay="250">
-                <a href="https://github.com/K7S3" target="_blank" class="social-link">
-                    <i class="fab fa-github"></i>
-                </a>
-                <a href="https://www.linkedin.com/in/keshavan-seshadri/" target="_blank" class="social-link">
-                    <i class="fab fa-linkedin"></i>
-                </a>
-                <a href="https://scholar.google.com/citations?user=3M3fxRYAAAAJ" target="_blank" class="social-link">
-                    <i class="fas fa-graduation-cap"></i>
-                </a>
-                <a href="https://x.com/palkiafire7" target="_blank" class="social-link">
-                    <i class="fab fa-twitter"></i>
-                </a>
-                <a href="https://www.instagram.com/k7_original/" target="_blank" class="social-link">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="https://www.facebook.com/keshavan.seshadri.2025/" target="_blank" class="social-link">
-                    <i class="fab fa-facebook"></i>
-                </a>
-            </div>
-        </div>
-        <div class="hero-image">
-            <div class="hero-image-container">
-                <div class="hero-image-glow"></div>
-                <img src="profile-photo.jpg" alt="Keshavan Seshadri">
-            </div>
-        </div>
-    </section>
-    
-    <!-- About Section -->
-    <section id="about" class="about-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">About Me</h2>
-            <div class="about-content" data-aos="fade-up" data-aos-delay="100">
-                <div class="about-text">
-                    <p>🚀 Hi, I'm Keshavan — a builder, researcher, and entrepreneur at heart.</p>
-                    <p>I'm currently a Senior Machine Learning Engineer at Prudential Financial, where I focus on building ML platforms and generative AI solutions to drive innovation in financial and insurance services. My work spans LLM-powered agents, retrieval-augmented generation (RAG), ML frameworks, and AI infrastructure — helping teams deploy AI products that are scalable, secure, and business-ready.</p>
-                    <p>Before Prudential, I founded two startups: Synergii, an AI-driven platform that helps entrepreneurs and SMBs find funding opportunities — from grants to venture capital, and another venture focused on AI solutions. I took Synergii from zero to a live product, running semantic search, RAG pipelines, and full-stack development end-to-end whilst deploying on AWS.</p>
-                    <p>I hold a Master's in Computer Science from Cornell Tech, and dual degrees (Bachelor's + Master's) from IIIT Hyderabad. My research background includes computational biology (GPCR activation mechanisms, molecular dynamics), molecular ML models for drug discovery, and contributions to open-source projects like 3Dmol.js through Google Summer of Code. I've published in the Journal of Chemical Education and presented research on allosteric communication in proteins.</p>
-                    <p>My interests lie at the intersection of AI research and product-building, especially in LLMs, agents, autonomous systems, and AI for finance. I'm passionate about building AI agents that can understand, reason, and act in complex environments.</p>
-                    <p>💡 If you're working on cutting-edge AI, fintech, or want to chat about startup ideas, feel free to connect!</p>
-                </div>
-                <div class="skills-grid">
-                    <div class="skill-card" data-aos="zoom-in" data-aos-delay="200">
-                        <i class="fas fa-robot"></i>
-                        <h3>AI Agents & LLMs</h3>
-                        <p>Autonomous systems, RAG, GPT-4, Agent frameworks</p>
-                    </div>
-                    <div class="skill-card" data-aos="zoom-in" data-aos-delay="300">
-                        <i class="fas fa-brain"></i>
-                        <h3>Machine Learning</h3>
-                        <p>Deep learning, NLP, ML Infrastructure</p>
-                    </div>
-                    <div class="skill-card" data-aos="zoom-in" data-aos-delay="400">
-                        <i class="fas fa-flask"></i>
-                        <h3>Applied AI Research</h3>
-                        <p>Computational biology, Molecular dynamics, Molecular ML</p>
-                    </div>
-                    <div class="skill-card" data-aos="zoom-in" data-aos-delay="500">
-                        <i class="fas fa-rocket"></i>
-                        <h3>Entrepreneurship</h3>
-                        <p>Startup building, Product development, AI for Finance</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Timeline Section -->
-    <section id="timeline" class="timeline-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Career Timeline</h2>
-            <div class="timeline" id="timeline-container">
-                <!-- Timeline items will be dynamically loaded here -->
-                <div class="timeline-item" data-aos="fade-right">
-                    <div class="timeline-date">Present</div>
-                    <div class="timeline-content">
-                        <h3>Prudential Financial</h3>
-                        <p>Working on innovative financial technology solutions</p>
-                    </div>
-                </div>
-                <div class="timeline-item" data-aos="fade-left">
-                    <div class="timeline-date">2023</div>
-                    <div class="timeline-content">
-                        <h3>Cornell University</h3>
-                        <p>Graduated with degree in Computer Science</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Education Section -->
-    <section id="education" class="education-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Education</h2>
-            <div class="education-grid" id="education-container">
-                <!-- Education items will be dynamically loaded here -->
-                <div class="education-card" data-aos="fade-up" data-aos-delay="100">
-                    <div class="education-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <div class="education-content">
-                        <h3>Cornell University</h3>
-                        <p class="education-degree">Master's in Computer Science</p>
-                        <p class="education-program">Cornell Tech</p>
-                    </div>
-                </div>
-                <div class="education-card" data-aos="fade-up" data-aos-delay="200">
-                    <div class="education-icon">
-                        <i class="fas fa-university"></i>
-                    </div>
-                    <div class="education-content">
-                        <h3>IIIT Hyderabad</h3>
-                        <p class="education-degree">Bachelor's in Computer Science</p>
-                        <p class="education-program">Dual Degree Program</p>
-                    </div>
-                </div>
-                <div class="education-card" data-aos="fade-up" data-aos-delay="300">
-                    <div class="education-icon">
-                        <i class="fas fa-flask"></i>
-                    </div>
-                    <div class="education-content">
-                        <h3>IIIT Hyderabad</h3>
-                        <p class="education-degree">Master's in Computational Natural Sciences</p>
-                        <p class="education-program">Research Focus: GPCR Dynamics</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Entrepreneurship Section -->
-    <section id="entrepreneurship" class="entrepreneurship-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Entrepreneurship</h2>
-            <div class="entrepreneurship-content">
-                <div class="venture-card featured" data-aos="fade-up" data-aos-delay="100">
-                    <div class="venture-header">
-                        <h3>Synergii</h3>
-                        <span class="venture-status">Active</span>
-                    </div>
-                    <div class="venture-content">
-                        <p class="venture-tagline">AI-powered grant discovery and application platform for researchers & entrepreneurs</p>
-                        <p class="venture-description">
-                            Synergii is an AI-based grant search and apply platform that helps researchers and entrepreneurs find the most relevant grants and apply to them in an instant. 
-                            We help entrepreneurs, non-profits and SMBs with the tedious task of discovering the most relevant grants and streamlining the application process for them in just one click.
-                        </p>
-                        <p class="venture-description">
-                            Built this innovative tool from the ground up as part of Cornell Tech's startup studio course. Designed in Figma and developed the MVP from 0 to 1, 
-                            integrating public datasets to capture a $34 billion market opportunity with targeted early revenue projections of $85 million.
-                        </p>
-                        <div class="tech-stack">
-                            <span class="stack-item">React</span>
-                            <span class="stack-item">Flask</span>
-                            <span class="stack-item">GPT-4</span>
-                            <span class="stack-item">BERT</span>
-                            <span class="stack-item">RAG</span>
-                            <span class="stack-item">Docker</span>
-                            <span class="stack-item">AWS App Runner</span>
-                            <span class="stack-item">RDS</span>
-                            <span class="stack-item">Cognito</span>
-                            <span class="stack-item">EC2</span>
-                            <span class="stack-item">GitHub Actions</span>
-                            <span class="stack-item">Figma</span>
-                        </div>
-                        <div class="venture-achievements">
-                            <div class="achievement-item">
-                                <i class="fas fa-rocket"></i>
-                                <span>1000+ Requests in 2 Weeks</span>
-                            </div>
-                            <div class="achievement-item">
-                                <i class="fas fa-university"></i>
-                                <span>Cornell Summer Accelerator 2024</span>
-                            </div>
-                            <div class="achievement-item">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Live & Running Platform</span>
-                            </div>
-                        </div>
-                        <div class="venture-links">
-                            <a href="https://synergii.org/" target="_blank" class="venture-link">
-                                Visit Synergii <i class="fas fa-external-link-alt"></i>
-                            </a>
-                            <a href="https://eship.cornell.edu/johnson-entrepreneurship-track-academic-courses/johnson-summer-startup-accelerator-2024-cohort-2/" target="_blank" class="venture-link secondary">
-                                Cornell Accelerator <i class="fas fa-university"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="entrepreneurship-stats" data-aos="fade-up" data-aos-delay="200">
-                    <div class="stat-card">
-                        <i class="fas fa-rocket"></i>
-                        <h4>2</h4>
-                        <p>Startups Founded</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-users"></i>
-                        <h4>1000+</h4>
-                        <p>Grant Requests</p>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-dollar-sign"></i>
-                        <h4>$34B</h4>
-                        <p>Market Opportunity</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Publications Section -->
-    <section id="publications" class="publications-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Publications</h2>
-            <div class="publications-grid" id="publications-container">
-                <!-- Publications will be dynamically loaded here -->
-                <div class="publication-card" data-aos="fade-up">
-                    <h3>A Computational Study on GPCR Activation Mechanisms</h3>
-                    <p class="publication-authors">Keshavan Seshadri et al.</p>
-                    <p class="publication-venue">International Institute of Information Technology, Hyderabad - August 2023</p>
-                    <p class="publication-abstract">GPCRs are the most prominent family of membrane proteins that serve as major targets for drug development...</p>
-                    <div class="publication-links">
-                        <a href="#" class="publication-link">Read More</a>
-                    </div>
-                </div>
-            </div>
-            <div class="view-more-container" data-aos="fade-up">
-                <a href="https://scholar.google.com/citations?user=3M3fxRYAAAAJ" target="_blank" class="btn btn-secondary">
-                    View All Publications on Google Scholar
-                </a>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Projects Section -->
-    <section id="projects" class="projects-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Projects</h2>
-            <div class="projects-grid" id="projects-container">
-                <!-- Projects will be dynamically loaded from GitHub -->
-            </div>
-            <div class="view-more-container" data-aos="fade-up">
-                <a href="https://github.com/K7S3" target="_blank" class="btn btn-secondary">
-                    View All Projects on GitHub
-                </a>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Instagram Feed Section -->
+    <!-- Instagram Feed Section (Keeping inline due to external scripts) -->
     <section id="instagram" class="instagram-section">
         <div class="container">
             <h2 class="section-title" data-aos="fade-up">
@@ -366,204 +70,32 @@
         </div>
     </section>
     
-    <!-- Speaking Engagements Section -->
-    <section id="speaking" class="speaking-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Speaking Engagements</h2>
-            <div class="speaking-content">
-                <!-- Featured Video -->
-                <div class="featured-video" data-aos="fade-up" data-aos-delay="100">
-                    <h3>Panel: Explainability and Transparency in Autonomous Agents</h3>
-                    <p class="video-event">AI Accelerator Institute - Agentic AI Summit NYC</p>
-                    <div class="video-wrapper">
-                        <script src="https://fast.wistia.com/embed/medias/ebjp5qf7qt.jsonp" async></script>
-                        <script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
-                        <div class="wistia_responsive_padding" style="padding:56.25% 0 0 0;position:relative;">
-                            <div class="wistia_responsive_wrapper" style="height:100%;left:0;position:absolute;top:0;width:100%;">
-                                <div class="wistia_embed wistia_async_ebjp5qf7qt seo=true videoFoam=true" style="height:100%;position:relative;width:100%">
-                                    <div class="wistia_swatch" style="height:100%;left:0;opacity:0;overflow:hidden;position:absolute;top:0;transition:opacity 200ms;width:100%;">
-                                        <img src="https://fast.wistia.com/embed/medias/ebjp5qf7qt/swatch" style="filter:blur(5px);height:100%;object-fit:contain;width:100%;" alt="" aria-hidden="true" onload="this.parentNode.style.opacity=1;" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="venture-links" style="display: flex; gap: 1rem; margin-top: 1rem;">
-                        <a href="https://productmarketing.wistia.com/medias/ebjp5qf7qt" target="_blank" class="video-link">
-                            <i class="fas fa-external-link-alt"></i> Watch Full Video
-                        </a>
-                        <a href="https://world.aiacceleratorinstitute.com/location/agenticainewyork/speaker/keshavanseshadri" target="_blank" class="video-link">
-                            <i class="fas fa-calendar"></i> AI Accelerator Institute
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Speaking Events Grid -->
-                <div class="speaking-grid">
-                    <div class="speaking-card" data-aos="fade-up" data-aos-delay="200">
-                        <div class="speaking-image">
-                            <img src="panel-photo-2.jpg" alt="BattleFin Panel">
-                            <div class="speaking-overlay">
-                                <i class="fas fa-microphone"></i>
-                            </div>
-                        </div>
-                        <div class="speaking-details">
-                            <h4>BattleFin Discovery Day</h4>
-                            <p class="speaking-topic">AI & Alternative Data in Finance</p>
-                            <p class="speaking-date">June 10-11, 2025 | New York City</p>
-                            <a href="https://www.battlefin.com/events/new-york-2025-new" target="_blank" class="speaking-link">
-                                View Details <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="speaking-card" data-aos="fade-up" data-aos-delay="300">
-                        <div class="speaking-image">
-                            <img src="panel-photo-3.jpg" alt="Put Data First Panel">
-                            <div class="speaking-overlay">
-                                <i class="fas fa-microphone"></i>
-                            </div>
-                        </div>
-                        <div class="speaking-details">
-                            <h4>Put Data First Conference</h4>
-                            <p class="speaking-topic">Future of Data-Driven Innovation</p>
-                            <p class="speaking-date">October 2025</p>
-                            <a href="https://www.putdatafirst.com/#Speakers" target="_blank" class="speaking-link">
-                                View Details <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- News Section -->
-    <section id="news" class="news-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Latest News & Updates</h2>
-            <div class="news-grid" id="news-container">
-                <div class="news-item" data-aos="fade-up">
-                    <div class="news-date">January 2025</div>
-                    <h3>Won Grand Prize at AI Berkeley Hackathon</h3>
-                    <p>Our team built ChipChat, an innovative solution that won the Grand Prize at the 2025 AI Berkeley Hackathon!</p>
-                </div>
-                <div class="news-item" data-aos="fade-up" data-aos-delay="100">
-                    <div class="news-date">December 2024</div>
-                    <h3>Panel Discussion on Explainable AI</h3>
-                    <p>Participated in a panel discussion on Explainability and Transparency in Autonomous Agents.</p>
-                </div>
-                <div class="news-item" data-aos="fade-up" data-aos-delay="200">
-                    <div class="news-date">October 2024</div>
-                    <h3>Mentoring at Break Through Tech</h3>
-                    <p>Started mentoring students to help them get into Tech and AI through Break Through Tech program.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Contact Section -->
-    <section id="contact" class="contact-section">
-        <div class="container">
-            <h2 class="section-title" data-aos="fade-up">Get In Touch</h2>
-            <div class="contact-content">
-                <div class="contact-info" data-aos="fade-right">
-                    <h3>Let's Connect</h3>
-                    <p>I'm always interested in discussing new opportunities, collaborations, or just having a chat about technology and innovation.</p>
-                    <div class="contact-details">
-                        <div class="contact-item">
-                            <i class="fas fa-envelope"></i>
-                            <a href="mailto:keshavanseshadri@gmail.com">keshavanseshadri@gmail.com</a>
-                        </div>
-                        <div class="contact-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>New York City Metropolitan Area</span>
-                        </div>
-                    </div>
-                    <div class="contact-social">
-                        <a href="https://github.com/K7S3" target="_blank" class="social-link">
-                            <i class="fab fa-github"></i>
-                        </a>
-                        <a href="https://www.linkedin.com/in/keshavan-seshadri/" target="_blank" class="social-link">
-                            <i class="fab fa-linkedin"></i>
-                        </a>
-                        <a href="https://x.com/palkiafire7" target="_blank" class="social-link">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                    </div>
-                </div>
-                <form class="contact-form" data-aos="fade-left">
-                    <input type="text" placeholder="Your Name" required>
-                    <input type="email" placeholder="Your Email" required>
-                    <textarea placeholder="Your Message" rows="5" required></textarea>
-                    <button type="submit" class="btn btn-primary">Send Message</button>
-                </form>
-            </div>
-        </div>
-    </section>
-    
-        <!-- Advanced AI Chatbot -->
-    <div class="chatbot-container" id="chatbot">
-        <div class="chatbot-header">
-            <div class="chatbot-header-content">
-                <div class="chatbot-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="chatbot-title">
-                    <h3>Keshavan's AI Assistant</h3>
-                    <span class="chatbot-status">Online & Ready to Help</span>
-                </div>
-            </div>
-            <div class="chatbot-controls">
-                <button class="chatbot-voice-toggle" onclick="chatbot.startVoiceInput()" title="Voice Input">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button class="chatbot-close" onclick="toggleChatbot()" title="Close Chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div class="chatbot-messages" id="chatbot-messages">
-            <!-- Messages will be dynamically added here -->
-        </div>
-        <div class="chatbot-input-container">
-            <div class="chatbot-input">
-                <input type="text" id="chatbot-input" placeholder="Ask me about Keshavan's projects, experience, or anything else...">
-                <button class="voice-input-btn" onclick="chatbot.startVoiceInput()" title="Voice Input">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button class="send-btn" onclick="sendMessage()" title="Send Message">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-            <div class="chatbot-features">
-                <span class="feature-tag"><i class="fas fa-brain"></i> AI Powered</span>
-                <span class="feature-tag"><i class="fas fa-microphone"></i> Voice Enabled</span>
-                <span class="feature-tag"><i class="fas fa-magic"></i> Smart Suggestions</span>
-            </div>
-        </div>
-    </div>
-
-    <button class="chatbot-toggle" onclick="toggleChatbot()" title="Chat with AI Assistant">
-        <div class="chatbot-toggle-content">
-            <i class="fas fa-comments"></i>
-            <div class="chatbot-pulse"></div>
-        </div>
-        <div class="chatbot-notification" id="chatbot-notification">
-            <span>💬 Ask me anything!</span>
-        </div>
-    </button>
-    
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 Keshavan Seshadri. All rights reserved.</p>
-            <p>Built with ❤️ and hosted on GitHub Pages</p>
-        </div>
-    </footer>
-    
     <!-- Scripts -->
+    <script src="scripts/components.js"></script>
     <script src="data.js"></script>
     <script src="script.js"></script>
+    
+    <!-- Initialize components after all scripts are loaded -->
+    <script>
+        // Enhanced initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize AOS
+            AOS.init({
+                duration: 1000,
+                once: true,
+                offset: 100
+            });
+            
+            // Hide loader after components are loaded
+            document.addEventListener('componentsLoaded', function() {
+                setTimeout(() => {
+                    const loader = document.getElementById('loader');
+                    if (loader) {
+                        loader.classList.add('hidden');
+                    }
+                }, 500);
+            });
+        });
+    </script>
 </body>
 </html> 

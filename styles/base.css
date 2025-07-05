@@ -451,6 +451,7 @@ a:hover {
 /* Component Imports */
 @import 'header.css';
 @import 'hero.css';
+@import 'chatbot.css';
 
 /* Scrollbar Enhancements */
 ::-webkit-scrollbar {
