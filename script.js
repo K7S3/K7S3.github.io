@@ -12,6 +12,149 @@ AOS.init({
     offset: 100
 });
 
+// Add interactive click effects
+document.addEventListener('DOMContentLoaded', function() {
+    // Add ripple effect to buttons
+    const buttons = document.querySelectorAll('.btn, .social-link, .project-link, .venture-link');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                pointer-events: none;
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+            `;
+            
+            this.style.position = 'relative';
+            this.style.overflow = 'hidden';
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Add hover sound effect (visual feedback)
+    const interactiveElements = document.querySelectorAll('.skill-card, .timeline-item, .publication-card, .news-item, .speaking-card');
+    interactiveElements.forEach(element => {
+        element.addEventListener('mouseenter', function() {
+            this.style.transform = this.style.transform + ' scale(1.02)';
+        });
+        
+        element.addEventListener('mouseleave', function() {
+            this.style.transform = this.style.transform.replace(' scale(1.02)', '');
+        });
+    });
+    
+    // Add parallax effect to hero section
+    window.addEventListener('scroll', function() {
+        const scrolled = window.pageYOffset;
+        const parallax = document.querySelector('.hero-image');
+        if (parallax) {
+            const speed = scrolled * 0.5;
+            parallax.style.transform = `translateY(${speed}px)`;
+        }
+    });
+    
+    // Add typing animation to hero title
+    const heroTitle = document.querySelector('.hero-title');
+    if (heroTitle) {
+        const text = heroTitle.textContent;
+        heroTitle.textContent = '';
+        let i = 0;
+        const typeWriter = () => {
+            if (i < text.length) {
+                heroTitle.textContent += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 80);
+            } else {
+                // Add cursor blink effect
+                heroTitle.style.borderRight = '3px solid var(--primary-color)';
+                heroTitle.style.animation = 'blink-cursor 1s infinite';
+            }
+        };
+        setTimeout(typeWriter, 1000);
+    }
+    
+    // Add mouse trail effect
+    let mouseTrail = [];
+    document.addEventListener('mousemove', function(e) {
+        mouseTrail.push({
+            x: e.clientX,
+            y: e.clientY,
+            time: Date.now()
+        });
+        
+        // Limit trail length
+        if (mouseTrail.length > 20) {
+            mouseTrail.shift();
+        }
+        
+        // Create sparkle at mouse position occasionally
+        if (Math.random() < 0.1) {
+            createSparkle(e.clientX, e.clientY);
+        }
+    });
+    
+    // Create sparkle effect
+    function createSparkle(x, y) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        sparkle.style.cssText = `
+            position: fixed;
+            left: ${x}px;
+            top: ${y}px;
+            width: 4px;
+            height: 4px;
+            background: var(--gradient-rainbow);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: sparkle 1s ease-out forwards;
+        `;
+        document.body.appendChild(sparkle);
+        
+        setTimeout(() => {
+            sparkle.remove();
+        }, 1000);
+    }
+    
+    // Add scroll-triggered animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.8s ease forwards';
+                entry.target.style.opacity = '1';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all cards and sections
+    const elementsToAnimate = document.querySelectorAll('.skill-card, .timeline-item, .publication-card, .news-item, .speaking-card, .education-card');
+    elementsToAnimate.forEach(el => {
+        el.style.opacity = '0';
+        observer.observe(el);
+    });
+});
+
 // Particles.js configuration
 particlesJS('particles-js', {
     particles: {

@@ -214,7 +214,7 @@ def update_data_js():
                 'type': 'speaking'
             },
             {
-                'date': 'May 2025',
+                'date': 'October 2025',
                 'title': 'Panel at Put Data First Conference',
                 'description': 'Participating as a speaker at the Put Data First conference, discussing the future of data-driven innovation.',
                 'link': 'https://www.putdatafirst.com/#Speakers',
