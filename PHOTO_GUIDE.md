@@ -54,7 +54,7 @@ The publication images are already linked from the journal websites, but you can
 
 ## 📁 Final Directory Structure
 ```
-keshavanseshadri.github.io/
+k7s3.github.io/
 ├── profile-photo.jpg ✅
 ├── panel-photo-1.jpg (to add)
 ├── panel-photo-2.jpg (to add)
