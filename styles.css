@@ -1680,7 +1680,7 @@ section {
 /* Advanced AI Chatbot Styling */
 .chatbot-container {
     position: fixed;
-    top: 100px;
+    bottom: 100px;
     right: 30px;
     width: 420px;
     height: 600px;
@@ -1693,7 +1693,7 @@ section {
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     overflow: hidden;
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(20px) scale(0.95);
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -2215,7 +2215,7 @@ section {
 /* Enhanced Toggle Button */
 .chatbot-toggle {
     position: fixed;
-    top: 20px;
+    bottom: 30px;
     right: 30px;
     width: 70px;
     height: 70px;
@@ -2263,7 +2263,7 @@ section {
 
 .chatbot-notification {
     position: absolute;
-    bottom: -45px;
+    top: -45px;
     right: 0;
     background: var(--dark-bg);
     color: var(--text-primary);
@@ -2272,7 +2272,7 @@ section {
     font-size: 0.85rem;
     white-space: nowrap;
     opacity: 0;
-    transform: translateY(-10px) scale(0.8);
+    transform: translateY(10px) scale(0.8);
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -2533,7 +2533,7 @@ section {
         height: calc(100vh - 200px);
         right: 20px;
         left: 20px;
-        top: 100px;
+        bottom: 100px;
         border-radius: 15px;
     }
     
@@ -2601,12 +2601,12 @@ section {
         width: 60px;
         height: 60px;
         font-size: 1.5rem;
-        top: 20px;
+        bottom: 30px;
         right: 20px;
     }
     
     .chatbot-notification {
-        bottom: -40px;
+        top: -40px;
         right: -10px;
         font-size: 0.8rem;
         padding: 0.4rem 0.8rem;
