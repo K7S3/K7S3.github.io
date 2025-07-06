@@ -3,8 +3,6 @@ name: Deploy to GitHub Pages with Gemini API
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
@@ -39,12 +37,24 @@ jobs:
         # Create a JavaScript file that sets the API key as a global variable
         echo "window.GEMINI_API_KEY = '${{ secrets.GEMINI_API_KEY }}';" > gemini-config.js
         
-        # Insert the script tag before the closing head tag in index.html
-        sed -i '/<\/head>/i\    <script src="gemini-config.js"></script>' index.html
+        # Verify the file was created
+        if [ -f "gemini-config.js" ]; then
+          echo "✅ gemini-config.js created successfully"
+          cat gemini-config.js
+        else
+          echo "❌ Failed to create gemini-config.js"
+          exit 1
+        fi
         
-        # Verify the injection worked
-        echo "API key injection completed"
-        grep -n "gemini-config.js" index.html || echo "Warning: Script tag not found"
+        # Check if script tag is already in index.html
+        if grep -q "gemini-config.js" index.html; then
+          echo "✅ Script tag already present in index.html"
+        else
+          echo "❌ Script tag not found in index.html"
+          exit 1
+        fi
+        
+        echo "🚀 API key injection completed successfully"
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
