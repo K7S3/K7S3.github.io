@@ -544,7 +544,6 @@
     transition: all var(--transition-cubic);
     z-index: 999;
     overflow: hidden;
-    position: relative;
 }
 
 .chatbot-toggle:hover {
