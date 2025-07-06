@@ -786,12 +786,14 @@ class AdvancedChatbot {
         // Google Gemini 2.5 Flash integration
         try {
             // Get API key from environment or global variable
-            const apiKey = window.GEMINI_API_KEY || process.env.GEMINI_API_KEY || this.getGeminiApiKey();
+            const apiKey = window.GEMINI_API_KEY || this.getGeminiApiKey();
             
             if (!apiKey) {
-                console.log('Gemini API key not found');
+                console.log('⚠️ Gemini API key not found - using fallback responses');
                 return null;
             }
+
+            console.log('🚀 Attempting Gemini API call...');
 
             const systemPrompt = this.getAdvancedSystemPrompt(intent);
             const conversationContext = this.buildConversationContext(message);
@@ -861,20 +863,29 @@ class AdvancedChatbot {
     }
 
     getGeminiApiKey() {
+        // Debug: Show what API key sources are available
+        console.log('🔍 Checking API key sources:', {
+            'window.GEMINI_API_KEY': window.GEMINI_API_KEY ? (window.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE' ? 'PLACEHOLDER' : 'SET') : 'UNDEFINED',
+            'window.GEMINI_API_KEY_INJECTED': window.GEMINI_API_KEY_INJECTED ? (window.GEMINI_API_KEY_INJECTED === 'YOUR_GEMINI_API_KEY_HERE' ? 'PLACEHOLDER' : 'SET') : 'UNDEFINED',
+            'localStorage': localStorage.getItem('gemini_api_key') ? 'SET' : 'UNDEFINED'
+        });
+        
         // Try multiple methods to retrieve the API key
         
         // Method 1: Check if already loaded globally
         if (window.GEMINI_API_KEY && window.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE') {
+            console.log('✅ Using global GEMINI_API_KEY');
             return window.GEMINI_API_KEY;
         }
         
-        // Method 2: Check environment variables (Node.js)
-        if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+        // Method 2: Check environment variables (Node.js) - Skip in browser
+        if (typeof process !== 'undefined' && process && process.env && process.env.GEMINI_API_KEY) {
             return process.env.GEMINI_API_KEY;
         }
         
         // Method 3: Check if injected during build process
-        if (window.GEMINI_API_KEY_INJECTED) {
+        if (window.GEMINI_API_KEY_INJECTED && window.GEMINI_API_KEY_INJECTED !== 'YOUR_GEMINI_API_KEY_HERE') {
+            console.log('✅ Using API key injected by GitHub Actions');
             return window.GEMINI_API_KEY_INJECTED;
         }
         

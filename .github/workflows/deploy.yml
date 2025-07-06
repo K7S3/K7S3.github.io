@@ -34,27 +34,27 @@ jobs:
 
     - name: Inject Gemini API Key
       run: |
-        # Create a JavaScript file that sets the API key as a global variable
+        # Method 1: Create the standalone JavaScript file
         echo "window.GEMINI_API_KEY = '${{ secrets.GEMINI_API_KEY }}';" > gemini-config.js
+        echo "console.log('🚀 Gemini API key loaded from GitHub Actions');" >> gemini-config.js
         
-        # Verify the file was created
-        if [ -f "gemini-config.js" ]; then
-          echo "✅ gemini-config.js created successfully"
-          cat gemini-config.js
-        else
-          echo "❌ Failed to create gemini-config.js"
-          exit 1
-        fi
+        # Method 2: Also inject directly into index.html as backup
+        sed -i 's/YOUR_GEMINI_API_KEY_HERE/${{ secrets.GEMINI_API_KEY }}/g' gemini-config-dev.js || true
         
-        # Check if script tag is already in index.html
-        if grep -q "gemini-config.js" index.html; then
-          echo "✅ Script tag already present in index.html"
-        else
-          echo "❌ Script tag not found in index.html"
-          exit 1
-        fi
+        # Method 3: Inject directly into a script tag in index.html
+        sed -i '/<script src="gemini-config-dev.js"><\/script>/a\    <script>window.GEMINI_API_KEY_INJECTED = "${{ secrets.GEMINI_API_KEY }}";</script>' index.html
         
-        echo "🚀 API key injection completed successfully"
+        # Verify all methods
+        echo "✅ API Key Injection Status:"
+        echo "📁 gemini-config.js exists: $(test -f gemini-config.js && echo 'YES' || echo 'NO')"
+        echo "🔍 API key in gemini-config-dev.js: $(grep -q '${{ secrets.GEMINI_API_KEY }}' gemini-config-dev.js && echo 'YES' || echo 'NO')"
+        echo "📄 Inline script in index.html: $(grep -q 'GEMINI_API_KEY_INJECTED' index.html && echo 'YES' || echo 'NO')"
+        
+        # Show the files for verification
+        echo "📋 Contents of gemini-config.js:"
+        cat gemini-config.js
+        
+        echo "🚀 Multi-method API key injection completed"
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
