@@ -32,29 +32,96 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v4
 
+    - name: Debug Environment and Secrets
+      run: |
+        echo "🔍 Environment Debug Information:"
+        echo "Environment: ${{ github.environment }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Event: ${{ github.event_name }}"
+        
+        # Check if secret is available (without exposing it)
+        if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
+          echo "❌ GEMINI_API_KEY secret is EMPTY or NOT ACCESSIBLE"
+          echo "🔧 Troubleshooting:"
+          echo "   1. Check that the secret exists in Settings > Environments > github-pages"
+          echo "   2. Verify the secret name is exactly 'GEMINI_API_KEY'"
+          echo "   3. Ensure this job has the correct environment configuration"
+          exit 1
+        else
+          echo "✅ GEMINI_API_KEY secret is accessible"
+          echo "🔑 Secret length: $(echo '${{ secrets.GEMINI_API_KEY }}' | wc -c) characters"
+        fi
+
     - name: Inject Gemini API Key
       run: |
+        # Store the API key in a variable for easier handling
+        API_KEY="${{ secrets.GEMINI_API_KEY }}"
+        
+        if [ -z "$API_KEY" ]; then
+          echo "❌ Failed to retrieve API key from secrets"
+          exit 1
+        fi
+        
+        echo "🚀 Starting API key injection..."
+        
         # Method 1: Create the standalone JavaScript file
-        echo "window.GEMINI_API_KEY = '${{ secrets.GEMINI_API_KEY }}';" > gemini-config.js
+        echo "window.GEMINI_API_KEY = '$API_KEY';" > gemini-config.js
         echo "console.log('🚀 Gemini API key loaded from GitHub Actions');" >> gemini-config.js
         
-        # Method 2: Also inject directly into index.html as backup
-        sed -i 's/YOUR_GEMINI_API_KEY_HERE/${{ secrets.GEMINI_API_KEY }}/g' gemini-config-dev.js || true
+        # Method 2: Replace placeholder in gemini-config-dev.js
+        sed -i "s/YOUR_GEMINI_API_KEY_HERE/$API_KEY/g" gemini-config-dev.js
         
         # Method 3: Inject directly into a script tag in index.html
-        sed -i '/<script src="gemini-config-dev.js"><\/script>/a\    <script>window.GEMINI_API_KEY_INJECTED = "${{ secrets.GEMINI_API_KEY }}";</script>' index.html
+        sed -i "/<script src=\"gemini-config-dev.js\"><\/script>/a\\    <script>window.GEMINI_API_KEY_INJECTED = \"$API_KEY\";<\/script>" index.html
         
-        # Verify all methods
-        echo "✅ API Key Injection Status:"
-        echo "📁 gemini-config.js exists: $(test -f gemini-config.js && echo 'YES' || echo 'NO')"
-        echo "🔍 API key in gemini-config-dev.js: $(grep -q '${{ secrets.GEMINI_API_KEY }}' gemini-config-dev.js && echo 'YES' || echo 'NO')"
-        echo "📄 Inline script in index.html: $(grep -q 'GEMINI_API_KEY_INJECTED' index.html && echo 'YES' || echo 'NO')"
+        # Verify all injection methods worked
+        echo "✅ API Key Injection Verification:"
         
-        # Show the files for verification
-        echo "📋 Contents of gemini-config.js:"
-        cat gemini-config.js
+        # Check Method 1
+        if [ -f "gemini-config.js" ] && grep -q "window.GEMINI_API_KEY" gemini-config.js; then
+          echo "📁 Method 1 (gemini-config.js): SUCCESS"
+        else
+          echo "❌ Method 1 (gemini-config.js): FAILED"
+        fi
         
-        echo "🚀 Multi-method API key injection completed"
+        # Check Method 2
+        if grep -q "$API_KEY" gemini-config-dev.js; then
+          echo "🔄 Method 2 (gemini-config-dev.js): SUCCESS"
+        else
+          echo "❌ Method 2 (gemini-config-dev.js): FAILED"
+        fi
+        
+        # Check Method 3
+        if grep -q "GEMINI_API_KEY_INJECTED" index.html; then
+          echo "📄 Method 3 (inline script): SUCCESS"
+        else
+          echo "❌ Method 3 (inline script): FAILED"
+        fi
+        
+        # Show first few characters of API key for verification (security: only first 10 chars)
+        echo "🔑 API Key verification (first 10 chars): $(echo $API_KEY | cut -c1-10)..."
+        
+        echo "🎉 API key injection process completed!"
+
+    - name: Verify Files Before Upload
+      run: |
+        echo "📋 Final Verification Before Upload:"
+        echo "📁 Files that will be uploaded:"
+        ls -la gemini-config.js index.html gemini-config-dev.js 2>/dev/null || echo "Some files missing"
+        
+        echo "🔍 Checking if API key is properly injected:"
+        if grep -q "window.GEMINI_API_KEY" gemini-config.js 2>/dev/null; then
+          echo "✅ gemini-config.js contains API key"
+        else
+          echo "❌ gemini-config.js missing or no API key"
+        fi
+        
+        if grep -q "GEMINI_API_KEY_INJECTED" index.html 2>/dev/null; then
+          echo "✅ index.html contains inline API key script"
+        else
+          echo "❌ index.html missing inline API key script"
+        fi
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
