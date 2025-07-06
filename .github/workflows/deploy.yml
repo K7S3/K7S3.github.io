@@ -37,7 +37,9 @@ jobs:
         # Read API key from secrets and inject it into the application
         API_KEY="${{ secrets.GEMINI_API_KEY }}"
         
+        echo "🔍 Debug: Secret access check..."
         if [ -n "$API_KEY" ]; then
+          echo "✅ API key found (length: ${#API_KEY} characters)"
           echo "🔑 Injecting Gemini API key..."
           
           # Create gemini-config.js with the API key
@@ -47,9 +49,16 @@ jobs:
           # Replace placeholder in gemini-config-dev.js
           sed -i "s/YOUR_GEMINI_API_KEY_HERE/$API_KEY/g" gemini-config-dev.js
           
+          # Verify files were created/modified
+          echo "📁 Verification:"
+          echo "  - gemini-config.js exists: $(test -f gemini-config.js && echo 'YES' || echo 'NO')"
+          echo "  - API key in gemini-config-dev.js: $(grep -q '$API_KEY' gemini-config-dev.js && echo 'YES' || echo 'NO')"
+          
           echo "✅ API key injection completed successfully"
         else
-          echo "⚠️  No API key found - chatbot will use fallback responses"
+          echo "❌ No API key found in secrets"
+          echo "💡 Make sure GEMINI_API_KEY is set as a repository secret"
+          echo "⚠️  Deploying with fallback responses..."
           
           # Create fallback gemini-config.js
           echo "window.GEMINI_API_KEY = null;" > gemini-config.js
