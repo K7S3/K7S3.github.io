@@ -603,8 +603,23 @@ class AdvancedChatbot {
     }
 
     setupVoiceRecognition() {
-        // Voice recognition disabled
-        this.recognition = null;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            this.recognition.lang = 'en-US';
+
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chatbot-input').value = transcript;
+                this.sendMessage();
+            };
+
+            this.recognition.onerror = (event) => {
+                console.log('Speech recognition error:', event.error);
+            };
+        }
     }
 
     setupSuggestions() {
@@ -1637,8 +1652,10 @@ Contact & Collaboration:
     }
 
     startVoiceInput() {
-        // Voice input disabled
-        return;
+        if (this.recognition) {
+            this.recognition.start();
+            this.trackEvent('voice_input_started');
+        }
     }
 
     trackEvent(eventName, properties = {}) {
