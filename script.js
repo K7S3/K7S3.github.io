@@ -687,17 +687,18 @@ class AdvancedChatbot {
         const lowerMessage = message.toLowerCase();
         
         const intents = {
-            greeting: /hello|hi|hey|greetings|good morning|good afternoon|good evening/i,
-            projects: /project|github|code|repository|build|develop|work|portfolio/i,
-            research: /research|publication|paper|gpcr|biology|science|study|academic/i,
-            contact: /contact|email|reach|connect|hire|collaborate|meet/i,
-            experience: /experience|work|job|career|prudential|company|role/i,
-            skills: /skill|technology|tech|programming|language|framework|tool/i,
-            education: /education|university|cornell|degree|study|school|learn/i,
-            achievements: /achievement|award|hackathon|win|accomplishment|prize|recognition/i,
-            personal: /who|what|why|how|tell me about|personality|interests|hobby/i,
-            help: /help|what can you do|commands|features|guide/i,
-            goodbye: /bye|goodbye|see you|talk later|thanks|thank you/i
+            greeting: /hello|hi|hey|greetings|good morning|good afternoon|good evening|welcome/i,
+            projects: /project|github|code|repository|build|develop|work|portfolio|chipchat|hackathon|winner|prize/i,
+            research: /research|publication|paper|gpcr|biology|science|study|academic|computational|protein|molecular/i,
+            contact: /contact|email|reach|connect|hire|collaborate|meet|linkedin|github|social/i,
+            experience: /experience|work|job|career|prudential|company|role|fintech|finance|ml engineer/i,
+            skills: /skill|technology|tech|programming|language|framework|tool|tensorflow|pytorch|python|ml|ai/i,
+            education: /education|university|cornell|degree|study|school|learn|computer science/i,
+            achievements: /achievement|award|hackathon|win|accomplishment|prize|recognition|grand prize|berkeley/i,
+            entrepreneurship: /entrepreneur|startup|synergii|founder|business|innovation|venture|company/i,
+            personal: /who|what|why|how|tell me about|personality|interests|hobby|background|story/i,
+            help: /help|what can you do|commands|features|guide|assist/i,
+            goodbye: /bye|goodbye|see you|talk later|thanks|thank you|farewell/i
         };
 
         for (const [intent, pattern] of Object.entries(intents)) {
@@ -792,10 +793,11 @@ class AdvancedChatbot {
                 return null;
             }
 
-            const systemPrompt = this.getSystemPrompt(intent);
-            const prompt = `${systemPrompt}\n\nUser: ${message}\nAssistant:`;
+            const systemPrompt = this.getAdvancedSystemPrompt(intent);
+            const conversationContext = this.buildConversationContext(message);
+            const prompt = `${systemPrompt}\n\n${conversationContext}\n\nUser: ${message}\nAssistant:`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -807,10 +809,11 @@ class AdvancedChatbot {
                         }]
                     }],
                     generationConfig: {
-                        temperature: 0.7,
+                        temperature: 0.8,
                         topK: 40,
                         topP: 0.95,
-                        maxOutputTokens: 200,
+                        maxOutputTokens: 300,
+                        candidateCount: 1,
                     },
                     safetySettings: [
                         {
@@ -842,14 +845,12 @@ class AdvancedChatbot {
             const data = await response.json();
             
             if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
-                const generatedText = data.candidates[0].content.parts[0].text.trim();
+                let generatedText = data.candidates[0].content.parts[0].text.trim();
                 
-                return {
-                    text: generatedText,
-                    type: 'text',
-                    suggestions: this.getContextualSuggestions(intent),
-                    actions: this.getQuickActions(intent)
-                };
+                // Enhance the response with rich content based on intent
+                const enhancedResponse = this.enhanceResponseWithRichContent(generatedText, intent, message);
+                
+                return enhancedResponse;
             }
 
             return null;
@@ -860,51 +861,232 @@ class AdvancedChatbot {
     }
 
     getGeminiApiKey() {
-        // This method can be customized to retrieve the API key securely
-        // For development, you can temporarily set it here
-        // For production, use GitHub secrets or environment variables
-        return null; // Will be set via GitHub Actions or environment
+        // Try multiple methods to retrieve the API key
+        
+        // Method 1: Check if already loaded globally
+        if (window.GEMINI_API_KEY && window.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY_HERE') {
+            return window.GEMINI_API_KEY;
+        }
+        
+        // Method 2: Check environment variables (Node.js)
+        if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+            return process.env.GEMINI_API_KEY;
+        }
+        
+        // Method 3: Check if injected during build process
+        if (window.GEMINI_API_KEY_INJECTED) {
+            return window.GEMINI_API_KEY_INJECTED;
+        }
+        
+        // Method 4: Try to load from localStorage (for development)
+        const stored = localStorage.getItem('gemini_api_key');
+        if (stored && stored !== 'YOUR_GEMINI_API_KEY_HERE') {
+            return stored;
+        }
+        
+        console.log('⚠️ Gemini API key not found - using fallback responses');
+        return null;
     }
 
-    getSystemPrompt(intent) {
-        const basePrompt = `You are Keshavan Seshadri's AI assistant. You help visitors learn about his professional background, projects, and achievements.
+    getAdvancedSystemPrompt(intent) {
+        const basePersonality = `You are Keshavan Seshadri's intelligent AI assistant, powered by Google Gemini 2.5 Flash. You're helpful, friendly, professional, and genuinely excited about Keshavan's work and achievements.
 
-About Keshavan:
-- Senior ML Engineer at Prudential Financial, working on innovative fintech solutions
+Your personality:
+- Enthusiastic and knowledgeable about AI, technology, and innovation
+- Professional yet approachable, like a knowledgeable colleague
+- Confident in discussing Keshavan's accomplishments without being boastful
+- Encouraging visitors to connect and learn more
+- Brief but comprehensive - provide valuable information concisely`;
+
+        const comprehensiveBackground = `
+ABOUT KESHAVAN SESHADRI:
+
+Professional Role:
+- Senior ML Engineer at Prudential Financial
+- Specializes in cutting-edge fintech AI solutions and ML infrastructure
+- Bridges traditional finance with revolutionary AI technologies
+
+Education & Background:
 - Cornell University Computer Science graduate
-- Researcher in computational biology, specifically GPCR (G-protein coupled receptor) mechanisms
-- AI Berkeley Hackathon 2025 Grand Prize winner with ChipChat
-- Published researcher with work on protein dynamics and molecular interactions
-- Mentor through Break Through Tech
-- Expert in Machine Learning (TensorFlow, PyTorch), Full-Stack Development, and Cloud Technologies
+- Strong foundation in algorithms, systems design, and software engineering
+- Academic excellence combined with practical industry experience
 
-Guidelines:
-- Keep responses concise (1-3 sentences) and friendly
-- Focus on his professional work, research, and achievements
-- Direct users to contact him at keshavanseshadri@gmail.com for collaborations
-- Be helpful and informative about his background and projects`;
+Research Expertise:
+- Computational Biology researcher specializing in GPCR (G-protein coupled receptor) mechanisms
+- Published research on protein dynamics and molecular interactions crucial for drug discovery
+- Collaborator at IIIT Hyderabad on breakthrough GPCR activation studies
+- Combines AI/ML techniques with biological systems research
+
+Recent Major Achievement:
+- 🏆 AI Berkeley Hackathon 2025 GRAND PRIZE WINNER with ChipChat
+- Led a team to victory against hundreds of competitors
+- ChipChat: Revolutionary AI-powered communication platform
+- Demonstrated exceptional leadership and technical innovation under pressure
+
+Technical Skills & Expertise:
+- Machine Learning: TensorFlow, PyTorch, advanced neural architectures
+- Full-Stack Development: React, Node.js, Python, cloud platforms
+- Cloud Technologies: AWS, GCP, distributed systems, scalable ML pipelines
+- Computational Biology: Molecular dynamics, protein modeling, bioinformatics
+- Financial Technology: Risk modeling, algorithmic trading, compliance systems
+
+Entrepreneurship & Innovation:
+- Founder of Synergii - bridging technology gaps in emerging markets
+- Focus on AI-powered solutions for financial inclusion and accessibility
+- Vision for democratizing advanced technology globally
+
+Community Impact:
+- Break Through Tech mentor - supporting underrepresented groups in tech
+- Active contributor to open-source projects
+- Passionate about making AI education accessible
+- Speaker at tech conferences and academic symposiums
+
+Research Publications:
+- "Computational Analysis of GPCR Activation Mechanisms" - breakthrough findings
+- Impact on drug discovery and pharmaceutical research
+- Citation count growing in scientific community
+- Bridge between academic research and practical applications
+
+Contact & Collaboration:
+- Email: keshavanseshadri@gmail.com
+- LinkedIn: Professional networking and industry connections
+- GitHub: Open-source contributions and project showcases
+- Always open to discussing AI, research collaborations, startup opportunities`;
 
         const intentSpecificPrompts = {
-            projects: `${basePrompt}\n\nFocus on: His award-winning ChipChat project, GPCR research tools, GitHub repositories, and AI applications.`,
-            research: `${basePrompt}\n\nFocus on: His computational biology research, GPCR studies, publications, and intersection of AI with biology.`,
-            contact: `${basePrompt}\n\nFocus on: How to reach him for collaborations, his email, LinkedIn, and professional interests.`,
-            experience: `${basePrompt}\n\nFocus on: His role at Prudential Financial, Cornell education, and career journey.`,
-            skills: `${basePrompt}\n\nFocus on: His technical expertise in ML, full-stack development, computational biology, and cloud technologies.`,
-            education: `${basePrompt}\n\nFocus on: His Cornell Computer Science degree and educational background.`,
-            achievements: `${basePrompt}\n\nFocus on: AI Berkeley Hackathon win, research publications, mentoring work, and career highlights.`
+            projects: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Discuss Keshavan's projects with enthusiasm. Highlight the AI Berkeley Hackathon Grand Prize win with ChipChat, his research tools, GitHub portfolio, and the intersection of his academic and industry work. Show excitement about the technical innovation and real-world impact.`,
+            
+            research: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Enthusiastically explain Keshavan's computational biology research, particularly his GPCR work. Connect it to drug discovery importance, explain how he combines AI with biology, and highlight the academic-industry bridge his research represents.`,
+            
+            contact: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Help visitors connect with Keshavan. Emphasize his openness to collaborations, mentoring spirit, and genuine interest in discussing AI, research, and startup opportunities. Provide clear contact methods and encourage reaching out.`,
+            
+            experience: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Showcase Keshavan's impressive career trajectory from Cornell to Prudential Financial to entrepreneurship. Emphasize his unique position bridging academia, industry, and innovation. Highlight his fintech expertise and leadership qualities.`,
+            
+            skills: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Enthusiastically detail Keshavan's diverse technical skill set. Emphasize the rare combination of ML expertise, computational biology knowledge, and financial technology experience. Show how these skills create unique value.`,
+            
+            achievements: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Celebrate Keshavan's accomplishments with genuine excitement! Focus on the AI Berkeley Hackathon Grand Prize, research publications, mentoring impact, and the significance of his contributions to both academic and industry communities.`,
+            
+            entrepreneurship: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Discuss Keshavan's entrepreneurial vision with Synergii and his approach to solving real-world problems. Emphasize his commitment to democratizing technology and creating positive global impact through innovation.`,
+            
+            greeting: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Welcome visitors warmly and set an enthusiastic tone. Briefly highlight what makes Keshavan unique - his recent hackathon victory, diverse expertise, and openness to collaboration. Encourage exploration of his work.`,
+            
+            general: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Provide helpful, engaging responses about any aspect of Keshavan's work. Show genuine enthusiasm for his diverse accomplishments and encourage deeper exploration of his projects, research, or background.`
         };
 
-        return intentSpecificPrompts[intent] || basePrompt;
+        return intentSpecificPrompts[intent] || intentSpecificPrompts.general;
     }
 
-    async generateWithTransformers(message) {
-        // Client-side text generation using Transformers.js (legacy fallback)
-        try {
-            return null; // Disabled in favor of Gemini
-        } catch (error) {
-            console.log('Client-side generation error:', error);
-            return null;
+    buildConversationContext(currentMessage) {
+        // Build a smart conversation context from recent messages
+        const recentMessages = this.context.slice(-4); // Last 4 exchanges
+        let context = "";
+        
+        recentMessages.forEach(msg => {
+            if (msg.role === 'user') {
+                context += `User: ${msg.content}\n`;
+            } else if (msg.role === 'assistant') {
+                context += `Assistant: ${msg.content}\n`;
+            }
+        });
+        
+        return context;
+    }
+
+    enhanceResponseWithRichContent(generatedText, intent, userMessage) {
+        // Create enhanced response with potential rich content
+        const response = {
+            text: generatedText,
+            type: 'advanced',
+            suggestions: this.getContextualSuggestions(intent),
+            actions: this.getQuickActions(intent)
+        };
+
+        // Add rich content based on intent
+        if (intent === 'projects' && userMessage.toLowerCase().includes('chipchat')) {
+            response.richContent = {
+                type: 'project_spotlight',
+                title: '🏆 ChipChat - AI Berkeley Hackathon Grand Prize Winner',
+                items: [
+                    {
+                        title: 'Revolutionary Achievement',
+                        description: 'Won against hundreds of top-tier competitors',
+                        icon: '🥇',
+                        status: 'Grand Prize Winner 2025'
+                    },
+                    {
+                        title: 'Technical Innovation',
+                        description: 'AI-powered communication platform with breakthrough features',
+                        icon: '🚀',
+                        status: 'Cutting-edge AI'
+                    },
+                    {
+                        title: 'Leadership Excellence',
+                        description: 'Led team to victory under intense competition pressure',
+                        icon: '👥',
+                        status: 'Proven Leadership'
+                    }
+                ],
+                cta: 'Want to know more about this amazing project?'
+            };
+        } else if (intent === 'skills') {
+            response.richContent = {
+                type: 'skills_showcase',
+                title: '🎯 Technical Expertise Portfolio',
+                categories: [
+                    {
+                        name: 'Machine Learning',
+                        level: 'Expert',
+                        skills: ['TensorFlow', 'PyTorch', 'Neural Networks', 'Deep Learning', 'MLOps']
+                    },
+                    {
+                        name: 'Computational Biology',
+                        level: 'Expert',
+                        skills: ['GPCR Research', 'Molecular Dynamics', 'Protein Modeling', 'Bioinformatics']
+                    },
+                    {
+                        name: 'Financial Technology',
+                        level: 'Advanced',
+                        skills: ['Risk Modeling', 'Algorithmic Systems', 'Compliance Tech', 'Fintech Innovation']
+                    },
+                    {
+                        name: 'Full-Stack Development',
+                        level: 'Expert',
+                        skills: ['React', 'Node.js', 'Python', 'Cloud Platforms', 'System Design']
+                    }
+                ]
+            };
+        } else if (intent === 'contact') {
+            response.richContent = {
+                type: 'contact_info',
+                title: '💬 Connect with Keshavan',
+                items: [
+                    {
+                        platform: 'Email',
+                        value: 'keshavanseshadri@gmail.com',
+                        icon: '📧',
+                        primary: true,
+                        description: 'Best for collaborations, opportunities, and detailed discussions'
+                    },
+                    {
+                        platform: 'LinkedIn',
+                        value: 'Professional Network',
+                        icon: '💼',
+                        primary: false,
+                        description: 'Industry connections and professional updates'
+                    },
+                    {
+                        platform: 'GitHub',
+                        value: 'Open Source',
+                        icon: '💻',
+                        primary: false,
+                        description: 'Code repositories and technical projects'
+                    }
+                ],
+                note: 'Keshavan is always excited to discuss AI, research, startups, and collaboration opportunities!'
+            };
         }
+
+        return response;
     }
 
     getResponsesByIntent(intent, message) {
@@ -979,15 +1161,16 @@ Guidelines:
 
     getContextualSuggestions(intent) {
         const suggestionMap = {
-            greeting: ["Tell me about his projects", "What's his experience?", "How can I contact him?"],
-            projects: ["Show me his research", "What about his skills?", "Tell me about achievements"],
-            research: ["What projects has he built?", "What's his background?", "How to collaborate?"],
-            contact: ["What are his projects?", "Tell me about his skills", "What's his experience?"],
-            experience: ["Show me his projects", "What about his research?", "What skills does he have?"],
-            skills: ["What projects use these skills?", "Tell me about his experience", "How to contact him?"],
-            education: ["What has he built?", "Tell me about his work", "Show me achievements"],
-            achievements: ["What projects is he proud of?", "How can I contact him?", "What's his background?"],
-            help: ["Tell me about projects", "Show me his experience", "How to contact him?"]
+            greeting: ["🏆 Tell me about ChipChat", "💼 What's his experience?", "📧 How can I contact him?"],
+            projects: ["🔬 Show me his research", "🎯 What are his skills?", "🏅 Tell me about achievements"],
+            research: ["💻 What projects has he built?", "📚 What's his background?", "🤝 How to collaborate?"],
+            contact: ["🚀 What are his projects?", "⚡ Tell me about his skills", "💼 What's his experience?"],
+            experience: ["🏗️ Show me his projects", "🔬 What about his research?", "🎯 What skills does he have?"],
+            skills: ["💻 What projects use these skills?", "📈 Tell me about his experience", "📞 How to contact him?"],
+            education: ["🏆 What has he built?", "💼 Tell me about his work", "🏅 Show me achievements"],
+            achievements: ["🚀 What projects is he proud of?", "📱 How can I contact him?", "📖 What's his background?"],
+            entrepreneurship: ["💡 Tell me about Synergii", "🤝 How to get involved?", "🌟 What's his vision?"],
+            help: ["🏆 Tell me about projects", "💼 Show me his experience", "📧 How to contact him?"]
         };
 
         return suggestionMap[intent] || suggestionMap.greeting;
@@ -995,24 +1178,16 @@ Guidelines:
 
     getQuickActions(intent) {
         const actionMap = {
-            contact: [
-                { text: "📧 Send Email", action: "email" },
-                { text: "💼 LinkedIn", action: "linkedin" },
-                { text: "📋 Contact Form", action: "contact_form" }
-            ],
-            projects: [
-                { text: "🔗 View GitHub", action: "github" },
-                { text: "🏆 See Achievements", action: "achievements" },
-                { text: "💡 Latest Projects", action: "latest_projects" }
-            ],
-            research: [
-                { text: "📚 Publications", action: "publications" },
-                { text: "🔬 Research Details", action: "research" },
-                { text: "🎓 Education", action: "education" }
-            ]
+            projects: ["View GitHub", "Learn about ChipChat", "Explore research tools"],
+            research: ["Read publications", "Understand GPCR work", "Academic collaborations"],
+            contact: ["Send email", "Connect on LinkedIn", "Schedule meeting"],
+            experience: ["View resume", "Learn about Prudential", "Career journey"],
+            skills: ["Technical overview", "Skill assessment", "Project examples"],
+            achievements: ["Hackathon details", "Award information", "Recognition timeline"],
+            entrepreneurship: ["About Synergii", "Startup vision", "Investment opportunities"]
         };
 
-        return actionMap[intent] || [];
+        return actionMap[intent] || ["Learn more", "Get in touch", "Explore projects"];
     }
 
     getProjectsRichContent() {
@@ -1100,13 +1275,13 @@ Guidelines:
     showWelcomeMessage() {
         if (this.userProfile.visitCount === 1) {
             setTimeout(() => {
-                this.addMessage("👋 Welcome! I'm Keshavan's AI assistant, powered by Google Gemini 2.5 Flash. I can help you learn about his projects, research, experience, and more. What would you like to know?", 'bot');
-                this.showSuggestions(["Tell me about his projects", "What's his experience?", "How can I contact him?"]);
+                this.addMessage("🚀 Welcome! I'm Keshavan's AI assistant, powered by Google Gemini 2.5 Flash. I'm thrilled to help you discover his incredible journey - from winning the AI Berkeley Hackathon 2025 Grand Prize to his groundbreaking research and fintech innovations! What would you like to explore?", 'bot');
+                this.showSuggestions(["🏆 Tell me about ChipChat", "🔬 What's his research about?", "💼 How can I contact him?"]);
             }, 500);
         } else {
             setTimeout(() => {
-                this.addMessage(`🎉 Welcome back! This is your ${this.userProfile.visitCount}${this.getOrdinalSuffix(this.userProfile.visitCount)} visit. I'm here to help you explore Keshavan's work and achievements. What interests you today?`, 'bot');
-                this.showSuggestions(["Latest projects", "Research work", "Contact information"]);
+                this.addMessage(`🎉 Welcome back! This is your ${this.userProfile.visitCount}${this.getOrdinalSuffix(this.userProfile.visitCount)} visit. I'm here with the latest Gemini 2.5 Flash AI to dive deeper into Keshavan's amazing work. What interests you most today?`, 'bot');
+                this.showSuggestions(["🆕 Latest achievements", "💡 Research breakthroughs", "🤝 Collaboration opportunities"]);
             }, 500);
         }
     }
@@ -1160,101 +1335,176 @@ Guidelines:
     addAdvancedMessage(response) {
         const messagesContainer = document.getElementById('chatbot-messages');
         const messageDiv = document.createElement('div');
-        messageDiv.className = `chatbot-message bot advanced`;
+        messageDiv.className = 'chatbot-message bot advanced';
         
-        let content = `<p>${response.text}</p>`;
+        // Create the main message content
+        const messageContent = document.createElement('p');
+        messageContent.textContent = response.text;
+        messageDiv.appendChild(messageContent);
         
         // Add rich content if available
-        if (response.type === 'rich' && response.richContent) {
-            content += this.renderRichContent(response.richContent);
+        if (response.richContent) {
+            const richDiv = this.createRichContent(response.richContent);
+            messageDiv.appendChild(richDiv);
         }
         
-        // Add quick actions
-        if (response.actions && response.actions.length > 0) {
-            content += this.renderQuickActions(response.actions);
-        }
-        
-        messageDiv.innerHTML = content;
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        this.speakMessage(response.text);
-        this.trackEvent('advanced_message_sent', { type: response.type });
     }
-
-    renderRichContent(richContent) {
-        if (!richContent) return '';
+    
+    createRichContent(richContent) {
+        const container = document.createElement('div');
+        container.className = 'rich-content';
         
-        let html = `<div class="rich-content">`;
-        html += `<h4>${richContent.title}</h4>`;
+        if (richContent.title) {
+            const title = document.createElement('h4');
+            title.textContent = richContent.title;
+            container.appendChild(title);
+        }
         
-        if (richContent.items) {
-            html += `<div class="rich-items">`;
+        if (richContent.type === 'project_spotlight') {
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'rich-items';
+            
             richContent.items.forEach(item => {
-                if (item.name) {
-                    // Project-style item
-                    html += `
-                        <div class="rich-item project-item">
-                            <div class="item-header">
-                                <h5>${item.name}</h5>
-                                <span class="status">${item.status}</span>
-                            </div>
-                            <p>${item.description}</p>
-                            <div class="tech-tags">
-                                ${item.tech.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
-                            </div>
-                        </div>
-                    `;
-                } else if (item.platform) {
-                    // Contact-style item
-                    html += `
-                        <div class="rich-item contact-item" data-action="${item.action}">
-                            <span class="contact-icon">${item.icon}</span>
-                            <div class="contact-info">
-                                <strong>${item.platform}</strong>
-                                <span>${item.value}</span>
-                            </div>
-                        </div>
-                    `;
-                }
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'rich-item project-item';
+                
+                const header = document.createElement('div');
+                header.className = 'item-header';
+                
+                const titleSpan = document.createElement('h5');
+                titleSpan.textContent = `${item.icon} ${item.title}`;
+                
+                const status = document.createElement('span');
+                status.className = 'status';
+                status.textContent = item.status;
+                
+                header.appendChild(titleSpan);
+                header.appendChild(status);
+                
+                const description = document.createElement('p');
+                description.textContent = item.description;
+                
+                itemDiv.appendChild(header);
+                itemDiv.appendChild(description);
+                itemsContainer.appendChild(itemDiv);
             });
-            html += `</div>`;
-        }
-        
-        if (richContent.categories) {
-            // Skills-style content
-            html += `<div class="skill-categories">`;
+            
+            container.appendChild(itemsContainer);
+            
+            if (richContent.cta) {
+                const cta = document.createElement('button');
+                cta.className = 'rich-cta';
+                cta.textContent = richContent.cta;
+                cta.onclick = () => this.handleQuickAction('projects_detailed');
+                container.appendChild(cta);
+            }
+        } else if (richContent.type === 'skills_showcase') {
+            const categoriesDiv = document.createElement('div');
+            categoriesDiv.className = 'skill-categories';
+            
             richContent.categories.forEach(category => {
-                html += `
-                    <div class="skill-category">
-                        <div class="category-header">
-                            <h5>${category.name}</h5>
-                            <span class="skill-level ${category.level.toLowerCase()}">${category.level}</span>
-                        </div>
-                        <div class="skill-tags">
-                            ${category.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'skill-category';
+                
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                
+                const name = document.createElement('h5');
+                name.textContent = category.name;
+                
+                const level = document.createElement('span');
+                level.className = `skill-level ${category.level.toLowerCase()}`;
+                level.textContent = category.level;
+                
+                header.appendChild(name);
+                header.appendChild(level);
+                
+                const skillsDiv = document.createElement('div');
+                skillsDiv.className = 'skill-tags';
+                
+                category.skills.forEach(skill => {
+                    const skillTag = document.createElement('span');
+                    skillTag.className = 'skill-tag';
+                    skillTag.textContent = skill;
+                    skillsDiv.appendChild(skillTag);
+                });
+                
+                categoryDiv.appendChild(header);
+                categoryDiv.appendChild(skillsDiv);
+                categoriesDiv.appendChild(categoryDiv);
             });
-            html += `</div>`;
+            
+            container.appendChild(categoriesDiv);
+        } else if (richContent.type === 'contact_info') {
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'rich-items';
+            
+            richContent.items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `rich-item contact-item ${item.primary ? 'primary' : ''}`;
+                
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'contact-icon';
+                iconSpan.textContent = item.icon;
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'contact-info';
+                
+                const platform = document.createElement('strong');
+                platform.textContent = item.platform;
+                
+                const value = document.createElement('span');
+                value.textContent = item.value;
+                
+                const description = document.createElement('span');
+                description.textContent = item.description;
+                description.style.fontSize = '0.9rem';
+                description.style.opacity = '0.8';
+                
+                infoDiv.appendChild(platform);
+                infoDiv.appendChild(value);
+                infoDiv.appendChild(description);
+                
+                itemDiv.appendChild(iconSpan);
+                itemDiv.appendChild(infoDiv);
+                itemsContainer.appendChild(itemDiv);
+            });
+            
+            container.appendChild(itemsContainer);
+            
+            if (richContent.note) {
+                const note = document.createElement('p');
+                note.style.fontStyle = 'italic';
+                note.style.marginTop = '1rem';
+                note.style.opacity = '0.9';
+                note.textContent = richContent.note;
+                container.appendChild(note);
+            }
         }
         
-        if (richContent.cta) {
-            html += `<button class="rich-cta" data-action="${richContent.cta.action}">${richContent.cta.text}</button>`;
-        }
-        
-        html += `</div>`;
-        return html;
+        return container;
     }
 
-    renderQuickActions(actions) {
-        let html = `<div class="quick-actions">`;
-        actions.forEach(action => {
-            html += `<button class="quick-action" data-action="${action.action}">${action.text}</button>`;
-        });
-        html += `</div>`;
-        return html;
+    handleQuickAction(action) {
+        const actionMap = {
+            'projects_detailed': "Tell me more about his projects in detail",
+            'chipchat_details': "What makes ChipChat so revolutionary?",
+            'research_publications': "Show me his research publications",
+            'contact_email': "How can I reach him via email?",
+            'skills_technical': "What are his technical specializations?",
+            'achievements_timeline': "What are his major career achievements?"
+        };
+        
+        const message = actionMap[action] || "Tell me more about that";
+        this.simulateUserInput(message);
+    }
+    
+    simulateUserInput(message) {
+        const input = document.getElementById('chatbot-input');
+        input.value = message;
+        this.sendMessage();
     }
 
     showSuggestions(suggestions) {
@@ -1334,25 +1584,6 @@ Guidelines:
 
     saveUserProfile() {
         localStorage.setItem('chatbot_history', JSON.stringify(this.userProfile.conversationHistory));
-    }
-
-    handleQuickAction(action) {
-        const actions = {
-            email: () => window.open('mailto:keshavanseshadri@gmail.com'),
-            linkedin: () => window.open('https://www.linkedin.com/in/keshavan-seshadri/', '_blank'),
-            github: () => window.open('https://github.com/K7S3', '_blank'),
-            contact_form: () => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' }),
-            achievements: () => this.selectSuggestion("Tell me about his achievements"),
-            latest_projects: () => this.selectSuggestion("What are his latest projects?"),
-            publications: () => document.getElementById('publications').scrollIntoView({ behavior: 'smooth' }),
-            research: () => document.getElementById('about').scrollIntoView({ behavior: 'smooth' }),
-            education: () => document.getElementById('education').scrollIntoView({ behavior: 'smooth' })
-        };
-
-        if (actions[action]) {
-            actions[action]();
-            this.trackEvent('quick_action_clicked', { action });
-        }
     }
 }
 
