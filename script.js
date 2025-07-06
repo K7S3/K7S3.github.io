@@ -603,23 +603,8 @@ class AdvancedChatbot {
     }
 
     setupVoiceRecognition() {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.lang = 'en-US';
-
-            this.recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('chatbot-input').value = transcript;
-                this.sendMessage();
-            };
-
-            this.recognition.onerror = (event) => {
-                console.log('Speech recognition error:', event.error);
-            };
-        }
+        // Voice recognition disabled
+        this.recognition = null;
     }
 
     setupSuggestions() {
@@ -1647,24 +1632,13 @@ Contact & Collaboration:
     }
 
     speakMessage(text) {
-        if ('speechSynthesis' in window && this.userProfile.voiceEnabled !== false) {
-            // Clean text for speech
-            const cleanText = text.replace(/[📧💼🔗🚀📚🌐🏆📬🛠️👋🎉]/g, '').trim();
-            if (cleanText.length > 0 && cleanText.length < 200) { // Only speak shorter messages
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.rate = 0.9;
-                utterance.pitch = 1;
-                utterance.volume = 0.7;
-                speechSynthesis.speak(utterance);
-            }
-        }
+        // Voice reading disabled - chatbot responses are silent
+        return;
     }
 
     startVoiceInput() {
-        if (this.recognition) {
-            this.recognition.start();
-            this.trackEvent('voice_input_started');
-        }
+        // Voice input disabled
+        return;
     }
 
     trackEvent(eventName, properties = {}) {
