@@ -600,6 +600,20 @@ class AdvancedChatbot {
         this.setupVoiceRecognition();
         this.setupSuggestions();
         this.showWelcomeMessage();
+        this.verifyApiConfiguration();
+    }
+    
+    verifyApiConfiguration() {
+        // Verify API configuration on startup
+        setTimeout(() => {
+            const apiKey = window.GEMINI_API_KEY || this.getGeminiApiKey();
+            if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE') {
+                console.log('✅ Gemini API properly configured - AI responses enabled');
+            } else {
+                console.log('❌ Gemini API not configured - using fallback responses');
+                console.log('💡 If you just deployed, the API key should be working. Try refreshing the page.');
+            }
+        }, 1000);
     }
 
     setupVoiceRecognition() {
@@ -864,11 +878,16 @@ class AdvancedChatbot {
 
     getGeminiApiKey() {
         // Debug: Show what API key sources are available
-        console.log('🔍 Checking API key sources:', {
+        const debugInfo = {
             'window.GEMINI_API_KEY': window.GEMINI_API_KEY ? (window.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE' ? 'PLACEHOLDER' : 'SET') : 'UNDEFINED',
             'window.GEMINI_API_KEY_INJECTED': window.GEMINI_API_KEY_INJECTED ? (window.GEMINI_API_KEY_INJECTED === 'YOUR_GEMINI_API_KEY_HERE' ? 'PLACEHOLDER' : 'SET') : 'UNDEFINED',
-            'localStorage': localStorage.getItem('gemini_api_key') ? 'SET' : 'UNDEFINED'
-        });
+            'localStorage': localStorage.getItem('gemini_api_key') ? 'SET' : 'UNDEFINED',
+            'scripts_loaded': {
+                'gemini-config.js': !!document.querySelector('script[src="gemini-config.js"]'),
+                'gemini-config-dev.js': !!document.querySelector('script[src="gemini-config-dev.js"]')
+            }
+        };
+        console.log('🔍 API Key Debug Info:', debugInfo);
         
         // Try multiple methods to retrieve the API key
         
