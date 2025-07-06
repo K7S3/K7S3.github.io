@@ -723,7 +723,7 @@ class AdvancedChatbot {
         
         // Fallback response when Gemini is unavailable
         const fallbackResponses = {
-            greeting: "Hello! I'm having a brief connection issue with my AI brain. While I get that sorted, feel free to explore Keshavan's work or contact him directly at keshavanseshadri@gmail.com!",
+            greeting: "Hello! I'm Keshavan's AI assistant. I'm currently using my basic responses while my advanced AI brain (Gemini 2.5 Flash) is being set up. Feel free to explore Keshavan's work or contact him directly at keshavanseshadri@gmail.com!",
                             projects: "I'd love to tell you about Keshavan's amazing projects! He's an accomplished speaker at major AI conferences, and has impressive research tools for GPCR studies. Check out his GitHub for more details!",
             research: "Keshavan's research focuses on computational biology, particularly GPCR mechanisms that are crucial for drug discovery. His work bridges AI and biology in fascinating ways!",
             contact: "You can reach Keshavan at keshavanseshadri@gmail.com. He's always excited to discuss AI projects, research collaborations, or startup opportunities!",
@@ -731,7 +731,7 @@ class AdvancedChatbot {
             skills: "Keshavan's expertise spans Machine Learning (TensorFlow, PyTorch), Full-Stack Development, Computational Biology, and Cloud Technologies - a unique combination perfect for AI-driven solutions!",
             education: "Keshavan graduated from Cornell University with a Computer Science degree, where he gained deep knowledge in AI, software engineering, and research methodologies.",
                             achievements: "Recent highlights include speaking at major AI conferences like the AI Accelerator Institute Summit, publishing GPCR research, being an NTSE scholar, and mentoring through Break Through Tech. Quite impressive!",
-            general: "I'm having a brief connection issue, but I'd love to help you learn about Keshavan! Try asking about his projects, research, or experience, or contact him directly at keshavanseshadri@gmail.com."
+            general: "I'm using my basic responses while my advanced AI brain is being set up. I'd love to help you learn about Keshavan! Try asking about his projects, speaking engagements, research, or experience, or contact him directly at keshavanseshadri@gmail.com."
         };
         
         const response = {
@@ -885,6 +885,7 @@ class AdvancedChatbot {
         }
         
         console.log('⚠️ Gemini API key not found - using fallback responses');
+        console.log('💡 To enable AI responses, get your free API key from: https://makersuite.google.com/app/apikey');
         return null;
     }
 
