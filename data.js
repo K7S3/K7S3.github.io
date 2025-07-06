@@ -279,15 +279,15 @@ const websiteData = {
     },
     {
       "date": "June 2025",
-      "title": "Featured Speaker at BattleFin Discovery Day",
-      "description": "Speaking at BattleFin's premier alternative data and AI conference for financial services in New York.",
+      "title": "Successfully Presented at BattleFin Discovery Day",
+      "description": "Presented on AI & Alternative Data in Finance at BattleFin's premier alternative data and AI conference for financial services in New York.",
       "link": "https://www.battlefin.com/events/new-york-2025-new",
       "type": "speaking"
     },
     {
       "date": "October 2025",
-      "title": "Panel at Put Data First Conference",
-      "description": "Participating as a speaker at the Put Data First conference, discussing the future of data-driven innovation.",
+      "title": "Upcoming: Put Data First Conference",
+      "description": "Scheduled to speak at the Put Data First conference, discussing the future of data-driven innovation.",
       "link": "https://www.putdatafirst.com/#Speakers",
       "type": "speaking"
     },
