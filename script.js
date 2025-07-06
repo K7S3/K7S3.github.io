@@ -606,12 +606,21 @@ class AdvancedChatbot {
     verifyApiConfiguration() {
         // Verify API configuration on startup
         setTimeout(() => {
+            console.log('🔍 API Configuration Verification:');
+            console.log('  - Current URL:', window.location.href);
+            console.log('  - window.GEMINI_API_KEY:', window.GEMINI_API_KEY ? (window.GEMINI_API_KEY.includes('AIza') ? 'SET (starts with AIza)' : 'SET (unknown format)') : 'UNDEFINED');
+            
             const apiKey = window.GEMINI_API_KEY || this.getGeminiApiKey();
             if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE') {
                 console.log('✅ Gemini API properly configured - AI responses enabled');
+                console.log('🎯 API Key length:', apiKey.length, 'characters');
             } else {
                 console.log('❌ Gemini API not configured - using fallback responses');
-                console.log('💡 If you just deployed, the API key should be working. Try refreshing the page.');
+                console.log('💡 Troubleshooting:');
+                console.log('  1. Check if you just deployed - may need hard refresh (Ctrl+F5)');
+                console.log('  2. Verify GEMINI_API_KEY is set as repository secret');
+                console.log('  3. Check GitHub Actions deployment logs');
+                console.log('  4. API key should start with "AIza"');
             }
         }, 1000);
     }
