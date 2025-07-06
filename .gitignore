@@ -1,6 +1,6 @@
 # API Keys and secrets - NEVER commit these!
 gemini-config.js
-gemini-config-dev.js
+# gemini-config-dev.js - Safe to commit (contains only placeholders)
 *.env
 .env.local
 .env.development.local
