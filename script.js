@@ -920,7 +920,8 @@ Research Expertise:
 Recent Major Achievements:
 - 🎤 Accomplished speaker at major AI conferences and industry summits
 - Spoke at AI Accelerator Institute - Agentic AI Summit NYC (featured panelist)
-- Upcoming speaker at BattleFin Discovery Day and Put Data First Conference
+- Successfully presented at BattleFin Discovery Day on AI & Alternative Data in Finance
+- Upcoming speaker at Put Data First Conference
 - 🏆 NTSE (National Talent Search Examination) Scholar - prestigious academic honor
 
 Technical Skills & Expertise:
@@ -1015,15 +1016,15 @@ Contact & Collaboration:
                     },
                     {
                         title: 'BattleFin Discovery Day',
-                        description: 'AI & Alternative Data in Finance - June 10-11, 2025',
+                        description: 'AI & Alternative Data in Finance - Successfully presented',
                         icon: '🏢',
-                        status: 'Upcoming Speaker'
+                        status: 'Completed 2025'
                     },
                     {
                         title: 'Put Data First Conference',
                         description: 'Future of Data-Driven Innovation - October 2025',
                         icon: '📊',
-                        status: 'Keynote Speaker'
+                        status: 'Upcoming Speaker'
                     }
                 ],
                 cta: 'Want to know more about these speaking engagements?'
@@ -1130,9 +1131,9 @@ Contact & Collaboration:
                 "His educational journey is exceptional! Starting as an NTSE scholar, Keshavan went on to Cornell's renowned Computer Science program. This combination of early academic recognition and world-class university education provided him with the foundation to excel in both research and industry applications."
             ],
             achievements: [
-                "Keshavan's achievements are remarkable! Recent highlights include speaking at major AI conferences like the AI Accelerator Institute Summit, being an NTSE scholar, publishing research on GPCR mechanisms, and mentoring students through Break Through Tech. He's also contributed to open-source projects and is a featured speaker at tech events.",
-                "So many accomplishments to celebrate! From conference speaking to research publications to community impact through mentoring. Keshavan's achievements span technical innovation, academic contribution, and social impact in the tech community.",
-                "His achievement list keeps growing! NTSE scholar, accomplished conference speaker, published researcher, open-source contributor, and tech mentor. Keshavan exemplifies excellence across multiple dimensions of the tech world."
+                "Keshavan's achievements are remarkable! Recent highlights include speaking at major AI conferences like the AI Accelerator Institute Summit and BattleFin Discovery Day, being an NTSE scholar, publishing research on GPCR mechanisms, and mentoring students through Break Through Tech. He has an upcoming presentation at Put Data First Conference and has contributed to open-source projects.",
+                "So many accomplishments to celebrate! From successful conference presentations to research publications to community impact through mentoring. Keshavan's achievements span technical innovation, academic contribution, and social impact in the tech community.",
+                "His achievement list keeps growing! NTSE scholar, accomplished conference speaker who has presented at major industry events, published researcher, open-source contributor, and tech mentor. Keshavan exemplifies excellence across multiple dimensions of the tech world."
             ],
             personal: [
                 "Keshavan is a passionate builder, researcher, and entrepreneur at heart! He loves working at the intersection of AI and real-world applications, whether that's in finance, biology, or emerging technologies. His curiosity drives him to explore new frontiers in tech and science.",
