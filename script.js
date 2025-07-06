@@ -1330,11 +1330,37 @@ Contact & Collaboration:
         this.isTyping = false;
     }
 
+    formatText(text) {
+        // Convert **text** to bold
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Convert *text* to italic
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Convert `code` to code blocks
+        text = text.replace(/`(.*?)`/g, '<code style="background: rgba(99, 102, 241, 0.1); color: var(--primary-color); padding: 2px 6px; border-radius: 4px; font-family: \'JetBrains Mono\', monospace;">$1</code>');
+        
+        // Convert URLs to clickable links
+        text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
+        
+        // Convert email addresses to mailto links
+        text = text.replace(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '<a href="mailto:$1" style="color: var(--primary-color); text-decoration: underline;">$1</a>');
+        
+        // Convert line breaks to <br> tags
+        text = text.replace(/\n/g, '<br>');
+        
+        return text;
+    }
+
     addMessage(text, sender) {
         const messagesContainer = document.getElementById('chatbot-messages');
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${sender}`;
-        messageDiv.innerHTML = `<p>${text}</p>`;
+        
+        // Format text for bot messages
+        const formattedText = sender === 'bot' ? this.formatText(text) : text;
+        messageDiv.innerHTML = `<p>${formattedText}</p>`;
+        
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
         
@@ -1350,9 +1376,9 @@ Contact & Collaboration:
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chatbot-message bot advanced';
         
-        // Create the main message content
+        // Create the main message content with formatting
         const messageContent = document.createElement('p');
-        messageContent.textContent = response.text;
+        messageContent.innerHTML = this.formatText(response.text);
         messageDiv.appendChild(messageContent);
         
         // Add rich content if available
@@ -1410,7 +1436,27 @@ Contact & Collaboration:
                 const cta = document.createElement('button');
                 cta.className = 'rich-cta';
                 cta.textContent = richContent.cta;
-                cta.onclick = () => this.handleQuickAction('projects_detailed');
+                cta.style.cssText = `
+                    animation: fadeInUp 0.4s ease-out;
+                    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+                `;
+                
+                // Enhanced interaction
+                cta.onclick = () => {
+                    cta.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.handleQuickAction('projects_detailed');
+                    }, 100);
+                };
+                
+                cta.onmouseenter = () => {
+                    cta.style.transform = 'translateY(-2px) scale(1.02)';
+                };
+                
+                cta.onmouseleave = () => {
+                    cta.style.transform = 'translateY(0) scale(1)';
+                };
+                
                 container.appendChild(cta);
             }
         } else if (richContent.type === 'skills_showcase') {
@@ -1529,13 +1575,61 @@ Contact & Collaboration:
         suggestionsDiv.className = 'suggestions-container';
         suggestionsDiv.id = 'suggestions-container';
         
-        let html = '<div class="suggestions">';
-        suggestions.forEach(suggestion => {
-            html += `<button class="suggestion-chip" onclick="chatbot.selectSuggestion('${suggestion}')">${suggestion}</button>`;
-        });
-        html += '</div>';
+        // Add a subtle header for suggestions
+        const headerDiv = document.createElement('div');
+        headerDiv.style.cssText = `
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+            font-weight: 500;
+        `;
+        headerDiv.innerHTML = '💡 Suggested questions:';
+        suggestionsDiv.appendChild(headerDiv);
         
-        suggestionsDiv.innerHTML = html;
+        const suggestionsContainer = document.createElement('div');
+        suggestionsContainer.className = 'suggestions';
+        
+        suggestions.forEach((suggestion, index) => {
+            const suggestionBtn = document.createElement('button');
+            suggestionBtn.className = 'suggestion-chip';
+            suggestionBtn.textContent = suggestion;
+            suggestionBtn.style.cssText = `
+                animation: fadeInUp 0.3s ease-out ${index * 0.1}s both;
+                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            `;
+            
+            // Enhanced click handler
+            suggestionBtn.onclick = () => {
+                // Add visual feedback
+                suggestionBtn.style.transform = 'scale(0.95)';
+                suggestionBtn.style.background = 'var(--primary-color)';
+                suggestionBtn.style.color = 'white';
+                
+                setTimeout(() => {
+                    this.selectSuggestion(suggestion);
+                }, 150);
+            };
+            
+            // Enhanced hover effects
+            suggestionBtn.onmouseenter = () => {
+                if (!suggestionBtn.classList.contains('clicked')) {
+                    suggestionBtn.style.transform = 'translateY(-2px) scale(1.02)';
+                    suggestionBtn.style.boxShadow = '0 4px 15px rgba(99, 102, 241, 0.3)';
+                }
+            };
+            
+            suggestionBtn.onmouseleave = () => {
+                if (!suggestionBtn.classList.contains('clicked')) {
+                    suggestionBtn.style.transform = 'translateY(0) scale(1)';
+                    suggestionBtn.style.boxShadow = 'none';
+                }
+            };
+            
+            suggestionsContainer.appendChild(suggestionBtn);
+        });
+        
+        suggestionsDiv.appendChild(suggestionsContainer);
         messagesContainer.appendChild(suggestionsDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
