@@ -261,6 +261,12 @@ const websiteData = {
       "degree": "Master's in Computational Natural Sciences",
       "program": "Research Focus: GPCR Dynamics",
       "type": "masters"
+    },
+    {
+      "institution": "NTSE (National Talent Search Examination)",
+      "degree": "NTSE Scholar",
+      "program": "National-level competitive scholarship for academic excellence",
+      "type": "award"
     }
   ],
   "news": [

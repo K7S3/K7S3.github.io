@@ -688,14 +688,14 @@ class AdvancedChatbot {
         
         const intents = {
             greeting: /hello|hi|hey|greetings|good morning|good afternoon|good evening|welcome/i,
-            projects: /project|github|code|repository|build|develop|work|portfolio|chipchat|hackathon|winner|prize/i,
-            research: /research|publication|paper|gpcr|biology|science|study|academic|computational|protein|molecular/i,
-            contact: /contact|email|reach|connect|hire|collaborate|meet|linkedin|github|social/i,
-            experience: /experience|work|job|career|prudential|company|role|fintech|finance|ml engineer/i,
-            skills: /skill|technology|tech|programming|language|framework|tool|tensorflow|pytorch|python|ml|ai/i,
-            education: /education|university|cornell|degree|study|school|learn|computer science/i,
-            achievements: /achievement|award|hackathon|win|accomplishment|prize|recognition|grand prize|berkeley/i,
-            entrepreneurship: /entrepreneur|startup|synergii|founder|business|innovation|venture|company/i,
+            projects: /project|github|code|repository|build|develop|work|portfolio|speaking|talk|presentation|lecture|event/i,
+            research: /research|publication|paper|study|biology|gpcr|molecular|science|academic|scholar/i,
+            contact: /contact|email|reach|connect|linkedin|social|message|talk|call|meet/i,
+            experience: /experience|job|work|career|professional|company|position|role|prudential|senior|ml engineer/i,
+            skills: /skill|technology|tech|programming|language|framework|tool|expertise|ability|proficient/i,
+            education: /education|degree|university|college|school|ntse|national talent search|scholarship|award|academic/i,
+            speaking: /speaking|talk|presentation|lecture|event|conference|panel|summit|battlefin|ai accelerator|put data first/i,
+            entrepreneurship: /startup|entrepreneur|business|venture|synergii|founder|company|innovation/i,
             personal: /who|what|why|how|tell me about|personality|interests|hobby|background|story/i,
             help: /help|what can you do|commands|features|guide|assist/i,
             goodbye: /bye|goodbye|see you|talk later|thanks|thank you|farewell/i
@@ -724,13 +724,13 @@ class AdvancedChatbot {
         // Fallback response when Gemini is unavailable
         const fallbackResponses = {
             greeting: "Hello! I'm having a brief connection issue with my AI brain. While I get that sorted, feel free to explore Keshavan's work or contact him directly at keshavanseshadri@gmail.com!",
-            projects: "I'd love to tell you about Keshavan's amazing projects! He recently won the AI Berkeley Hackathon 2025 Grand Prize with ChipChat, and has impressive research tools for GPCR studies. Check out his GitHub for more details!",
+                            projects: "I'd love to tell you about Keshavan's amazing projects! He's an accomplished speaker at major AI conferences, and has impressive research tools for GPCR studies. Check out his GitHub for more details!",
             research: "Keshavan's research focuses on computational biology, particularly GPCR mechanisms that are crucial for drug discovery. His work bridges AI and biology in fascinating ways!",
             contact: "You can reach Keshavan at keshavanseshadri@gmail.com. He's always excited to discuss AI projects, research collaborations, or startup opportunities!",
             experience: "Keshavan is a Senior ML Engineer at Prudential Financial, bringing together his Cornell Computer Science background with cutting-edge AI applications in fintech.",
             skills: "Keshavan's expertise spans Machine Learning (TensorFlow, PyTorch), Full-Stack Development, Computational Biology, and Cloud Technologies - a unique combination perfect for AI-driven solutions!",
             education: "Keshavan graduated from Cornell University with a Computer Science degree, where he gained deep knowledge in AI, software engineering, and research methodologies.",
-            achievements: "Recent highlights include winning the AI Berkeley Hackathon 2025 Grand Prize, publishing GPCR research, and mentoring through Break Through Tech. Quite impressive!",
+                            achievements: "Recent highlights include speaking at major AI conferences like the AI Accelerator Institute Summit, publishing GPCR research, being an NTSE scholar, and mentoring through Break Through Tech. Quite impressive!",
             general: "I'm having a brief connection issue, but I'd love to help you learn about Keshavan! Try asking about his projects, research, or experience, or contact him directly at keshavanseshadri@gmail.com."
         };
         
@@ -917,11 +917,11 @@ Research Expertise:
 - Collaborator at IIIT Hyderabad on breakthrough GPCR activation studies
 - Combines AI/ML techniques with biological systems research
 
-Recent Major Achievement:
-- 🏆 AI Berkeley Hackathon 2025 GRAND PRIZE WINNER with ChipChat
-- Led a team to victory against hundreds of competitors
-- ChipChat: Revolutionary AI-powered communication platform
-- Demonstrated exceptional leadership and technical innovation under pressure
+Recent Major Achievements:
+- 🎤 Accomplished speaker at major AI conferences and industry summits
+- Spoke at AI Accelerator Institute - Agentic AI Summit NYC (featured panelist)
+- Upcoming speaker at BattleFin Discovery Day and Put Data First Conference
+- 🏆 NTSE (National Talent Search Examination) Scholar - prestigious academic honor
 
 Technical Skills & Expertise:
 - Machine Learning: TensorFlow, PyTorch, advanced neural architectures
@@ -954,7 +954,7 @@ Contact & Collaboration:
 - Always open to discussing AI, research collaborations, startup opportunities`;
 
         const intentSpecificPrompts = {
-            projects: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Discuss Keshavan's projects with enthusiasm. Highlight the AI Berkeley Hackathon Grand Prize win with ChipChat, his research tools, GitHub portfolio, and the intersection of his academic and industry work. Show excitement about the technical innovation and real-world impact.`,
+            projects: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Discuss Keshavan's projects with enthusiasm. Highlight his speaking engagements at major AI conferences, his research tools, GitHub portfolio, and the intersection of his academic and industry work. Show excitement about the technical innovation and real-world impact.`,
             
             research: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Enthusiastically explain Keshavan's computational biology research, particularly his GPCR work. Connect it to drug discovery importance, explain how he combines AI with biology, and highlight the academic-industry bridge his research represents.`,
             
@@ -964,11 +964,11 @@ Contact & Collaboration:
             
             skills: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Enthusiastically detail Keshavan's diverse technical skill set. Emphasize the rare combination of ML expertise, computational biology knowledge, and financial technology experience. Show how these skills create unique value.`,
             
-            achievements: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Celebrate Keshavan's accomplishments with genuine excitement! Focus on the AI Berkeley Hackathon Grand Prize, research publications, mentoring impact, and the significance of his contributions to both academic and industry communities.`,
+            achievements: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Celebrate Keshavan's accomplishments with genuine excitement! Focus on his speaking engagements at major AI conferences, NTSE scholarship, research publications, mentoring impact, and the significance of his contributions to both academic and industry communities.`,
             
             entrepreneurship: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Discuss Keshavan's entrepreneurial vision with Synergii and his approach to solving real-world problems. Emphasize his commitment to democratizing technology and creating positive global impact through innovation.`,
             
-            greeting: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Welcome visitors warmly and set an enthusiastic tone. Briefly highlight what makes Keshavan unique - his recent hackathon victory, diverse expertise, and openness to collaboration. Encourage exploration of his work.`,
+            greeting: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Welcome visitors warmly and set an enthusiastic tone. Briefly highlight what makes Keshavan unique - his speaking at major AI conferences, diverse expertise, and openness to collaboration. Encourage exploration of his work.`,
             
             general: `${basePersonality}\n${comprehensiveBackground}\n\nCURRENT FOCUS: Provide helpful, engaging responses about any aspect of Keshavan's work. Show genuine enthusiasm for his diverse accomplishments and encourage deeper exploration of his projects, research, or background.`
         };
@@ -1002,31 +1002,31 @@ Contact & Collaboration:
         };
 
         // Add rich content based on intent
-        if (intent === 'projects' && userMessage.toLowerCase().includes('chipchat')) {
+        if (intent === 'speaking' || (intent === 'projects' && (userMessage.toLowerCase().includes('speaking') || userMessage.toLowerCase().includes('talk') || userMessage.toLowerCase().includes('conference')))) {
             response.richContent = {
                 type: 'project_spotlight',
-                title: '🏆 ChipChat - AI Berkeley Hackathon Grand Prize Winner',
+                title: '🎤 Speaking Engagements & Conference Presentations',
                 items: [
                     {
-                        title: 'Revolutionary Achievement',
-                        description: 'Won against hundreds of top-tier competitors',
-                        icon: '🥇',
-                        status: 'Grand Prize Winner 2025'
+                        title: 'AI Accelerator Institute Summit NYC',
+                        description: 'Panel: Explainability and Transparency in Autonomous Agents',
+                        icon: '🗽',
+                        status: 'Featured Panelist 2025'
                     },
                     {
-                        title: 'Technical Innovation',
-                        description: 'AI-powered communication platform with breakthrough features',
-                        icon: '🚀',
-                        status: 'Cutting-edge AI'
+                        title: 'BattleFin Discovery Day',
+                        description: 'AI & Alternative Data in Finance - June 10-11, 2025',
+                        icon: '🏢',
+                        status: 'Upcoming Speaker'
                     },
                     {
-                        title: 'Leadership Excellence',
-                        description: 'Led team to victory under intense competition pressure',
-                        icon: '👥',
-                        status: 'Proven Leadership'
+                        title: 'Put Data First Conference',
+                        description: 'Future of Data-Driven Innovation - October 2025',
+                        icon: '📊',
+                        status: 'Keynote Speaker'
                     }
                 ],
-                cta: 'Want to know more about this amazing project?'
+                cta: 'Want to know more about these speaking engagements?'
             };
         } else if (intent === 'skills') {
             response.richContent = {
@@ -1100,9 +1100,9 @@ Contact & Collaboration:
                 `Greetings! I'm Keshavan's intelligent assistant. ${isReturningUser ? 'Thanks for coming back! ' : ''}I can provide insights about his projects, experience, and achievements. What interests you most?`
             ],
             projects: [
-                "Keshavan has built some amazing projects! His recent work includes ChipChat (AI Berkeley Hackathon Grand Prize winner), GPCR research tools, and various AI applications. His GitHub showcases full-stack development, ML models, and research tools. Would you like me to show you specific projects?",
-                "From winning hackathons to publishing research, Keshavan's projects span AI, web development, and computational biology. His portfolio includes award-winning applications, research tools, and open-source contributions. I can provide detailed information about any specific project!",
-                "Keshavan's project portfolio is impressive! He's built everything from AI chatbots to molecular dynamics simulations. Recent highlights include his hackathon-winning ChipChat and groundbreaking GPCR research. Want to dive deeper into any particular area?"
+                "Keshavan has built some amazing projects! His recent work includes speaking at major AI conferences, GPCR research tools, and various AI applications. His GitHub showcases full-stack development, ML models, and research tools. Would you like me to show you specific projects?",
+                "From speaking at conferences to publishing research, Keshavan's work spans AI, web development, and computational biology. His portfolio includes research tools, open-source contributions, and speaking engagements at major industry events. I can provide detailed information about any specific project!",
+                "Keshavan's project portfolio is impressive! He's built everything from AI chatbots to molecular dynamics simulations. Recent highlights include his speaking engagements at AI conferences and groundbreaking GPCR research. Want to dive deeper into any particular area?"
             ],
             research: [
                 "Keshavan's research focuses on computational biology, particularly GPCR (G-protein coupled receptor) activation mechanisms. His work at IIIT Hyderabad has been published and contributes to drug discovery research. He combines AI with biology to understand protein dynamics and molecular interactions.",
@@ -1125,14 +1125,14 @@ Contact & Collaboration:
                 "Impressive technical breadth! Keshavan masters everything from deep learning and NLP to full-stack development and bioinformatics. His skills span Python, JavaScript, React, TensorFlow, AWS, and specialized tools for computational research."
             ],
             education: [
-                "Keshavan's educational background is stellar! He graduated from Cornell University with a degree in Computer Science, bringing together theoretical knowledge and practical skills. His time at Cornell Tech provided cutting-edge exposure to AI and entrepreneurship.",
-                "Cornell University alumnus with a strong foundation in Computer Science! Keshavan's education at one of the world's top tech programs equipped him with advanced knowledge in AI, software engineering, and research methodologies.",
-                "His Cornell education provides an exceptional foundation! The Computer Science program there is renowned for its rigor and innovation. Keshavan leveraged this world-class education to excel in both research and industry applications."
+                "Keshavan's educational background is stellar! He's an NTSE (National Talent Search Examination) scholar and graduated from Cornell University with a degree in Computer Science, bringing together theoretical knowledge and practical skills. His time at Cornell Tech provided cutting-edge exposure to AI and entrepreneurship.",
+                "Cornell University alumnus with a strong foundation in Computer Science! Keshavan's education journey began with being an NTSE scholar - a prestigious national-level academic honor in India. His education at one of the world's top tech programs equipped him with advanced knowledge in AI, software engineering, and research methodologies.",
+                "His educational journey is exceptional! Starting as an NTSE scholar, Keshavan went on to Cornell's renowned Computer Science program. This combination of early academic recognition and world-class university education provided him with the foundation to excel in both research and industry applications."
             ],
             achievements: [
-                "Keshavan's achievements are remarkable! Recent highlights include winning the Grand Prize at AI Berkeley Hackathon 2025 with ChipChat, publishing research on GPCR mechanisms, and mentoring students through Break Through Tech. He's also contributed to open-source projects and spoken at tech events.",
-                "So many accomplishments to celebrate! From hackathon victories to research publications to community impact through mentoring. Keshavan's achievements span technical innovation, academic contribution, and social impact in the tech community.",
-                "His achievement list keeps growing! AI Berkeley Hackathon Grand Prize winner, published researcher, open-source contributor, and tech mentor. Keshavan exemplifies excellence across multiple dimensions of the tech world."
+                "Keshavan's achievements are remarkable! Recent highlights include speaking at major AI conferences like the AI Accelerator Institute Summit, being an NTSE scholar, publishing research on GPCR mechanisms, and mentoring students through Break Through Tech. He's also contributed to open-source projects and is a featured speaker at tech events.",
+                "So many accomplishments to celebrate! From conference speaking to research publications to community impact through mentoring. Keshavan's achievements span technical innovation, academic contribution, and social impact in the tech community.",
+                "His achievement list keeps growing! NTSE scholar, accomplished conference speaker, published researcher, open-source contributor, and tech mentor. Keshavan exemplifies excellence across multiple dimensions of the tech world."
             ],
             personal: [
                 "Keshavan is a passionate builder, researcher, and entrepreneur at heart! He loves working at the intersection of AI and real-world applications, whether that's in finance, biology, or emerging technologies. His curiosity drives him to explore new frontiers in tech and science.",
@@ -1161,7 +1161,7 @@ Contact & Collaboration:
 
     getContextualSuggestions(intent) {
         const suggestionMap = {
-            greeting: ["🏆 Tell me about ChipChat", "💼 What's his experience?", "📧 How can I contact him?"],
+            greeting: ["🎤 Tell me about his speaking engagements", "💼 What's his experience?", "📧 How can I contact him?"],
             projects: ["🔬 Show me his research", "🎯 What are his skills?", "🏅 Tell me about achievements"],
             research: ["💻 What projects has he built?", "📚 What's his background?", "🤝 How to collaborate?"],
             contact: ["🚀 What are his projects?", "⚡ Tell me about his skills", "💼 What's his experience?"],
@@ -1178,7 +1178,7 @@ Contact & Collaboration:
 
     getQuickActions(intent) {
         const actionMap = {
-            projects: ["View GitHub", "Learn about ChipChat", "Explore research tools"],
+            projects: ["View GitHub", "Learn about speaking engagements", "Explore research tools"],
             research: ["Read publications", "Understand GPCR work", "Academic collaborations"],
             contact: ["Send email", "Connect on LinkedIn", "Schedule meeting"],
             experience: ["View resume", "Learn about Prudential", "Career journey"],
@@ -1192,13 +1192,13 @@ Contact & Collaboration:
 
     getProjectsRichContent() {
         return {
-            title: "🚀 Featured Projects",
+            title: "🚀 Featured Projects & Speaking",
             items: [
                 {
-                    name: "ChipChat",
-                    description: "AI Berkeley Hackathon 2025 Grand Prize Winner",
-                    tech: ["AI", "NLP", "Web Development"],
-                    status: "🏆 Award Winner"
+                    name: "AI Conference Speaking",
+                    description: "Major AI conferences and industry summits",
+                    tech: ["AI", "Autonomous Agents", "Data Innovation"],
+                    status: "🎤 Active Speaker"
                 },
                 {
                     name: "GPCR Research Tools",
@@ -1275,8 +1275,8 @@ Contact & Collaboration:
     showWelcomeMessage() {
         if (this.userProfile.visitCount === 1) {
             setTimeout(() => {
-                this.addMessage("🚀 Welcome! I'm Keshavan's AI assistant, powered by Google Gemini 2.5 Flash. I'm thrilled to help you discover his incredible journey - from winning the AI Berkeley Hackathon 2025 Grand Prize to his groundbreaking research and fintech innovations! What would you like to explore?", 'bot');
-                this.showSuggestions(["🏆 Tell me about ChipChat", "🔬 What's his research about?", "💼 How can I contact him?"]);
+                this.addMessage("🚀 Welcome! I'm Keshavan's AI assistant, powered by Google Gemini 2.5 Flash. I'm thrilled to help you discover his incredible journey - from being an NTSE scholar to speaking at major AI conferences to his groundbreaking research and fintech innovations! What would you like to explore?", 'bot');
+                this.showSuggestions(["🎤 Tell me about his speaking engagements", "🔬 What's his research about?", "💼 How can I contact him?"]);
             }, 500);
         } else {
             setTimeout(() => {
@@ -1490,7 +1490,7 @@ Contact & Collaboration:
     handleQuickAction(action) {
         const actionMap = {
             'projects_detailed': "Tell me more about his projects in detail",
-            'chipchat_details': "What makes ChipChat so revolutionary?",
+            'speaking_details': "What conferences has he spoken at?",
             'research_publications': "Show me his research publications",
             'contact_email': "How can I reach him via email?",
             'skills_technical': "What are his technical specializations?",
