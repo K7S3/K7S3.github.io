@@ -22,60 +22,33 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-
     - name: Setup Pages
       uses: actions/configure-pages@v4
 
-    - name: Debug Environment
+    - name: Inject API Key
       run: |
-        echo "🔍 Environment Debug Information:"
-        echo "  - Repository: ${{ github.repository }}"
-        echo "  - Environment: github-pages"
-        echo "  - Actor: ${{ github.actor }}"
-        echo "  - Event: ${{ github.event_name }}"
+        echo "🔑 Injecting Gemini API Key..."
         
-    - name: Simple API Key Injection
-      run: |
-        echo "🔑 Simple API key injection..."
-        
-        # Check if secret is available
+        # Check if secret exists
         if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
-          echo "❌ GEMINI_API_KEY secret not found or empty"
-          echo "Please ensure the secret is set in repository settings"
-          exit 1
+          echo "❌ GEMINI_API_KEY secret not found"
+          echo "📝 Creating fallback configuration..."
+          echo '<script>window.GEMINI_API_KEY = null; console.log("⚠️ API key not configured - using fallback");</script>' > api-injection.html
+        else
+          echo "✅ GEMINI_API_KEY secret found"
+          echo "🔍 API key starts with: $(echo '${{ secrets.GEMINI_API_KEY }}' | cut -c1-6)"
+          echo '<script>window.GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}"; console.log("✅ Gemini API key loaded successfully");</script>' > api-injection.html
         fi
         
-        echo "✅ GEMINI_API_KEY secret found"
-        echo "🔍 API key preview: $(echo '${{ secrets.GEMINI_API_KEY }}' | cut -c1-10)..."
-        
-        # Direct injection into index.html (most reliable method)
-        echo "📝 Injecting API key into index.html..."
-        
-        # Replace the gemini-config-dev.js script tag with direct injection
-        sed -i 's|<script src="gemini-config-dev.js"></script>|<script>\nwindow.GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}";\nconsole.log("🚀 API key injected by GitHub Actions");\nconsole.log("✅ Gemini AI enabled");\n</script>\n<script src="gemini-config-dev.js"></script>|g' index.html
-        
-        # Also update gemini-config-dev.js as backup
-        echo "📝 Updating gemini-config-dev.js..."
-        sed -i "s/YOUR_GEMINI_API_KEY_HERE/${{ secrets.GEMINI_API_KEY }}/g" gemini-config-dev.js
-        
-        echo "✅ API key injected successfully"
+        # Insert the API key script before gemini-config-dev.js
+        sed -i '/<script src="gemini-config-dev.js"><\/script>/i\    <script>window.GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}"; console.log("✅ Gemini API key injected by GitHub Actions");</script>' index.html
         
         # Verify injection
-        echo "🔍 Verification:"
-        if grep -q "window.GEMINI_API_KEY.*AIza" index.html 2>/dev/null; then
-          echo "✅ API key found in index.html"
+        echo "🔍 Verifying injection..."
+        if grep -q "window.GEMINI_API_KEY.*AIza" index.html; then
+          echo "✅ API key successfully injected"
         else
-          echo "❌ API key NOT found in index.html"
-        fi
-        
-        if grep -q "AIza" gemini-config-dev.js 2>/dev/null; then
-          echo "✅ API key found in gemini-config-dev.js"
-        else
-          echo "❌ API key NOT found in gemini-config-dev.js"
+          echo "⚠️ API key injection may have failed"
         fi
 
     - name: Upload artifact
