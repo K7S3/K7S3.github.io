@@ -25,7 +25,7 @@ if (!apiKey && typeof window !== 'undefined' && window.GEMINI_API_KEY_INJECTED) 
 if (!apiKey) {
     // Try to get from environment variable in the browser (if available)
     // REPLACE 'YOUR_GEMINI_API_KEY_HERE' WITH YOUR ACTUAL API KEY FOR LOCAL TESTING
-    apiKey = 'YOUR_GEMINI_API_KEY_HERE'; // Replace with your actual API key for local testing
+    apiKey = 'AIzaSyDnN0ilYtJuXW0M2lM7JZ9vnNoHTnnyQBw'; // Replace with your actual API key for local testing
     
     if (apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
         console.log('⚠️  Please replace YOUR_GEMINI_API_KEY_HERE with your actual Gemini API key');
