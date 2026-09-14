@@ -1,6 +1,7 @@
 // Content data - Last updated: 2026-09-14
 const websiteData = {
   "lastUpdated": "2026-09-14",
+  // <github:projects>
   "projects": [
     {
       "name": "Synergii",
@@ -11,16 +12,6 @@ const websiteData = {
       "stars": 0,
       "forks": 0,
       "updated_at": "2025-07-05T18:23:58Z"
-    },
-    {
-      "name": "3Dmol.js",
-      "description": "WebGL accelerated JavaScript molecular graphics library",
-      "url": "https://github.com/K7S3/3Dmol.js",
-      "homepage": null,
-      "language": "JavaScript",
-      "stars": 1,
-      "forks": 0,
-      "updated_at": "2021-04-28T06:27:19Z"
     },
     {
       "name": "Endless-Runner",
@@ -53,14 +44,74 @@ const websiteData = {
       "updated_at": "2023-05-25T14:34:33Z"
     },
     {
+      "name": "Researcher",
+      "description": "Multi agent to perform company research.",
+      "url": "https://github.com/K7S3/Researcher",
+      "homepage": null,
+      "language": "Python",
+      "stars": 0,
+      "forks": 0,
+      "updated_at": "2026-04-18T00:05:24Z"
+    },
+    {
+      "name": "Spotify-Transformer",
+      "description": "An app that allows users to download Spotify tracks, providing lyrics, English phonetics for karaoke, and word meanings to enhance the listening experience using OpenAI's GPT-4",
+      "url": "https://github.com/K7S3/Spotify-Transformer",
+      "homepage": "",
+      "language": "Jupyter Notebook",
+      "stars": 1,
+      "forks": 0,
+      "updated_at": "2026-01-08T23:11:14Z"
+    },
+    {
+      "name": "SimulationCity",
+      "description": "Game Like SimCity for browser.",
+      "url": "https://github.com/K7S3/SimulationCity",
+      "homepage": null,
+      "language": null,
+      "stars": 0,
+      "forks": 0,
+      "updated_at": "2025-11-28T08:11:34Z"
+    },
+    {
+      "name": "3A-AgenticAutoApply",
+      "description": "Agentic Auto Apply Bot to any Job",
+      "url": "https://github.com/K7S3/3A-AgenticAutoApply",
+      "homepage": null,
+      "language": null,
+      "stars": 0,
+      "forks": 0,
+      "updated_at": "2025-11-19T02:22:56Z"
+    },
+    {
+      "name": "Understudy-Agent",
+      "description": "LLM health monitor + Automatic fallback router",
+      "url": "https://github.com/K7S3/Understudy-Agent",
+      "homepage": null,
+      "language": "JavaScript",
+      "stars": 0,
+      "forks": 0,
+      "updated_at": "2025-10-13T14:40:34Z"
+    },
+    {
+      "name": "Web-Scraping-Amazon-books-",
+      "description": "Code in python to scrap all bestsellers from amazon.in and amazon.com",
+      "url": "https://github.com/K7S3/Web-Scraping-Amazon-books-",
+      "homepage": null,
+      "language": "Python",
+      "stars": 2,
+      "forks": 0,
+      "updated_at": "2025-09-18T15:09:02Z"
+    },
+    {
       "name": "K7S3.github.io",
       "description": "A website for Keshavan",
       "url": "https://github.com/K7S3/K7S3.github.io",
       "homepage": null,
-      "language": "CSS",
+      "language": "JavaScript",
       "stars": 0,
       "forks": 0,
-      "updated_at": "2025-07-05T22:38:14Z"
+      "updated_at": "2025-07-07T17:11:29Z"
     },
     {
       "name": "AutoEHR",
@@ -91,68 +142,9 @@ const websiteData = {
       "stars": 0,
       "forks": 0,
       "updated_at": "2025-03-13T18:45:47Z"
-    },
-    {
-      "name": "Arga",
-      "description": "Linear Regression Model",
-      "url": "https://github.com/K7S3/Arga",
-      "homepage": null,
-      "language": "Jupyter Notebook",
-      "stars": 0,
-      "forks": 0,
-      "updated_at": "2024-07-03T02:59:43Z"
-    },
-    {
-      "name": "Prudential-MLE",
-      "description": "Prudential MLE assesment",
-      "url": "https://github.com/K7S3/Prudential-MLE",
-      "homepage": null,
-      "language": "Jupyter Notebook",
-      "stars": 0,
-      "forks": 0,
-      "updated_at": "2024-07-01T15:45:47Z"
-    },
-    {
-      "name": "fitloop-server",
-      "description": "Backend for fitloop",
-      "url": "https://github.com/K7S3/fitloop-server",
-      "homepage": null,
-      "language": "Python",
-      "stars": 0,
-      "forks": 0,
-      "updated_at": "2024-04-04T04:29:37Z"
-    },
-    {
-      "name": "Food-Image-Recognition",
-      "description": "A system that takes food images as an input, recognizes the food automatically and gives the nutritional-facts as an output.",
-      "url": "https://github.com/K7S3/Food-Image-Recognition",
-      "homepage": "",
-      "language": null,
-      "stars": 0,
-      "forks": 0,
-      "updated_at": "2024-04-04T03:29:42Z"
-    },
-    {
-      "name": "BashScript-files",
-      "description": "Contain some bash scripts to perform certain tasks",
-      "url": "https://github.com/K7S3/BashScript-files",
-      "homepage": null,
-      "language": "Shell",
-      "stars": 1,
-      "forks": 0,
-      "updated_at": "2024-02-13T06:11:16Z"
-    },
-    {
-      "name": "Spotify-Transformer",
-      "description": "An app that allows users to download Spotify tracks, providing lyrics, English phonetics for karaoke, and word meanings to enhance the listening experience using OpenAI's GPT-4",
-      "url": "https://github.com/K7S3/Spotify-Transformer",
-      "homepage": "",
-      "language": "Jupyter Notebook",
-      "stars": 0,
-      "forks": 0,
-      "updated_at": "2024-01-30T00:53:24Z"
     }
   ],
+  // </github:projects>
   "publications": [
     {
       "title": "Molecular Dynamics and Machine Learning Study of Adrenaline Dynamics in the Binding Pocket of GPCR",
@@ -181,6 +173,7 @@ const websiteData = {
       "doi": "10.1021/acs.jchemed.0c00579"
     }
   ],
+  // <linkedin:timeline>
   "timeline": [
     {
       "date": "Present",
@@ -237,6 +230,8 @@ const websiteData = {
       "type": "research"
     }
   ],
+  // </linkedin:timeline>
+  // <linkedin:education>
   "education": [
     {
       "institution": "Cornell University",
@@ -251,4 +246,5 @@ const websiteData = {
       "type": "masters"
     }
   ]
+  // </linkedin:education>
 };

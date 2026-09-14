@@ -1,5 +1,3 @@
+# Only dependency: requests, for update_data.py's public GitHub API fetch.
+# (The old LinkedIn/Scholar scraping deps were removed with the fake sync.)
 requests==2.31.0
-beautifulsoup4==4.12.2
-scholarly==1.7.11
-selenium==4.15.2
-webdriver-manager==4.0.1 

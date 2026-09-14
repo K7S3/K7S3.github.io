@@ -1,0 +1,143 @@
+{
+  "_note": "Curated from Keshavan's public LinkedIn profile and resume. This file is the single source of truth for the site's timeline/education sections. Update it by hand (~10 min, quarterly or after a role change), then run: python3 refresh_content.py",
+  "education": [
+    {
+      "institution": "Cornell University",
+      "degree": "M.Eng Computer Science",
+      "program": "GPA 3.92/4.0",
+      "type": "masters"
+    },
+    {
+      "institution": "IIIT Hyderabad",
+      "degree": "Master's by Research (Computational Natural Sciences) + B.Tech Computer Science",
+      "program": "GPA 8.15/10",
+      "type": "masters"
+    }
+  ],
+  "experience": [
+    {
+      "date": "Present",
+      "title": "Meta",
+      "description": "Currently at Meta, New York NY (per LinkedIn).",
+      "type": "work"
+    },
+    {
+      "date": "Aug 2024 - 2025",
+      "title": "Senior Machine Learning Engineer - Prudential Financial",
+      "description": "Senior ML Engineer in Newark NJ. Built a real-time Table Augmented Generation system (AWS, DuckDB, FastAPI, GPT-4) powering a chatbot for thousands of users.",
+      "type": "work"
+    },
+    {
+      "date": "Nov 2023 - Jul 2024",
+      "title": "Technical Founder - Synergii",
+      "description": "Technical founder in New York NY. Built an AI-powered grant discovery platform end to end (RAG, GPT-4, BERT); Cornell Johnson Summer Startup Accelerator.",
+      "type": "work"
+    },
+    {
+      "date": "Jul 2022 - Dec 2022",
+      "title": "Software Engineer - BrowserStack",
+      "description": "Software engineer in Mumbai IN. Shipped features for Playwright, Puppeteer, and Cypress test frameworks for the Automate product.",
+      "type": "work"
+    },
+    {
+      "date": "May 2019 - Jul 2023",
+      "title": "Graduate Researcher - CCNSB, IIIT Hyderabad",
+      "description": "Graduate researcher in Hyderabad IN. GPCR activation and drug-design research blending molecular dynamics simulations with machine learning.",
+      "type": "research"
+    },
+    {
+      "date": "Sep 2021 - Nov 2021",
+      "title": "Full-Stack AI Intern - Couture.AI",
+      "description": "AI intern in Bangalore IN. Built a GUI platform for training ResNet, Inception, and Deep Speech models.",
+      "type": "work"
+    },
+    {
+      "date": "May 2021 - Sep 2021",
+      "title": "Mitacs Globalink Intern - Queen's University (remote)",
+      "description": "Physics-based ML models to predict quantum-mechanical observables with Dr. Farnaz Heidar-Zadeh.",
+      "type": "research"
+    },
+    {
+      "date": "May 2019 - Aug 2019",
+      "title": "Google Summer of Code - 3Dmol.js",
+      "description": "Extended 3Dmol.js for active learning in chemistry classrooms; published in the Journal of Chemical Education.",
+      "type": "research"
+    },
+    {
+      "date": "May 2018 - Nov 2018",
+      "title": "Research Assistant - Virtual Labs",
+      "description": "Research assistant in Hyderabad IN. Built a game-based learning tool for Data Structures used by millions of students.",
+      "type": "research"
+    }
+  ],
+  "lastReviewed": "2026-09-14",
+  "profile": {
+    "about": "Hi, I'm Keshavan - a builder, researcher, and entrepreneur at heart.",
+    "headline": "AI Researcher • Software Engineer • Entrepreneur",
+    "location": "New York, New York",
+    "name": "Keshavan Seshadri"
+  },
+  "publications": [
+    {
+      "date": "July 2023",
+      "doi": "10.1021/acs.jcim.3c00401",
+      "title": "Molecular Dynamics and Machine Learning Study of Adrenaline Dynamics in the Binding Pocket of GPCR",
+      "venue": "Journal of Chemical Information and Modeling"
+    },
+    {
+      "date": "August 2020",
+      "doi": "10.1021/acs.jchemed.0c00579",
+      "title": "The 3Dmol.js learning environment: A classroom response system for 3D chemical structures",
+      "venue": "Journal of Chemical Education"
+    }
+  ],
+  "skills": {
+    "fullstack": [
+      "React",
+      "Flask",
+      "FastAPI",
+      "Docker",
+      "Django",
+      "Ruby",
+      "K8s",
+      "Git"
+    ],
+    "languages": [
+      "Python",
+      "C++",
+      "C",
+      "JavaScript",
+      "Java",
+      "C#"
+    ],
+    "ml": [
+      "PyTorch",
+      "Keras",
+      "NumPy",
+      "SciPy",
+      "Pandas"
+    ],
+    "other": [
+      "AWS",
+      "AMBER",
+      "Unity",
+      "OpenGL",
+      "WebGL",
+      "LaTeX",
+      "SQL",
+      "Jenkins"
+    ]
+  },
+  "volunteer": [
+    {
+      "date": "Aug 2024 - Oct 2024",
+      "org": "Break Through Tech",
+      "role": "Mentor"
+    },
+    {
+      "date": "Jul 2019",
+      "org": "RISHS International School",
+      "role": "Workshop on Computer Networks"
+    }
+  ]
+}

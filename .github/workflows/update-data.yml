@@ -1,35 +1,38 @@
-name: Update Website Data
+# Refreshes ONLY the GitHub projects section of data.js, using the public
+# GitHub API (no auth, no scraping). Timeline, education, and publications are
+# curated by hand via linkedin.json + refresh_content.py — see README.
+name: Refresh GitHub projects
 
 on:
   schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
+    # Weekly on Sundays; repo metadata barely changes day to day.
+    - cron: '0 9 * * 0'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+
 jobs:
-  update-data:
+  update-projects:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
-    
+        python-version: '3.12'
+
     - name: Install dependencies
-      run: |
-        pip install requests beautifulsoup4 scholarly selenium webdriver-manager
-    
-    - name: Run update script
+      run: pip install requests
+
+    - name: Refresh projects from GitHub API
       run: python update_data.py
-    
+
     - name: Commit and push if changed
       run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-        git add -A
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update website data" && git push) 
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add data.js
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Refresh GitHub projects" && git push)

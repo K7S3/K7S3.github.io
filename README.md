@@ -16,6 +16,10 @@ Static personal portfolio site for Keshavan Seshadri, live at
 │                       #   stat counters, section rendering)
 ├── data.js             # Content data: projects, publications, timeline,
 │                       #   education (lastUpdated: 2026-09-14)
+├── linkedin.json        # Source of truth for timeline/education (curated by
+│                       #   hand from LinkedIn; see "Keeping content fresh")
+├── refresh_content.py   # Regenerates data.js timeline/education from
+│                       #   linkedin.json (manual, no network)
 ├── update_data.py      # Helper that refreshes data.js (GitHub repos are the
 │                       #   only part fetched live; the rest is curated manually)
 ├── images/             # Publication figures
@@ -35,6 +39,27 @@ Static personal portfolio site for Keshavan Seshadri, live at
    `requirements.txt`) or let the `update-data.yml` workflow do it.
 4. **Images** — keep photos small: profile ≤ 200 KB, others ≤ 400 KB
    (e.g. `PIL`: open, `thumbnail`, save as optimized progressive JPEG).
+
+## Keeping content fresh
+
+**LinkedIn refresh (~10 minutes, quarterly or after a role change):**
+
+1. Open your LinkedIn profile and copy any changed facts (role, dates,
+   location, about text, new publications).
+2. Edit `linkedin.json` by hand to match — it's the source of truth for the
+   timeline and education sections.
+3. Run `python3 refresh_content.py` — it rewrites only the
+   `<linkedin:timeline>` and `<linkedin:education>` blocks in `data.js` and
+   bumps `lastUpdated`. Nothing else is touched, and nothing is fetched over
+   the network.
+4. If the hero/about copy in `index.html` also needs the new role, edit it
+   directly (it's hand-written prose, not generated).
+5. Commit and push; GitHub Pages redeploys automatically.
+
+There is intentionally **no automation** for this: LinkedIn has no public API
+for profile data, so a scripted sync would just be hardcoded guesses. The only
+scheduled job (`update-data.yml`, weekly) refreshes the GitHub projects list
+from the public GitHub API.
 
 ## Notes
 
