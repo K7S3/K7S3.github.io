@@ -2463,4 +2463,98 @@ section {
         bottom: 92px;
     }
     .k7-chat-fab { bottom: 18px; right: 18px; }
+    .k7-ai-label { display: none; }
+    .k7-compare { grid-template-columns: 1fr; }
+}
+
+/* ---- Agentic chatbot v2: AI toggle, progress, compare ---- */
+.k7-ai-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+}
+.k7-ai-toggle input { display: none; }
+.k7-ai-track {
+    width: 34px;
+    height: 19px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.16);
+    position: relative;
+    transition: background 0.2s ease;
+    display: inline-block;
+}
+.k7-ai-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s ease;
+}
+.k7-ai-toggle input:checked + .k7-ai-track { background: var(--primary-color); }
+.k7-ai-toggle input:checked + .k7-ai-track .k7-ai-thumb { left: 17px; }
+.k7-ai-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+}
+.k7-ai-progress {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.k7-ai-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--gradient);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+.k7-ai-consent {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.k7-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: stretch;
+}
+.k7-compare-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    min-width: 0;
+}
+.k7-compare-card strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.88rem;
+}
+.k7-cmp-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+}
+.k7-cmp-row:last-child { margin-bottom: 0; }
+.k7-cmp-k {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
 }

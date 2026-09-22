@@ -19,8 +19,8 @@ window.chatbotKB = {
     team: "product-centric ads ranking",
     location: "New York City",
     education: [
-      "Cornell Tech — M.Eng Computer Science",
-      "IIIT Hyderabad — Master's by Research (Computational Natural Sciences) + B.Tech Computer Science"
+      "Cornell Tech - M.Eng Computer Science",
+      "IIIT Hyderabad - Master's by Research (Computational Natural Sciences) + B.Tech Computer Science"
     ],
     email: "keshavanseshadri@gmail.com",
     tagline: "AI Researcher • Software Engineer • Entrepreneur"
@@ -74,7 +74,7 @@ window.chatbotKB = {
     {
       id: "entrepreneur",
       keywords: ["startup", "founder", "entrepreneur", "synergii", "company", "founded"],
-      answer: "He's the technical founder of Synergii, an AI-powered grant discovery platform he built end to end (RAG, GPT-4, BERT) through Cornell's Johnson Summer Startup Accelerator. You can see it in his projects below — I can show you his AI projects if you'd like."
+      answer: "He's the technical founder of Synergii, an AI-powered grant discovery platform he built end to end (RAG, GPT-4, BERT) through Cornell's Johnson Summer Startup Accelerator. You can see it in his projects below - I can show you his AI projects if you'd like."
     },
     {
       id: "research",
@@ -94,7 +94,7 @@ window.chatbotKB = {
     {
       id: "skills",
       keywords: ["skills", "languages", "stack", "technologies", "python", "pytorch", "tech stack"],
-      answer: "Python, C++, JavaScript, PyTorch, React, FastAPI, Docker, AWS and more — the full list is in the About section."
+      answer: "Python, C++, JavaScript, PyTorch, React, FastAPI, Docker, AWS and more - the full list is in the About section."
     }
   ],
 
@@ -138,5 +138,39 @@ window.chatbotKB = {
     "What does he work on?",
     "Download his resume",
     "How do I contact him?"
-  ]
+  ],
+
+  // Grounded entity facts for pronoun resolution and "tell me more"
+  // follow-ups. Every line is sourced from the site's own data.js/index.html
+  // content - never invent new facts here.
+  entities: {
+    "Meta": {
+      label: "Meta",
+      detail: "At Meta in New York City, he's a Software Engineer (E4) working on product-centric ads ranking."
+    },
+    "Prudential": {
+      label: "Prudential Financial",
+      detail: "At Prudential Financial (Aug 2024 - 2025, Newark NJ), he was a Senior ML Engineer building a real-time Table Augmented Generation system on AWS, DuckDB, FastAPI, and GPT-4, powering a chatbot used by thousands of people."
+    },
+    "Synergii": {
+      label: "Synergii",
+      detail: "Synergii is the AI-powered grant discovery platform he founded and built end to end (RAG, GPT-4, BERT) as Technical Founder (Nov 2023 - Jul 2024) through Cornell's Johnson Summer Startup Accelerator."
+    },
+    "BrowserStack": {
+      label: "BrowserStack",
+      detail: "At BrowserStack (Jul 2022 - Dec 2022, Mumbai), he shipped features for Playwright, Puppeteer, and Cypress test frameworks for the Automate product."
+    },
+    "CCNSB": {
+      label: "CCNSB, IIIT Hyderabad",
+      detail: "As a Graduate Researcher at CCNSB, IIIT Hyderabad (May 2019 - Jul 2023), he worked on GPCR activation and drug-design research blending molecular dynamics simulations with machine learning."
+    },
+    "Cornell Tech": {
+      label: "Cornell Tech",
+      detail: "He earned his M.Eng in Computer Science from Cornell Tech (GPA 3.92/4.0)."
+    },
+    "IIIT Hyderabad": {
+      label: "IIIT Hyderabad",
+      detail: "At IIIT Hyderabad he completed a Master's by Research in Computational Natural Sciences and a B.Tech in Computer Science."
+    }
+  }
 };
