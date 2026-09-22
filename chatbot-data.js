@@ -2,8 +2,13 @@
 // Local data only: the chatbot answers from this file and the site's own
 // data.js. No network calls, no API keys. Update the facts here and the
 // chatbot picks them up automatically.
+//
+// NOTE: assigned on window (not const) so chatbot.js can read it via
+// window.chatbotKB. Top-level const/let in a classic script does NOT
+// create a window property, which previously made window.chatbotKB
+// undefined and killed the chatbot before it rendered its FAB.
 
-const chatbotKB = {
+window.chatbotKB = {
   profile: {
     name: "Keshavan Seshadri",
     shortName: "Keshavan",
