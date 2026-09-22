@@ -1,13 +1,13 @@
-// Content data - Last updated: 2026-09-14
+// Content data - Last updated: 2026-09-22
 const websiteData = {
-  "lastUpdated": "2026-09-14",
+  "lastUpdated": "2026-09-22",
   // <github:projects>
   "projects": [
     {
       "name": "Synergii",
       "description": "An AI-based grant search tool to find the most relevant grants.",
       "url": "https://github.com/K7S3/Synergii",
-      "homepage": "https://synergii.org/",
+      "homepage": null,
       "language": "JavaScript",
       "stars": 0,
       "forks": 0,
@@ -177,8 +177,8 @@ const websiteData = {
   "timeline": [
     {
       "date": "Present",
-      "title": "Meta",
-      "description": "Currently at Meta, New York NY (per LinkedIn).",
+      "title": "Software Engineer (E4) - Meta",
+      "description": "Software Engineer (E4) at Meta, New York NY. Works on product-centric ads ranking at Meta in New York.",
       "type": "work"
     },
     {

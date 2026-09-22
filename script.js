@@ -21,6 +21,16 @@ function throttleRaf(fn) {
     };
 }
 
+// Escape text for safe insertion into innerHTML templates
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Initialize AOS (skip entirely when the user prefers reduced motion)
 if (!prefersReducedMotion) {
     AOS.init({
@@ -193,16 +203,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }));
     
-    // Add typing animation to hero title (skip for reduced motion)
+    // Add typing animation to hero title (skip for reduced motion).
+    // Types into the existing markup so the gradient name span survives.
     const heroTitle = document.querySelector('.hero-title');
     if (heroTitle && !prefersReducedMotion) {
-        const text = heroTitle.textContent;
-        heroTitle.textContent = '';
-        let i = 0;
+        const greeting = "Hi, I'm ";
+        const name = "Keshavan Seshadri";
+        heroTitle.setAttribute('aria-label', greeting + name);
+        heroTitle.innerHTML = '';
+        let gi = 0, ni = 0;
+        const renderName = () =>
+            heroTitle.innerHTML =
+                escapeHtml(greeting) +
+                '<span class="hero-name gradient-text">' +
+                escapeHtml(name.slice(0, ni)) + '</span>';
         const typeWriter = () => {
-            if (i < text.length) {
-                heroTitle.textContent += text.charAt(i);
-                i++;
+            if (gi < greeting.length) {
+                heroTitle.textContent = greeting.slice(0, ++gi);
+                setTimeout(typeWriter, 80);
+            } else if (ni <= name.length) {
+                renderName();
+                ni++;
                 setTimeout(typeWriter, 80);
             } else {
                 // Typing complete - no cursor needed
@@ -328,6 +349,7 @@ async function fetchGitHubProjects() {
 function createProjectCard(project, index) {
     const card = document.createElement('div');
     card.className = 'project-card';
+    card.dataset.projectName = project.name;
     card.setAttribute('data-aos', 'fade-up');
     card.setAttribute('data-aos-delay', index * 100);
     

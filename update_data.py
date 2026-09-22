@@ -47,7 +47,10 @@ def fetch_github_data():
             "name": repo["name"],
             "description": repo["description"] or "No description available",
             "url": repo["html_url"],
-            "homepage": repo["homepage"],
+            # The synergii.org domain is discontinued: never surface it as a
+            # project homepage link. The GitHub repo URL above stays.
+            "homepage": (None if (repo["homepage"] or "").lower().find("synergii.org") != -1
+                         else repo["homepage']),
             "language": repo["language"],
             "stars": repo["stargazers_count"],
             "forks": repo["forks_count"],
