@@ -28,7 +28,11 @@
   }
 
   function norm(text) {
-    return ' ' + String(text).toLowerCase().replace(/[’‘]/g, "'").trim() + ' ';
+    return ' ' + String(text).toLowerCase()
+      .replace(/[’‘]/g, "'")
+      .replace(/[?.!,;:"()\[\]]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim() + ' ';
   }
 
   function has(t, ...words) {
@@ -154,10 +158,20 @@
   /* ---------------- intent router ---------------- */
 
   function detectFaq(t) {
+    // Strip generic carrier phrases so specific topic keywords win.
+    const stripped = ' ' + t.replace(
+      /tell me about|let me know about|what about|how about|i want to know|information about|info about|anything about|tell me|something about/g, ' '
+    ) + ' ';
+    const s = stripped.replace(/\s+/g, ' ');
     let best = null, bestScore = 0;
     KB.faqs.forEach((faq) => {
       let score = 0;
-      faq.keywords.forEach((kw) => { if (t.includes(kw)) score += kw.split(' ').length; });
+      faq.keywords.forEach((kw) => {
+        const words = kw.split(' ').length;
+        // Single-word keywords must match whole words ("work" should not match "network").
+        const hit = words > 1 ? s.includes(kw) : s.includes(' ' + kw + ' ');
+        if (hit) score += words;
+      });
       if (score > bestScore) { bestScore = score; best = faq; }
     });
     return bestScore > 0 ? best : null;

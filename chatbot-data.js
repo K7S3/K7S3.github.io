@@ -58,7 +58,7 @@ const chatbotKB = {
     },
     {
       id: "work",
-      keywords: ["where does he work", "where work", "job", "employer", "meta", "work on", "what does he do", "role", "team", "ads ranking"],
+      keywords: ["where does he work", "where does keshavan work", "where work", "work", "works", "job", "employer", "meta", "work on", "what does he do", "role", "team", "ads ranking"],
       answer: "He's a Software Engineer (E4) at Meta in NYC, working on product-centric ads ranking. Before Meta he was a Senior ML Engineer at Prudential Financial, building a real-time Table Augmented Generation system."
     },
     {
