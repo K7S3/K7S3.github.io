@@ -7,10 +7,10 @@
  * and scores intents with a small client-side model (token overlap +
  * weighted phrases + context boost).
  *
- * Optional AI mode (off by default) lazy-loads a small open model via
- * WebLLM entirely in the visitor's browser: no server, no key, nothing
- * leaves the device. The WebLLM library and model are NOT fetched until the
- * visitor flips the AI toggle.
+ * Optional AI mode (off by default) answers questions through Google's
+ * Gemini API using the site's embedded key (GEMINI_API_KEY below, which is
+ * restricted to this site). The visitor's questions are sent to Google;
+ * nothing else leaves the device.
  *
  * Tools: navigateTo | filterProjects | clearProjectFilter |
  *        downloadResume | composeEmail | answerFaq | compareEntities
@@ -24,6 +24,15 @@
 
   const KB = window.chatbotKB;
   const EMAIL = KB.profile.email;
+
+  /* -------- site config: key for AI mode --------
+   * AI mode is ON by default: every question goes to Google's Gemini API
+   * using the key below. Create the key in Google AI Studio and restrict it
+   * to this site's HTTP referrer (https://k7s3.github.io/*) before deploy.
+   * While the placeholder is still in place, the fast built-in assistant
+   * answers instead - nothing is sent to Google.
+   */
+  const GEMINI_API_KEY = "__GEMINI_API_KEY_PLACEHOLDER__";
 
   /* ---------------- utilities ---------------- */
 
@@ -127,8 +136,7 @@
     lastTopic: null,    // faq id | 'projects' | 'compare' | 'email' | section key
     lastEntity: null,   // 'Meta' | 'Synergii' | 'project:Name' | null
     projectFilter: null,// {query, names:[], shown}
-    pending: null,      // {kind, step, data} for multi-step actions
-    aiMode: false
+    pending: null       // {kind, step, data} for multi-step actions
   };
 
   function resetCtx() {
@@ -137,7 +145,6 @@
     ctx.lastEntity = null;
     ctx.projectFilter = null;
     ctx.pending = null;
-    ctx.aiMode = false;
   }
 
   // Which entity a faq answer is "about", for pronoun follow-ups.
@@ -688,7 +695,7 @@
     switch (det.intent) {
       case 'greeting':
         return { kind: 'reply', topic: null,
-          html: "Hey! I'm Keshavan's site assistant. Ask me about his work, projects, education - or flip the <strong>AI</strong> switch up top for on-device AI answers.",
+          html: "Hey! I'm Keshavan's site assistant. Ask me about his work, projects, education - or flip the <strong>AI</strong> switch up top for AI answers powered by the Gemini API.",
           chips: defaultChips() };
       case 'thanks':
         return { kind: 'reply', topic: null,
@@ -818,11 +825,7 @@
 
   const agent = {
     handle(input) {
-      if (ai.loading) {
-        ui.bot('Still downloading the on-device model - ' + ai.pctText + ' so far. Ask me again in a bit, or keep AI mode off for instant answers.');
-        return;
-      }
-      if (ctx.aiMode && ai.ready) { aiTurn(input); return; }
+      if (ai.ready) { aiTurn(input); return; }
       ui.typing(true);
       const delay = 450;
       setTimeout(() => {
@@ -834,30 +837,24 @@
     }
   };
 
-  /* ---------------- optional AI mode (WebLLM, lazy) ----------------
-   * Off by default. Nothing is downloaded until the visitor flips the AI
-   * toggle: then we dynamically import WebLLM from a CDN and load a small
-   * open model that runs 100% in the visitor's browser via WebGPU.
-   * No server, no API key, no data leaves the device.
+  /* ---------------- AI mode (Gemini API, default on) ----------------
+   * Every question is answered by Google's Gemini API using the site's key
+   * (GEMINI_API_KEY, referrer-restricted to this site in Google AI Studio).
+   * The visitor's questions are sent to Google; nothing else leaves the
+   * device. If the key is still the placeholder or the API is unreachable,
+   * the fast built-in assistant answers instead. No toggle: AI is the default.
    */
 
   const ai = {
-    engine: null,
-    loading: false,
     ready: false,
-    wantOn: false,
+    busy: false,
     history: [],
-    pctText: '0%',
-    MODEL: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-    CDN: 'https://esm.run/@mlc-ai/web-llm'
+    MODEL: 'gemini-3.6-flash'
   };
-
-  // Synchronous pre-check used by the UI and by tests.
-  function aiTryEnable() {
-    if (!('gpu' in navigator)) return 'no-webgpu';
-    return 'webgpu-ok';
-  }
-
+  // AI is on by default. It becomes active once a real (non-placeholder)
+  // referrer-restricted key is embedded above.
+  ai.ready = typeof GEMINI_API_KEY === 'string' && GEMINI_API_KEY.length > 0 &&
+    GEMINI_API_KEY.indexOf('PLACEHOLDER') === -1;
   function buildSystemPrompt() {
     const L = [];
     L.push("You are the on-site assistant for Keshavan Seshadri's personal portfolio website (k7s3.github.io).");
@@ -877,127 +874,50 @@
     return L.join('\n');
   }
 
-  async function onAiToggle(on) {
-    const box = $('#k7-ai-checkbox');
-    if (!on) {
-      ai.wantOn = false;
-      ctx.aiMode = false;
-      if (box) box.checked = false;
-      if (ai.ready || ai.loading) ui.bot('AI mode off - back to the fast built-in assistant.');
-      return;
-    }
-    if (ai.ready) {
-      ai.wantOn = true;
-      ctx.aiMode = true;
-      ui.bot('AI mode on - answers are generated on your device by a small local model. Flip it off anytime for the fast assistant.');
-      return;
-    }
-    if (ai.loading) {
-      ai.wantOn = true;
-      if (box) box.checked = true;
-      return;
-    }
-    if (aiTryEnable() === 'no-webgpu') {
-      ui.bot('AI mode needs <strong>WebGPU</strong>, which this browser or device doesn\u2019t support. The fast built-in assistant stays on - it works everywhere.');
-      if (box) box.checked = false;
-      return;
-    }
-    if (box) box.checked = false; // stays off until the visitor confirms the download
-    showAiConsent();
-  }
-
-  function showAiConsent() {
-    const div = ui.botEl(
-      '<strong>Enable AI mode?</strong><br><span class="chat-dim">' +
-      'This downloads a small open model (<strong>Llama 3.2 1B, about 0.8 GB</strong>) and runs it fully on your device via WebGPU. ' +
-      'First download can take a few minutes and is cached afterwards. No server, no account, nothing leaves your device.</span>' +
-      '<div class="k7-ai-consent">' +
-      '<button class="k7-chip" data-ai-ok>Download model</button>' +
-      '<button class="k7-chip" data-ai-no>Not now</button>' +
-      '</div>'
-    );
-    const ok = div.querySelector('[data-ai-ok]');
-    const no = div.querySelector('[data-ai-no]');
-    if (ok) ok.addEventListener('click', () => { ok.disabled = true; startAiDownload(); });
-    if (no) no.addEventListener('click', () => { div.querySelector('.k7-ai-consent').innerHTML = '<span class="chat-dim">No problem - the fast assistant is still here.</span>'; });
-  }
-
-  async function startAiDownload() {
-    ai.loading = true;
-    ai.wantOn = true;
-    const card = ui.botEl(
-      '<strong>Downloading on-device model…</strong><br><span class="chat-dim">Llama 3.2 1B (about 0.8 GB). Cached in your browser after the first download.</span>' +
-      '<div class="k7-ai-progress"><div class="k7-ai-bar" id="k7-ai-bar"></div></div>' +
-      '<span class="chat-dim" id="k7-ai-pct">Starting…</span>'
-    );
-    const bar = card.querySelector('#k7-ai-bar');
-    const pct = card.querySelector('#k7-ai-pct');
-    try {
-      const webllm = await import(ai.CDN);
-      ai.engine = await webllm.CreateMLCEngine(ai.MODEL, {
-        initProgressCallback: (p) => {
-          const v = Math.round((p.progress || 0) * 100);
-          ai.pctText = v + '%';
-          if (bar) bar.style.width = v + '%';
-          if (pct) pct.textContent = v + '% - ' + (p.text || 'loading');
-        }
-      });
-      ai.loading = false;
-      ai.ready = true;
-      if (ai.wantOn) {
-        ctx.aiMode = true;
-        const box = $('#k7-ai-checkbox');
-        if (box) box.checked = true;
-        ui.bot('AI mode is ready - the model runs fully on your device, nothing leaves your browser. Ask me anything about Keshavan.');
-      } else {
-        ui.bot('Model downloaded and cached. Flip the AI switch on whenever you want to use it.');
-      }
-    } catch (e) {
-      ai.loading = false;
-      ui.bot('Couldn\u2019t load the on-device model (' + esc((e && e.message) || 'download failed') + '). The fast built-in assistant is still here - it works everywhere.');
-    }
-  }
-
   async function aiTurn(input) {
+    if (ai.busy) {
+      ui.bot('Still working on your last question - give me a moment.');
+      return;
+    }
+    ai.busy = true;
+    const div = ui.botEl('');
     ui.typing(true);
     try {
-      const messages = [{ role: 'system', content: buildSystemPrompt() }]
-        .concat(ai.history.slice(-8))
-        .concat([{ role: 'user', content: input }]);
-      const div = ui.botEl('');
-      let full = '';
-      const push = (d) => {
-        full += d;
-        div.innerHTML = esc(full).replace(/\n/g, '<br>');
-        ui.scroll();
+      const body = {
+        system_instruction: { parts: [{ text: buildSystemPrompt() }] },
+        contents: ai.history.slice(-8).concat([{ role: 'user', parts: [{ text: input }] }]),
+        generationConfig: { temperature: 0.2, maxOutputTokens: 400 }
       };
-      let streamed = false;
-      try {
-        const stream = await ai.engine.chat.completions.create({
-          messages: messages, stream: true, temperature: 0.2, max_tokens: 400
-        });
-        for await (const chunk of stream) {
-          const delta = chunk && chunk.choices && chunk.choices[0] && chunk.choices[0].delta;
-          const d = delta ? (delta.content || '') : '';
-          if (d) { push(d); streamed = true; }
-        }
-      } catch (se) { /* fall through to non-streaming */ }
-      if (!streamed) {
-        const resp = await ai.engine.chat.completions.create({ messages: messages, temperature: 0.2, max_tokens: 400 });
-        const msg = resp && resp.choices && resp.choices[0] && resp.choices[0].message;
-        push((msg && msg.content) || '');
-      }
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + ai.MODEL + ':generateContent?key=' + encodeURIComponent(GEMINI_API_KEY);
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) throw new Error('the API returned status ' + resp.status);
+      const data = await resp.json();
+      const cand = data && data.candidates && data.candidates[0];
+      const parts = cand && cand.content && cand.content.parts;
+      let full = '';
+      if (parts) parts.forEach((p) => { if (p && p.text) full += p.text; });
       ui.typing(false);
       if (!full.trim()) {
-        div.innerHTML = 'The on-device model returned an empty reply - try rephrasing your question.';
-        return;
+        div.innerHTML = 'The AI returned an empty reply - try rephrasing your question.';
+      } else {
+        div.innerHTML = esc(full).replace(/\n/g, '<br>');
+        ui.scroll();
+        ai.history.push({ role: 'user', parts: [{ text: input }] }, { role: 'model', parts: [{ text: full }] });
+        if (ai.history.length > 12) ai.history = ai.history.slice(-12);
       }
-      ai.history.push({ role: 'user', content: input }, { role: 'assistant', content: full });
-      if (ai.history.length > 12) ai.history = ai.history.slice(-12);
     } catch (e) {
       ui.typing(false);
-      ui.bot('The on-device model hit a snag - try again, or flip AI mode off for the fast assistant.');
+      div.remove();
+      ui.bot('The AI service didn\u2019t respond (' + esc((e && e.message) || 'request failed') + ') - here\u2019s the built-in answer instead:');
+      const r = runTurn(input);
+      if (r.narrate) ui.status(r.narrate);
+      if (r.html) ui.bot(r.html, { chips: r.chips });
     }
+    ai.busy = false;
   }
 
   /* ---------------- UI ---------------- */
@@ -1027,11 +947,6 @@
         '<div class="k7-chat-header">' +
           '<span class="k7-chat-avatar">K7</span>' +
           '<div class="k7-chat-title"><strong>Ask about Keshavan</strong><span class="k7-chat-online"><i></i>online</span></div>' +
-          '<label class="k7-ai-toggle" title="AI mode: answers from a small model running on your device">' +
-            '<input type="checkbox" id="k7-ai-checkbox" aria-label="Toggle AI mode">' +
-            '<span class="k7-ai-track"><span class="k7-ai-thumb"></span></span>' +
-            '<span class="k7-ai-label">AI</span>' +
-          '</label>' +
           '<button class="k7-chat-close" aria-label="Close chat"><i class="fas fa-times"></i></button>' +
         '</div>' +
         '<div class="k7-chat-messages" id="k7-chat-messages" aria-live="polite"></div>' +
@@ -1054,8 +969,6 @@
 
       fab.addEventListener('click', () => this.toggle());
       panel.querySelector('.k7-chat-close').addEventListener('click', () => this.toggle(false));
-      const aiBox = panel.querySelector('#k7-ai-checkbox');
-      if (aiBox) aiBox.addEventListener('change', (e) => onAiToggle(e.target.checked));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !panel.hidden) this.toggle(false);
       });
@@ -1069,7 +982,9 @@
       });
 
       this.bot(
-        "Hey! I'm Keshavan's site assistant - I can show you his projects, compare them, download his resume, draft an email to him, or answer questions about his work. Tip: flip the <strong>AI</strong> switch up top for on-device AI answers.",
+        ai.ready
+          ? "Hey! I'm Keshavan's site assistant, AI-powered by the Gemini API and grounded in this site. Ask me anything about his work, projects, or background - or tap a suggestion below."
+          : "Hey! I'm Keshavan's site assistant - I can show you his projects, compare them, download his resume, draft an email to him, or answer questions about his work.",
         { chips: true }
       );
     },
@@ -1163,8 +1078,8 @@
     // Test hook: agent internals for scripted verification.
     window.__k7Chatbot = {
       agent: agent, tools: tools, planFor: detectIntent, KB: KB, ctx: ctx,
-      simulate: runTurn, reset: resetCtx, ui: ui, onAiToggle: onAiToggle,
-      ai: { tryEnable: aiTryEnable, systemPrompt: buildSystemPrompt, model: ai.MODEL, cdn: ai.CDN }
+      simulate: runTurn, reset: resetCtx, ui: ui,
+      ai: { systemPrompt: buildSystemPrompt, model: ai.MODEL, turn: aiTurn, state: ai }
     };
   });
 })();
