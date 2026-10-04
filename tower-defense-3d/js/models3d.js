@@ -87,9 +87,21 @@ var Lib = {
           else if (Array.isArray(mat) && mat[0] && mat[0].color) col.copy(mat[0].color);
         } catch (e){}
         var n = g.attributes.position.count;
-        var carr = new Float32Array(n * 3);
-        for (var i = 0; i < n; i++){ carr[i*3] = col.r; carr[i*3+1] = col.g; carr[i*3+2] = col.b; }
-        g.setAttribute('color', new THREE.BufferAttribute(carr, 3));
+        /* If the source geometry already carries baked vertex colors (e.g.
+           KayKit GLBs converted with texture colors baked into COLOR_0),
+           keep them; otherwise bake the material color. */
+        var existing = g.attributes.color;
+        if (existing && existing.itemSize === 3 && existing.count === n){
+          /* keep as-is */
+        } else if (existing && existing.itemSize === 4 && existing.count === n){
+          var rgb = new Float32Array(n * 3);
+          for (var q = 0; q < n; q++){ rgb[q*3] = existing.array[q*4]; rgb[q*3+1] = existing.array[q*4+1]; rgb[q*3+2] = existing.array[q*4+2]; }
+          g.setAttribute('color', new THREE.BufferAttribute(rgb, 3));
+        } else {
+          var carr = new Float32Array(n * 3);
+          for (var i = 0; i < n; i++){ carr[i*3] = col.r; carr[i*3+1] = col.g; carr[i*3+2] = col.b; }
+          g.setAttribute('color', new THREE.BufferAttribute(carr, 3));
+        }
         if (!g.attributes.normal) g.computeVertexNormals();
         if (!g.attributes.uv){
           g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));

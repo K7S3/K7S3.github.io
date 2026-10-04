@@ -170,6 +170,7 @@ NB.Renderer3D = function(canvas){
     _s1 = new THREE.Vector3();
 
     buildGround();
+    buildSky();
     buildSpire();
     buildUplinkFx();
     buildWalls();
@@ -488,24 +489,193 @@ NB.Renderer3D = function(canvas){
 
   /* paint the ground canvas: dusty concrete/metal, grid, blocked, gate cracks,
      faint cyan uplink tint. blockedRects in grid coords; gates in grid coords. */
-  function paintGround(blockedRects, gates){
+  /* ================= sky: gradient dome, stars, aurora =================
+     Replaces the old flat-black background. A big BackSide sphere with a
+     cheap gradient shader (top/horizon/bottom + sun disk glow), a Points
+     starfield for night sectors, and two animated aurora ribbons for the
+     sectors that want them. Per-sector look is applied by applyEnvironment(),
+     driven by the `env` block on each sector in js/sectors.js. */
+  var skyUniforms = null, starMat = null, auroraMats = [], skyDome = null;
+  var envSunColor = null, envId = '', currentEnv = null, envFogDensity = 0.0058;
+  var DEFAULT_ENV = {
+    skyTop: '#3a1f33', skyHorizon: '#c4552a', skyBottom: '#1c0f14',
+    fog: '#6e3524', fogDensity: 0.0058,
+    sunColor: '#ffb36b', sunIntensity: 1.7, sunElev: 24, sunAzim: 145,
+    hemiSky: '#c48a6a', hemiGround: '#3a2418', hemiIntensity: 1.2,
+    ground: ['#5e636e', '#6f6357', '#5a5f6a'], dust: '#c47a3a',
+    stars: 0.0, aurora: 0.0
+  };
+
+  function buildSky(){
+    skyUniforms = {
+      topColor: { value: new THREE.Color(DEFAULT_ENV.skyTop) },
+      horizonColor: { value: new THREE.Color(DEFAULT_ENV.skyHorizon) },
+      bottomColor: { value: new THREE.Color(DEFAULT_ENV.skyBottom) },
+      sunDir: { value: new THREE.Vector3(0, 1, 0) },
+      sunColor: { value: new THREE.Color(DEFAULT_ENV.sunColor) },
+      sunGlow: { value: 0.5 }
+    };
+    var skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: skyUniforms,
+      vertexShader: [
+        'varying vec3 vDir;',
+        'void main(){',
+        '  vDir = normalize(position);',
+        '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform vec3 topColor; uniform vec3 horizonColor; uniform vec3 bottomColor;',
+        'uniform vec3 sunColor; uniform vec3 sunDir; uniform float sunGlow;',
+        'varying vec3 vDir;',
+        'void main(){',
+        '  float h = clamp(vDir.y, -1.0, 1.0);',
+        '  vec3 col = h > 0.0',
+        '    ? mix(horizonColor, topColor, pow(h, 0.55))',
+        '    : mix(horizonColor, bottomColor, pow(-h, 0.6));',
+        '  float s = max(dot(normalize(vDir), normalize(sunDir)), 0.0);',
+        '  col += sunColor * (pow(s, 350.0) * 1.2 + pow(s, 8.0) * sunGlow * 0.35);',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n')
+    });
+    skyDome = new THREE.Mesh(new THREE.SphereGeometry(760, 32, 20), skyMat);
+    skyDome.frustumCulled = false;
+    skyDome.renderOrder = -10;
+    scene.add(skyDome);
+
+    /* starfield (visible in night sectors via env.stars) */
+    var nstars = 500, sp = new Float32Array(nstars * 3);
+    for (var i = 0; i < nstars; i++){
+      var th = Math.random() * 6.2832, ph = Math.random() * 1.35 + 0.08;
+      sp[i * 3] = 740 * Math.sin(ph) * Math.cos(th);
+      sp[i * 3 + 1] = 740 * Math.cos(ph);
+      sp[i * 3 + 2] = 740 * Math.sin(ph) * Math.sin(th);
+    }
+    var sgeo = new THREE.BufferGeometry();
+    sgeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+    starMat = new THREE.PointsMaterial({ color: 0xcfe0ff, size: 1.8,
+      sizeAttenuation: false, transparent: true, opacity: 0,
+      depthWrite: false, fog: false });
+    var stars = new THREE.Points(sgeo, starMat);
+    stars.frustumCulled = false;
+    stars.renderOrder = -9;
+    scene.add(stars);
+
+    /* aurora ribbons (animated; intensity per-sector via env.aurora) */
+    for (var k = 0; k < 2; k++){
+      var am = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uTime: { value: Math.random() * 10 },
+          uColor: { value: new THREE.Color(k ? '#3af2a0' : '#3aa8f2') },
+          uIntensity: { value: 0 }
+        },
+        vertexShader: [
+          'varying vec2 vUv;',
+          'void main(){ vUv = uv;',
+          '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }'
+        ].join('\n'),
+        fragmentShader: [
+          'uniform float uTime; uniform float uIntensity; uniform vec3 uColor;',
+          'varying vec2 vUv;',
+          'void main(){',
+          '  float band = sin(vUv.x * 18.0 + uTime * 0.6',
+          '    + sin(vUv.x * 5.0 + uTime * 0.3) * 1.5);',
+          '  band = smoothstep(0.1, 0.9, band * 0.5 + 0.5);',
+          '  float vert = sin(vUv.y * 3.14159);',
+          '  float a = band * vert * vert * uIntensity * 0.5;',
+          '  gl_FragColor = vec4(uColor, a);',
+          '}'
+        ].join('\n')
+      });
+      var ribbon = new THREE.Mesh(new THREE.PlaneGeometry(900, 160, 1, 1), am);
+      ribbon.position.set(k ? -150 : 200, 330, k ? -420 : -380);
+      ribbon.rotation.y = k ? 0.5 : -0.4;
+      ribbon.rotation.z = k ? 0.12 : -0.1;
+      ribbon.frustumCulled = false;
+      ribbon.renderOrder = -8;
+      scene.add(ribbon);
+      auroraMats.push(am);
+    }
+    envSunColor = new THREE.Color(DEFAULT_ENV.sunColor);
+    applyEnvironment(DEFAULT_ENV);
+  }
+
+  /* Apply a sector's environment look: sky gradient, fog, sun, hemi, stars,
+     aurora. Called when the sector changes (and once at boot). */
+  function applyEnvironment(env){
+    env = env || {};
+    function pick(k){ return env[k] == null ? DEFAULT_ENV[k] : env[k]; }
+    skyUniforms.topColor.value.set(pick('skyTop'));
+    skyUniforms.horizonColor.value.set(pick('skyHorizon'));
+    skyUniforms.bottomColor.value.set(pick('skyBottom'));
+    var fogC = pick('fog');
+    scene.fog.color.set(fogC);
+    scene.fog.density = num(pick('fogDensity'), 0.0058);
+    envFogDensity = scene.fog.density;
+    fogBase.set(fogC);
+    hemi.color.set(pick('hemiSky'));
+    hemi.groundColor.set(pick('hemiGround'));
+    baseHemi = num(pick('hemiIntensity'), 1.2);
+    var scol = pick('sunColor');
+    sun.color.set(scol);
+    envSunColor.set(scol);
+    baseSun = num(pick('sunIntensity'), 1.7);
+    var el = num(pick('sunElev'), 24) * Math.PI / 180;
+    var az = num(pick('sunAzim'), 145) * Math.PI / 180;
+    sun.position.set(
+      Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)
+    ).multiplyScalar(140);
+    skyUniforms.sunDir.value.copy(sun.position).normalize();
+    skyUniforms.sunColor.value.set(scol);
+    starMat.opacity = num(pick('stars'), 0) * 0.9;
+    var au = num(pick('aurora'), 0);
+    for (var i = 0; i < auroraMats.length; i++)
+      auroraMats[i].uniforms.uIntensity.value = au;
+    currentEnv = env;
+  }
+
+  function paintGround(blockedRects, gates, env){
     var ctx = groundCtx;
     var cw = groundCanvas.width, ch = groundCanvas.height;
     var sx = cw / W, sz = ch / H;
     ctx.clearRect(0, 0, cw, ch);
-    /* base: dusty concrete/metal, clearly readable (dramatic, not pitch black) */
+    /* base: per-sector ground palette (env.ground), clearly readable;
+       dusty concrete/metal, dramatic, never near-black */
+    var gc = (env && env.ground) || DEFAULT_ENV.ground;
     var grad = ctx.createLinearGradient(0, 0, cw, ch);
-    grad.addColorStop(0, '#5e636e');
-    grad.addColorStop(0.5, '#6f6357');
-    grad.addColorStop(1, '#5a5f6a');
+    grad.addColorStop(0, gc[0]);
+    grad.addColorStop(0.5, gc[1]);
+    grad.addColorStop(1, gc[2]);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cw, ch);
     var rng = mulberry(4242);
-    for (var i = 0; i < 2600; i++){
+    for (var i = 0; i < 4200; i++){
       var gx = rng() * cw, gy = rng() * ch, gr = 1 + rng() * 7;
       var warm = rng() < 0.4;
       ctx.fillStyle = warm ? 'rgba(120,95,65,0.12)' : 'rgba(30,26,36,0.14)';
       ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill();
+    }
+    /* fine grain */
+    for (var f = 0; f < 2600; f++){
+      var fx = rng() * cw, fy = rng() * ch;
+      ctx.fillStyle = rng() < 0.5 ? 'rgba(255,255,255,0.045)' : 'rgba(0,0,0,0.06)';
+      ctx.fillRect(fx, fy, 1.6, 1.6);
+    }
+    /* cracks: thin dark jagged polylines */
+    ctx.strokeStyle = 'rgba(20,14,10,0.35)'; ctx.lineWidth = 1.2;
+    for (var cr = 0; cr < 46; cr++){
+      var px0 = rng() * cw, py0 = rng() * ch;
+      ctx.beginPath(); ctx.moveTo(px0, py0);
+      var px1 = px0, py1 = py0;
+      for (var sg2 = 0; sg2 < 5; sg2++){
+        px1 += (rng() - 0.5) * 46; py1 += (rng() - 0.5) * 46;
+        ctx.lineTo(px1, py1);
+      }
+      ctx.stroke();
     }
     /* metal plate seams */
     ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 2;
@@ -572,6 +742,9 @@ NB.Renderer3D = function(canvas){
   /* rebuild rubble instances + ground texture when the sector changes */
   function refreshSector(sector){
     sector = sector || {};
+    /* per-sector environment look (sky, fog, sun, terrain tint) */
+    var sid = sector.id || '';
+    if (sid !== envId){ envId = sid; applyEnvironment(sector.env); }
     var cols = Math.max(8, Math.round(num(sector.cols, num((NB.CONFIG || {}).COLS, 64))));
     var rows = Math.max(8, Math.round(num(sector.rows, num((NB.CONFIG || {}).ROWS, 40))));
     var cell = num(sector.cell, num((NB.CONFIG || {}).CELL, 2));
@@ -582,7 +755,7 @@ NB.Renderer3D = function(canvas){
     if (sig !== sectorSig){
       sectorSig = sig;
       texUplinkR = uplinkR;
-      paintGround(sector.blocked, sector.gates);
+      paintGround(sector.blocked, sector.gates, sector.env);
       /* rubble on blocked cells */
       var br = sector.blocked || [];
       var rng = mulberry(31337);
@@ -2150,78 +2323,47 @@ NB.Renderer3D = function(canvas){
     ash.material.opacity = 0.35 + surgeI * 0.35;
   }
 
-  /* ================= debris: tumbling chunks ================= */
+  /* ================= debris: destruction physics (juice, not sim) =========
+     NB.Debris owns the physics: pooled tumbling chunks, gravity, ground
+     bounce with damping/friction, spin settle, radial explosion impulses.
+     This module only renders it (instanced boxes synced per frame).
+     See js/debris.js for the explicit scope statement. */
+  var debrisSys = null, debrisMesh = null;
   function buildDebris(){
+    debrisSys = NB.Debris.create({ cap: 300, gravity: 22 });
     var geo = new THREE.BoxGeometry(1, 1, 1);
     var mat = new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0.5 });
-    var cap = 360;
-    var mesh = new THREE.InstancedMesh(geo, mat, cap);
-    mesh.frustumCulled = false; mesh.count = 0;
-    scene.add(mesh);
-    debris = { mesh: mesh, cap: cap, n: 0,
-      px: new Float32Array(cap), py: new Float32Array(cap), pz: new Float32Array(cap),
-      vx: new Float32Array(cap), vy: new Float32Array(cap), vz: new Float32Array(cap),
-      rx: new Float32Array(cap), ry: new Float32Array(cap),
-      sx: new Float32Array(cap), sy: new Float32Array(cap),
-      life: new Float32Array(cap), maxLife: new Float32Array(cap),
-      size: new Float32Array(cap) };
+    debrisMesh = new THREE.InstancedMesh(geo, mat, debrisSys.cap());
+    debrisMesh.frustumCulled = false; debrisMesh.count = 0;
+    scene.add(debrisMesh);
   }
 
   function spawnDebris(x, y, z, o){
     o = o || {};
-    var D = debris;
-    var count = num(o.count, 4);
     var c = hexRgb(o.color == null ? '#5a4a3c' : o.color);
-    var speed = num(o.speed, 7);
-    for (var k = 0; k < count; k++){
-      if (D.n >= D.cap) return;
-      var i = D.n++;
-      var a = Math.random() * 6.2832;
-      D.px[i] = x; D.py[i] = y + Math.random(); D.pz[i] = z;
-      D.vx[i] = Math.cos(a) * speed * (0.4 + Math.random() * 0.8);
-      D.vy[i] = 4 + Math.random() * 6;
-      D.vz[i] = Math.sin(a) * speed * (0.4 + Math.random() * 0.8);
-      D.rx[i] = Math.random() * 6.28; D.ry[i] = Math.random() * 6.28;
-      D.sx[i] = (Math.random() - 0.5) * 9; D.sy[i] = (Math.random() - 0.5) * 9;
-      D.life[i] = D.maxLife[i] = num(o.life, 1.3) * (0.7 + Math.random() * 0.6);
-      D.size[i] = num(o.size, 0.7) * (0.6 + Math.random() * 0.8);
-      D.mesh.setColorAt(i, c);
-    }
-    if (D.mesh.instanceColor) D.mesh.instanceColor.needsUpdate = true;
+    debrisSys.burst(x, y, z, { count: num(o.count, 4), speed: num(o.speed, 7),
+      up: num(o.up, 5), life: num(o.life, 1.3), size: num(o.size, 0.7),
+      color: [c.r, c.g, c.b] });
   }
 
   function updateDebris(dt){
-    var D = debris, i;
-    for (i = 0; i < D.n; i++){
-      D.life[i] -= dt;
-      if (D.life[i] <= 0){
-        var l = --D.n;
-        if (i !== l){
-          D.px[i] = D.px[l]; D.py[i] = D.py[l]; D.pz[i] = D.pz[l];
-          D.vx[i] = D.vx[l]; D.vy[i] = D.vy[l]; D.vz[i] = D.vz[l];
-          D.rx[i] = D.rx[l]; D.ry[i] = D.ry[l];
-          D.sx[i] = D.sx[l]; D.sy[i] = D.sy[l];
-          D.life[i] = D.life[l]; D.maxLife[i] = D.maxLife[l]; D.size[i] = D.size[l];
-          D.mesh.setColorAt(i, _c1.setHex(0xffffff));
-        }
-        i--;
-        continue;
-      }
-      D.vy[i] -= 22 * dt;
-      D.px[i] += D.vx[i] * dt; D.py[i] += D.vy[i] * dt; D.pz[i] += D.vz[i] * dt;
-      var gy = groundY(D.px[i], D.pz[i]) + D.size[i] * 0.4;
-      if (D.py[i] < gy){ D.py[i] = gy; D.vy[i] *= -0.25; D.vx[i] *= 0.7; D.vz[i] *= 0.7; }
-      D.rx[i] += D.sx[i] * dt; D.ry[i] += D.sy[i] * dt;
-      var fade = clamp(D.life[i] / (D.maxLife[i] * 0.3), 0, 1);
-      _v1.set(D.px[i], D.py[i], D.pz[i]);
-      _e1.set(D.rx[i], D.ry[i], 0); _q1.setFromEuler(_e1);
-      var s = D.size[i] * (0.4 + 0.6 * fade);
+    debrisSys.update(dt, groundY);
+    var n = debrisSys.active();
+    for (var i = 0; i < n; i++){
+      var b = debrisSys.body(i);
+      var fade = clamp(b.life / (b.maxLife * 0.3), 0, 1);
+      _v1.set(b.x, b.y, b.z);
+      _e1.set(b.rx, b.ry, 0); _q1.setFromEuler(_e1);
+      var s = b.size * (0.4 + 0.6 * fade);
       _s1.set(s, s * 0.7, s);
       _m1.compose(_v1, _q1, _s1);
-      D.mesh.setMatrixAt(i, _m1);
+      debrisMesh.setMatrixAt(i, _m1);
+      _c1.setRGB(b.r, b.g, b.b);
+      debrisMesh.setColorAt(i, _c1);
     }
-    D.mesh.count = D.n;
-    D.mesh.instanceMatrix.needsUpdate = true;
+    debrisMesh.count = n;
+    debrisMesh.instanceMatrix.needsUpdate = true;
+    if (debrisMesh.instanceColor) debrisMesh.instanceColor.needsUpdate = true;
   }
 
   /* ================= shockwave rings ================= */
@@ -2778,6 +2920,8 @@ NB.Renderer3D = function(canvas){
         spawnCrater(x, z, big ? 7 : 4.5);
         spawnDebris(x, gy + 1, z, { count: n <= 8 ? 4 : 6, color: e.color || '#5a4a3c',
           speed: big ? 10 : 7, life: big ? 1.6 : 1.2, size: big ? 1.1 : 0.7 });
+        /* radial impulse: the blast shoves nearby debris outward (juice) */
+        if (debrisSys) debrisSys.kick(x, z, big ? 14 : 8, big ? 16 : 9);
         if (big) r.camera.addTrauma(0.3);
         break;
       }
@@ -2788,6 +2932,8 @@ NB.Renderer3D = function(canvas){
       case 'wallHit':
         spawnBurst(x, gy + 1.2, z, { count: 3 + num(e.n, 3), color: e.color || '#ffb347',
           speed: 6, life: 0.45, size: 2.2, up: 4 });
+        spawnDebris(x, gy + 1.2, z, { count: 2, color: '#6a625a', speed: 4,
+          life: 0.9, size: 0.45 });
         break;
       case 'structureDown':
         spawnBurst(x, gy + 1.5, z, { count: 30, color: e.color || '#ff7744',
@@ -2795,6 +2941,7 @@ NB.Renderer3D = function(canvas){
         spawnPuff(x, gy + 2, z, { count: 10, life: 2, size: 6.5 });
         spawnRing(x, z, { color: '#ff9f43', maxR: 12, life: 0.8 });
         spawnDebris(x, gy + 1.5, z, { count: 5, color: '#5a4a3c', speed: 9, life: 1.5, size: 1.0 });
+        if (debrisSys) debrisSys.kick(x, z, 12, 13);
         spawnCrater(x, z, 6);
         r.camera.addTrauma(0.35);
         break;
@@ -2812,17 +2959,21 @@ NB.Renderer3D = function(canvas){
     var active = surgeManual.active || !!s.active;
     var warn = num(s.warningIn, 0);
     var I = active ? (surgeManual.active ? surgeManual.i : 0.85) : 0;
-    var dens = 0.011 + I * 0.024;
+    var dens = envFogDensity + I * 0.024;
     scene.fog.density += (dens - scene.fog.density) * Math.min(1, dt * 3);
     if (!active && warn > 0)
       _c1.copy(fogBase).lerp(fogSurge, 0.3 + 0.22 * Math.sin(time * 7));
     else
       _c1.copy(fogBase).lerp(fogSurge, I * (0.55 + 0.45 * Math.sin(time * 2.5)));
     scene.fog.color.copy(_c1);
-    /* cheap subtle day/dusk shift across waves */
+    /* cheap subtle day/dusk shift across waves, relative to the sector's sun */
     var wv = num(snap && snap.waveIndex, 0);
     var warm = 0.5 + 0.5 * Math.sin((wv % 4) / 4 * 6.2832);
-    sun.color.setHex(0xffd9a0).lerp(_c2.setHex(0x9ab8ff), (1 - warm) * 0.35);
+    if (envSunColor) sun.color.copy(envSunColor).lerp(_c2.setHex(0x9ab8ff), (1 - warm) * 0.35);
+    else sun.color.setHex(0xffd9a0).lerp(_c2.setHex(0x9ab8ff), (1 - warm) * 0.35);
+    /* aurora shimmer */
+    for (var ai = 0; ai < auroraMats.length; ai++)
+      auroraMats[ai].uniforms.uTime.value = time;
     /* base lights scaled by the brightness slider every frame (init values
        alone would be clobbered here); surge dims from there. */
     var bv = 0.55 + 0.45 * brightnessV;

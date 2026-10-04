@@ -42,7 +42,10 @@ if (!envOk) fail++;
 const noClobber = /sun\.intensity\s*=\s*baseSun/.test(src) && /hemi\.intensity\s*=\s*baseHemi/.test(src);
 console.log((noClobber ? 'PASS' : 'FAIL') + ' updateEnvironment scales from baseSun/baseHemi');
 if (!noClobber) fail++;
-// ground texture luminance floor: parse the three gradient stops in paintGround
+// ground texture luminance floor: ground palettes are now per-sector
+// (env.ground in sectors.js + DEFAULT_ENV.ground in render3d.js); the base
+// gradient in paintGround is tinted from them. Parse every palette and
+// require each one's mean luminance above the floor.
 function lum(hex){
   const r = parseInt(hex.slice(1, 3), 16) / 255,
         g = parseInt(hex.slice(3, 5), 16) / 255,
@@ -50,14 +53,20 @@ function lum(hex){
   const f = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
 }
-const stops = [...src.matchAll(/grad\.addColorStop\([\d.]+,\s*'(#[0-9a-fA-F]{6})'\)/g)].map(m => m[1]);
-if (stops.length < 3) { console.log('FAIL ground gradient stops found: ' + stops.length); fail++; }
-else {
-  const mean = stops.reduce((a, h) => a + lum(h), 0) / stops.length;
-  const ok = mean > 0.10;
-  console.log((ok ? 'PASS' : 'FAIL') + ' ground base mean luminance = ' + mean.toFixed(3) + ' (floor 0.10)');
-  if (!ok) fail++;
+const secSrc = fs.readFileSync(path.join(__dirname, '..', 'sectors.js'), 'utf8');
+const palettes = [];
+for (const s of [src, secSrc]){
+  for (const m of s.matchAll(/ground:\s*\[((?:'#[0-9a-fA-F]{6}'\s*,?\s*){3})\]/g)){
+    palettes.push(m[1].match(/#[0-9a-fA-F]{6}/g));
+  }
 }
+if (palettes.length < 5) { console.log('FAIL ground palettes found: ' + palettes.length + ' (want >= 5)'); fail++; }
+palettes.forEach((p, i) => {
+  const mean = p.reduce((a, h) => a + lum(h), 0) / p.length;
+  const ok = mean > 0.10;
+  console.log((ok ? 'PASS' : 'FAIL') + ' ground palette ' + i + ' mean luminance = ' + mean.toFixed(3) + ' (floor 0.10)');
+  if (!ok) fail++;
+});
 // brightness slider present in settings UI
 const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
 const sliderOk = html.includes('rng-bright');

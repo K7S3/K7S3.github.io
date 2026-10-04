@@ -57,6 +57,13 @@ NB.SECTORS = [
   name:'Meridian Arcology',
   tagline:'The outer arcology. Hold the perimeter while the spire wakes.',
   difficulty:1,
+  env:{
+    skyTop:'#3a1f33', skyHorizon:'#c4552a', skyBottom:'#1c0f14',
+    fog:'#6e3524', fogDensity:0.0058,
+    sunColor:'#ffb36b', sunIntensity:1.7, sunElev:24, sunAzim:145,
+    hemiSky:'#c48a6a', hemiGround:'#3a2418', hemiIntensity:1.2,
+    ground:['#6b5a4e','#7a5f4a','#5e4f45'], dust:'#c47a3a', stars:0.0, aurora:0.0
+  },
   cols:64, rows:40,
   blocked:[
     {x:4,z:14,w:5,h:5},{x:16,z:4,w:6,h:3},{x:18,z:18,w:5,h:6},
@@ -139,6 +146,13 @@ NB.SECTORS = [
   name:'Kestrel Arcology',
   tagline:'Canyon approaches. The rust is learning the ground.',
   difficulty:2,
+  env:{
+    skyTop:'#02040c', skyHorizon:'#14406b', skyBottom:'#05070f',
+    fog:'#0a1826', fogDensity:0.0062,
+    sunColor:'#9ab8ff', sunIntensity:0.7, sunElev:55, sunAzim:230,
+    hemiSky:'#3a5a8a', hemiGround:'#0c1420', hemiIntensity:0.85,
+    ground:['#5a6478','#626c82','#4f586c'], dust:'#4a6a9a', stars:1.0, aurora:0.85
+  },
   cols:64, rows:40,
   blocked:[
     {x:8,z:12,w:22,h:3},{x:34,z:12,w:22,h:3},
@@ -227,6 +241,13 @@ NB.SECTORS = [
   name:'Aegis Arcology',
   tagline:'The scrap basin. Everything the rust discarded, weaponized.',
   difficulty:3,
+  env:{
+    skyTop:'#3f7fc2', skyHorizon:'#e8b96a', skyBottom:'#8a6a3a',
+    fog:'#c89858', fogDensity:0.0048,
+    sunColor:'#fff2d8', sunIntensity:2.0, sunElev:68, sunAzim:100,
+    hemiSky:'#9ac2e8', hemiGround:'#6a5232', hemiIntensity:1.35,
+    ground:['#8a7355','#96795a','#7d6850'], dust:'#d8a85e', stars:0.0, aurora:0.0
+  },
   cols:64, rows:40,
   blocked:[
     {x:25,z:11,w:14,h:12},
@@ -325,6 +346,13 @@ NB.SECTORS = [
   name:'Nocturne Arcology',
   tagline:'Ridge maze. Long night, short sightlines.',
   difficulty:4,
+  env:{
+    skyTop:'#150d2e', skyHorizon:'#7a3fa0', skyBottom:'#0d0817',
+    fog:'#241a38', fogDensity:0.0068,
+    sunColor:'#c48aff', sunIntensity:0.9, sunElev:18, sunAzim:300,
+    hemiSky:'#5a3f8a', hemiGround:'#1a1226', hemiIntensity:1.0,
+    ground:['#655a76','#6e6380','#5a5068'], dust:'#8a5fc2', stars:0.55, aurora:0.0
+  },
   cols:64, rows:40,
   blocked:[
     {x:14,z:0,w:3,h:26},
@@ -432,6 +460,13 @@ NB.SECTORS = [
   name:'Helios Arcology',
   tagline:'The killing field before the Command Spire. Dawn or nothing.',
   difficulty:5,
+  env:{
+    skyTop:'#2e6b9e', skyHorizon:'#f2c078', skyBottom:'#4a3040',
+    fog:'#8a6a4a', fogDensity:0.0052,
+    sunColor:'#ffe8b0', sunIntensity:1.9, sunElev:32, sunAzim:75,
+    hemiSky:'#8ab8d8', hemiGround:'#4a3a28', hemiIntensity:1.3,
+    ground:['#6e6258','#7a6a58','#655a50'], dust:'#e8b878', stars:0.0, aurora:0.0
+  },
   cols:64, rows:40,
   blocked:[
     {x:10,z:12,w:4,h:4},{x:22,z:2,w:5,h:3},{x:36,z:13,w:4,h:4},

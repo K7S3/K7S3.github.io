@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const CACHE_VERSION = 'novabastion-3d-beta3';
+const CACHE_VERSION = 'novabastion-3d-beta4';
 
 /* Walk the app shell: game code, styles, vendored libs + fonts, icons, manifest.
  * Excluded: dev scripts (build tooling, not game assets), test files, and the
