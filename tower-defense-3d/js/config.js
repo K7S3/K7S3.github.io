@@ -64,7 +64,62 @@ NB.CONFIG = {
   MELEE_RANGE_CELLS: 1.6,
   SEEK_RANGE_CELLS: 14,
   SAPPER_SEEK_RANGE_CELLS: 20,
-  BREACH_RANGE_CELLS: 3
+  BREACH_RANGE_CELLS: 3,
+
+  /* ---- population & economy (colony layer) ---- */
+  POP_BASE_CAP: 12,          /* housing without Hab Modules */
+  POP_START: 10,
+  POP_GROWTH_TIME: 40,       /* seconds per +1 pop when fed, housed, content */
+  POP_FOOD_PER_SEC: 0.05,    /* food consumed per colonist per second */
+  FOOD_START: 30,
+  METAL_START: 20,
+  FOOD_SURPLUS_MORALE: 60,   /* above this stockpile, surplus morale ticks */
+  STARVE_MORALE_PER_SEC: 0.6,
+
+  EXTRACTOR_COST: 100,
+  EXTRACTOR_HP: 350,
+  EXTRACTOR_METAL_PER_SEC: 1.2,  /* per assigned laborer */
+  EXTRACTOR_SLOTS: 3,
+  EXTRACTOR_NODE_RANGE: 3,       /* cells: must build within this of a scrap node */
+
+  HYDRO_COST: 80,
+  HYDRO_HP: 300,
+  HYDRO_FOOD_PER_SEC: 1.5,   /* per assigned laborer */
+  HYDRO_SLOTS: 2,
+
+  HAB_COST: 60,
+  HAB_HP: 250,
+  HAB_POP: 8,                /* +pop cap per Hab Module */
+
+  ENGINEER_REPAIR_PER_SEC: 6,    /* per engineer, to most-damaged structure in uplink */
+  ENGINEER_COST_DISCOUNT: 0.02,  /* per engineer, max ENGINEER_MAX_DISCOUNT */
+  ENGINEER_MAX_DISCOUNT: 0.20,
+  ENGINEER_GOV_CAP: 3,
+  SCIENTIST_RESEARCH_PER_SEC: 1,
+  SCIENTIST_GOV_CAP: 3,
+  AGE_RESEARCH: [60, 180],       /* research thresholds for Fortification, Dominion */
+  GOVERNOR_TICK: 2,
+
+  RANGER_COST_GOLD: 150,
+  RANGER_COST_FOOD: 20,
+  RANGER_HP: 120,
+  RANGER_DMG: 25,
+  RANGER_RANGE: 7,           /* cells */
+  RANGER_SPEED: 9,           /* world units per second */
+  RANGER_FIRE_INTERVAL: 0.9,
+  RANGER_CAP: 6,
+
+  TROOP_CAP: 6,                 /* max fielded + training troops (all types) */
+
+  WORKER_CAP: 40,            /* visible worker agents */
+  WORKER_SPEED: 4.5,
+
+  /* metal cost table: gold stays the main currency; metal gates the top end */
+  METAL_TOWER_FORT: 10,      /* sniper/arc/amplify build */
+  METAL_TOWER_DOMINION: 15,  /* chrono build */
+  METAL_TIER3: 15,           /* tier-3 upgrade */
+  METAL_BRANCH: 25,          /* branch specialization */
+  METAL_SPIRE: [20, 40, 80]  /* spire upgrade tiers */
 };
 
 /*

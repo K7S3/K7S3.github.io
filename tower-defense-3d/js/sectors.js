@@ -81,6 +81,7 @@ NB.SECTORS = [
     {x:40,z:14,r:2.5,h:2.5},{x:52,z:24,r:3,h:2}
   ],
   barrels:[{x:3,z:10},{x:5,z:6},{x:60,z:26},{x:58,z:30}],
+  scrap:[{x:24,z:14},{x:40,z:26},{x:32,z:28}],
   overclockCharges:3,
   waves:[
     wave('First contact', 1.0, 1.0, [

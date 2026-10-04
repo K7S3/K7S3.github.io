@@ -120,6 +120,28 @@ h1,h2,.kicker,.btn{font-family:var(--label);letter-spacing:0.06em}
 .hud-stat.muted{color:var(--muted);font-size:12px}
 .ico{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-style:normal}
 .gold-dot{width:11px;height:11px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.metal-dot{width:11px;height:11px;border-radius:50%;background:#c47a3a;box-shadow:0 0 8px #c47a3a}
+.food-ico{color:#4ade80;font-size:15px}
+.pop-ico{color:var(--cyan);font-size:14px}
+.hud-stat .rate{font-size:11px;color:var(--muted);margin-left:2px}
+#hud-pop-wrap{cursor:pointer;border:1px solid transparent;border-radius:6px;padding:2px 6px}
+/* colony population panel */
+.pop-count{color:var(--cyan);font-size:0.8em}
+.econ-line{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.class-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.class-row{display:flex;align-items:center;gap:8px}
+.class-row .dot{flex:0 0 auto}
+.class-info{flex:1;display:flex;flex-direction:column}
+.class-info b{font-size:14px}
+.class-desc{font-size:11px;color:var(--muted)}
+.class-n{font-size:16px;font-weight:700;min-width:28px;text-align:center}
+.step-btn{width:40px;height:40px;font-size:20px;padding:0;flex:0 0 auto}
+.idle-dot{width:11px;height:11px;border-radius:50%;background:var(--muted)}
+.train-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.train-row{display:flex;align-items:center;gap:8px}
+.train-prog{font-size:12px;color:var(--cyan-soft)}
+.troop-status{font-size:12px;color:var(--muted)}
+.panel-head.sub h3{font-size:13px;margin:8px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em}
 .energy-ico{color:var(--amber);font-size:15px}
 .heart{color:var(--cyan);font-size:13px}
 .morale-ico{color:var(--amber);font-size:14px}

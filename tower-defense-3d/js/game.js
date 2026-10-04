@@ -474,6 +474,7 @@ var Game = {
   togglePlaceMode: function(kind, towerId){
     if (this.mode !== 'game') return;
     if (kind === 'spire'){ this.ui.openSpire(); return; }
+    if (kind === 'colony'){ this.ui.openPop(); return; }
     var cur = this.placeMode;
     if (cur && cur.kind === kind && cur.towerId === towerId){
       this.placeMode = null;
@@ -504,7 +505,12 @@ var Game = {
       max:'Already at max.', full:'Already at full integrity.', wall:'Wall not found.',
       tower:'Unknown tower.', branch:'Pick a branch at max tier first.',
       tier:'Needs tier 3 to specialize.', choice:'Invalid choice.', none:'Nothing pending.',
-      cooldown:'Overclock cooling down.', age:'Requires a later age.', kind:'Unknown order.'
+      cooldown:'Overclock cooling down.', age:'Requires a later age.', kind:'Unknown order.',
+      metal:'Not enough metal: build extractors near scrap nodes.',
+      node:'Extractor must be within 3 cells of a scrap node.',
+      soldier:'No soldiers in the pool: assign colonists as soldiers first.',
+      cap:'Unit cap reached.', class:'Unknown class.', troop:'Unknown troop.',
+      order:'Unknown order kind.', owner:'That unit is not yours.'
     };
     return map[reason] || 'Order refused.';
   },
@@ -565,6 +571,110 @@ var Game = {
       this.snd('error');
       this.ui.toast('Cannot build reactor', this.reasonText(res && res.reason));
     }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  /* ---------------- colony: economy buildings ---------------- */
+
+  buildEconAt: function(kind, cx, cz){
+    var res;
+    var intentKind = kind === 'extractor' ? 'buildExtractor' :
+                     kind === 'hydro' ? 'buildHydro' : 'buildHab';
+    var label = kind === 'extractor' ? 'extractor' :
+                kind === 'hydro' ? 'hydroponics' : 'hab module';
+    if (this.netMode === 'guest'){
+      this.sendIntent({ kind: intentKind, cx: cx, cz: cz });
+      return;
+    }
+    try { res = this.sim.applyIntent({ kind: intentKind, cx: cx, cz: cz, playerId: this.playerId }); }
+    catch (e){ this.snd('error'); return; }
+    if (res && res.ok){
+      this.snd('build');
+      this.selection = null;
+      this.ui.closePanels();
+    } else {
+      this.snd('error');
+      this.ui.toast('Cannot build ' + label, this.reasonText(res && res.reason));
+    }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  /* ---------------- colony: population & troops ---------------- */
+
+  assignClass: function(cls, n){
+    var res = this.sendIntent({ kind: 'assignClass', cls: cls, n: n });
+    if (res && !res.ok && !res.remote){ this.snd('error'); }
+    else this.snd('click');
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  toggleGovernor: function(){
+    var cur = this.lastSnap && this.lastSnap.pop && this.lastSnap.pop.governor;
+    var res = this.sendIntent({ kind: 'governor', on: !cur });
+    if (res && res.ok !== false) this.snd('click');
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  trainTroop: function(type){
+    var res = this.sendIntent({ kind: 'trainTroop', type: type });
+    if (res && res.ok){ this.snd('upgrade'); this.ui.toast('Training ' + type, 'a volunteer reports for duty'); }
+    else if (res && !res.remote){ this.snd('error'); this.ui.toast('Cannot train', this.reasonText(res && res.reason)); }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  /* order kind applied to the next battlefield tap with a troop selected */
+  troopOrderKind: 'attackmove',
+  setTroopOrderKind: function(kind){
+    if (['move', 'attackmove', 'hold'].indexOf(kind) < 0) return;
+    this.troopOrderKind = kind;
+    this.snd('click');
+    this.ui.refreshTroopPanel();
+  },
+
+  pickTroopAt: function(clientX, clientY){
+    if (!this.renderer || typeof this.renderer.pickTroop !== 'function') return null;
+    try { return this.renderer.pickTroop(clientX, clientY); }
+    catch (e){ return null; }
+  },
+
+  orderSelectedTroop: function(clientX, clientY){
+    var sel = this.selection;
+    if (!sel || sel.kind !== 'troop') return false;
+    /* tapping another troop switches selection */
+    var other = this.pickTroopAt(clientX, clientY);
+    if (other && other.id !== sel.id){
+      this.selection = { kind: 'troop', id: other.id, ref: other.ref };
+      this.view.selected = this.selection;
+      this.ui.openTroop(other.ref);
+      this.snd('click');
+      return true;
+    }
+    if (other) return true; /* re-tapped the same troop: keep selection */
+    /* order the selected troop to the tapped point */
+    var kind = this.troopOrderKind || 'attackmove';
+    if (kind === 'hold'){
+      var tp = this.ui.findTroop(sel.id);
+      if (tp){ this.sendTroopOrder(sel.id, 'hold', tp.x, tp.z); return true; }
+    }
+    var p = this.groundPoint(clientX, clientY);
+    if (!p) return false;
+    this.sendTroopOrder(sel.id, kind, p.x, p.z);
+    /* move marker feedback */
+    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
+      try { this.renderer.moveMarker(p.x, p.z, kind); } catch (e){}
+    }
+    return true;
+  },
+
+  sendTroopOrder: function(id, kind, x, z){
+    var res = this.sendIntent({ kind: 'troopOrder', id: id, order: kind, x: x, z: z });
+    if (res && res.ok){ this.snd('click'); }
+    else if (res && !res.remote){ this.snd('error'); }
     this.lastSnap = this.safeSnapshot();
     this.ui.updateHUD(this.lastSnap);
   },
@@ -829,6 +939,9 @@ var Game = {
     var lists = [
       { kind:'tower', arr: snap.towers || [], idf: function(r){ return r.instId; } },
       { kind:'reactor', arr: snap.reactors || [], idf: function(r){ return r.instId; } },
+      { kind:'extractor', arr: snap.extractors || [], idf: function(r){ return r.instId; } },
+      { kind:'hydro', arr: snap.hydros || [], idf: function(r){ return r.instId; } },
+      { kind:'hab', arr: snap.habs || [], idf: function(r){ return r.instId; } },
       { kind:'wall', arr: snap.walls || [], idf: function(r){ return r.id; } }
     ];
     for (var l = 0; l < lists.length; l++){
@@ -842,6 +955,15 @@ var Game = {
   },
 
   selectAt: function(clientX, clientY){
+    /* troops first: small, mobile, and the player's RTS pieces */
+    var tp = this.pickTroopAt(clientX, clientY);
+    if (tp){
+      this.selection = { kind: 'troop', id: tp.id, ref: tp.ref };
+      this.view.selected = this.selection;
+      this.snd('click');
+      this.ui.openTroop(tp.ref);
+      return true;
+    }
     var hit = this.pickAt(clientX, clientY);
     if (hit){
       this.selection = hit;
@@ -873,6 +995,10 @@ var Game = {
         valid = !!(r && r.ok);
       } else if (mode.kind === 'reactor'){
         valid = this._reactorCellOk(cell.cx, cell.cz);
+      } else if (mode.kind === 'extractor' || mode.kind === 'hydro' || mode.kind === 'hab'){
+        var er = this.sim.canPlaceEcon ? this.sim.canPlaceEcon(mode.kind, cell.cx, cell.cz)
+                                       : { ok: false };
+        valid = !!(er && er.ok);
       }
     } catch (e){ valid = false; }
     this.view.ghost = { cells: [{ cx: cell.cx, cz: cell.cz }], valid: valid };
@@ -1096,12 +1222,18 @@ var Game = {
       }
       return;
     }
-    if (mode && (mode.kind === 'tower' || mode.kind === 'reactor')){
+    if (mode && (mode.kind === 'tower' || mode.kind === 'reactor' ||
+                 mode.kind === 'extractor' || mode.kind === 'hydro' || mode.kind === 'hab')){
       var cell = this.groundCell(clientX, clientY);
       if (!cell) return;
       if (mode.kind === 'tower') this.buildAt(cell.cx, cell.cz, mode.towerId);
-      else this.buildReactorAt(cell.cx, cell.cz);
+      else if (mode.kind === 'reactor') this.buildReactorAt(cell.cx, cell.cz);
+      else this.buildEconAt(mode.kind, cell.cx, cell.cz);
       return;
+    }
+    /* troop selected: tap ground to order it (tap enemy = attack-move there) */
+    if (this.selection && this.selection.kind === 'troop'){
+      if (this.orderSelectedTroop(clientX, clientY)) return;
     }
     /* no placement mode: interactive world objects first */
     if (this.tapWorld(clientX, clientY)) return;

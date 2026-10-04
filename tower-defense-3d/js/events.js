@@ -33,9 +33,9 @@ NB.EVENTS = [
     text:'A ragged column of survivors from a fallen arcology stumbles out of the dust, begging for shelter behind your walls. Feeding them strains the stores, but the noise of a crowd draws the rust.',
     choices:[
       {id:'refugees-open', label:'Open the gates', colonistFriendly:true,
-       hint:'+8 morale, -100 gold, next wave +10% HP',
-       effects:{morale:8, gold:-100, nextWaveMult:1.1},
-       outcome:'The gates swing open. The halls fill with grateful voices, but the rust heard the commotion too. (+8 morale, -100 gold, next wave +10% HP)'},
+       hint:'+8 morale, -100 gold, +4 colonists, next wave +10% HP',
+       effects:{morale:8, gold:-100, pop:4, nextWaveMult:1.1},
+       outcome:'The gates swing open. The halls fill with grateful voices, but the rust heard the commotion too. (+8 morale, -100 gold, +4 colonists, next wave +10% HP)'},
       {id:'refugees-turn', label:'Turn them away',
        hint:'-8 morale, +50 gold, next wave -5% HP',
        effects:{morale:-8, gold:50, nextWaveMult:0.95},

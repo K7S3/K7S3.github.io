@@ -250,6 +250,30 @@ var UI = {
     if (!g || !snap) return;
     $('hud-gold-v').textContent = Math.floor(snap.gold);
     $('hud-energy-v').textContent = (snap.energyUsed | 0) + '/' + (snap.energyCap | 0);
+    /* colony resources */
+    var mv = $('hud-metal-v');
+    if (mv){
+      mv.textContent = Math.floor(snap.metal || 0);
+      var mr = $('hud-metal-r');
+      if (mr) mr.textContent = '+' + (snap.metalRate || 0).toFixed(1) + '/s';
+    }
+    var fv = $('hud-food-v');
+    if (fv){
+      fv.textContent = Math.floor(snap.food || 0);
+      var fr = $('hud-food-r');
+      if (fr){
+        var frr = snap.foodRate || 0;
+        fr.textContent = (frr >= 0 ? '+' : '') + frr.toFixed(1) + '/s';
+        fr.style.color = snap.starving ? '#ff5a36' : (frr < 0 ? '#ff9f43' : '');
+      }
+    }
+    var pv = $('hud-pop-v');
+    if (pv){
+      var pop = snap.pop || {};
+      pv.textContent = (pop.total || 0) + '/' + (pop.cap || 0);
+      var pw = $('hud-pop-wrap');
+      if (pw) pw.style.borderColor = snap.starving ? '#ff5a36' : '';
+    }
     var hqFrac = snap.hqMaxHp > 0 ? snap.hqHp / snap.hqMaxHp : 0;
     $('hud-hq-v').textContent = snap.hqHp + '/' + snap.hqMaxHp;
     $('hud-hq-fill').style.width = Math.max(0, Math.min(100, hqFrac * 100)) + '%';
@@ -329,6 +353,17 @@ var UI = {
         } else if (kind === 'reactor'){
           active = !!(mode && mode.kind === 'reactor');
           cant = snap.gold < ((NB.CONFIG && NB.CONFIG.REACTOR_COST) || 150);
+        } else if (kind === 'extractor'){
+          active = !!(mode && mode.kind === 'extractor');
+          cant = snap.gold < ((NB.CONFIG && NB.CONFIG.EXTRACTOR_COST) || 100);
+        } else if (kind === 'hydro'){
+          active = !!(mode && mode.kind === 'hydro');
+          cant = snap.gold < ((NB.CONFIG && NB.CONFIG.HYDRO_COST) || 80);
+        } else if (kind === 'hab'){
+          active = !!(mode && mode.kind === 'hab');
+          cant = snap.gold < ((NB.CONFIG && NB.CONFIG.HAB_COST) || 60);
+        } else if (kind === 'colony'){
+          active = !$('panel-pop').classList.contains('hidden');
         } else if (kind === 'sell'){
           active = !!(mode && mode.kind === 'sell');
         } else if (kind === 'spire'){
@@ -345,6 +380,9 @@ var UI = {
       var label = mode.kind === 'tower' ? (((NB.TOWERS || {})[mode.towerId] || {}).name || mode.towerId)
         : mode.kind === 'wall' ? 'Wall (drag to draw)'
         : mode.kind === 'reactor' ? 'Reactor'
+        : mode.kind === 'extractor' ? 'Extractor (near a scrap node)'
+        : mode.kind === 'hydro' ? 'Hydroponics Bay'
+        : mode.kind === 'hab' ? 'Hab Module'
         : mode.kind === 'sell' ? 'Sell mode: click a structure' : mode.kind;
       hint.innerHTML = '';
       hint.appendChild(el('span', null, 'Placing ' + label + ' - click the battlefield. '));
@@ -359,9 +397,11 @@ var UI = {
       if (g.selection.kind === 'tower' && !$('panel-tower').classList.contains('hidden')) this.refreshTowerPanel();
       if (g.selection.kind === 'wall' && !$('panel-wall').classList.contains('hidden')) this.refreshWallPanel();
       if (g.selection.kind === 'reactor' && !$('panel-reactor').classList.contains('hidden')) this.refreshReactorPanel();
+      if (g.selection.kind === 'troop' && !$('panel-troop').classList.contains('hidden')) this.refreshTroopPanel();
     }
     if (!$('panel-spire').classList.contains('hidden')) this.refreshSpirePanel();
     if (!$('panel-wave').classList.contains('hidden')) this.openWave();
+    if (!$('panel-pop').classList.contains('hidden')) this.refreshPopPanel();
   },
 
   setMuteIcon: function(muted){
@@ -403,6 +443,14 @@ var UI = {
     var CFG = NB.CONFIG || {};
     btn('wall', null, '#9a8a66', 'Wall', CFG.WALL_COST || 8, 'Drag on the battlefield to draw walls.');
     btn('reactor', null, '#facc15', 'Reactor', CFG.REACTOR_COST || 150, 'Adds energy capacity.');
+    btn('extractor', null, '#c47a3a', 'Extractor', CFG.EXTRACTOR_COST || 100,
+        'Mining rig. Build within 3 cells of a scrap node; staff with laborers for metal.');
+    btn('hydro', null, '#4ade80', 'Hydroponics', CFG.HYDRO_COST || 80,
+        'Food farm. Staff with laborers to feed the colony.');
+    btn('hab', null, '#a78bfa', 'Hab', CFG.HAB_COST || 60,
+        'Housing. +8 population cap per module.');
+    var col = btn('colony', null, '#7df9ff', 'Colony', null, 'Population, classes, and the ranger program.', true);
+    col.addEventListener('click', function(){ self.openPop(); }, true);
     btn('sell', null, '#ff5a36', 'Sell', null, 'Click a structure to sell it.', true);
     var sp = btn('spire', null, '#22d3ee', 'Spire', null, 'Command Spire: uplink, overclock, upgrades.', true);
     sp.addEventListener('click', function(){ self.openSpire(); }, true);
@@ -410,7 +458,7 @@ var UI = {
 
   /* ---------------- panels ---------------- */
 
-  PANELS: ['panel-tower','panel-wall','panel-reactor','panel-spire','panel-wave'],
+  PANELS: ['panel-tower','panel-wall','panel-reactor','panel-spire','panel-wave','panel-pop','panel-troop'],
 
   closePanels: function(){
     for (var i = 0; i < this.PANELS.length; i++){
@@ -590,6 +638,181 @@ var UI = {
     this.game.selection = null;
     this.refreshSpirePanel();
     this.openPanel('panel-spire');
+  },
+
+  /* ---------------- colony population panel ---------------- */
+
+  CLASS_META: [
+    { id: 'laborer', name: 'Laborers', color: '#ffb347',
+      desc: 'Harvest scrap, farm hydroponics.' },
+    { id: 'engineer', name: 'Engineers', color: '#a3e635',
+      desc: 'Repair structures, cut build costs.' },
+    { id: 'soldier', name: 'Soldiers', color: '#ff5a36',
+      desc: 'Pool for ranger training.' },
+    { id: 'scientist', name: 'Scientists', color: '#c084fc',
+      desc: 'Research new ages early.' }
+  ],
+
+  openPop: function(){
+    this.game.selection = null;
+    this.refreshPopPanel();
+    this.openPanel('panel-pop');
+  },
+
+  refreshPopPanel: function(){
+    var g = this.game, snap = g.lastSnap || {};
+    var pop = snap.pop || { total: 0, cap: 0, idle: 0, governor: true, classes: {} };
+    var cls = pop.classes || {};
+    $('pop-count').textContent = (pop.total || 0) + ' / ' + (pop.cap || 0);
+    var econ = $('pop-econ-line');
+    if (econ){
+      var fr = snap.foodRate || 0;
+      econ.innerHTML = '';
+      econ.appendChild(el('span', null,
+        'Food ' + Math.floor(snap.food || 0) +
+        ' (' + (fr >= 0 ? '+' : '') + fr.toFixed(1) + '/s, need ' +
+        (snap.foodCons || 0).toFixed(1) + '/s)' +
+        (snap.starving ? ' STARVING' : '')));
+      econ.appendChild(el('span', null,
+        'Metal ' + Math.floor(snap.metal || 0) +
+        ' (+' + (snap.metalRate || 0).toFixed(1) + '/s)'));
+      if ((snap.researchNeed || 0) > 0)
+        econ.appendChild(el('span', null,
+          'Research ' + (snap.research || 0) + ' / ' + snap.researchNeed));
+    }
+    var grid = $('pop-classes');
+    if (grid){
+      grid.innerHTML = '';
+      var self = this;
+      this.CLASS_META.forEach(function(m){
+        var row = el('div', 'class-row');
+        var dot = el('span', 'dot');
+        dot.style.color = m.color; dot.style.background = m.color;
+        row.appendChild(dot);
+        var info = el('div', 'class-info');
+        info.appendChild(el('b', null, m.name));
+        info.appendChild(el('span', 'class-desc', m.desc));
+        row.appendChild(info);
+        var n = el('span', 'class-n', String(cls[m.id] || 0));
+        row.appendChild(n);
+        var minus = el('button', 'btn step-btn', '-');
+        minus.type = 'button';
+        minus.setAttribute('aria-label', 'Fewer ' + m.name);
+        var plus = el('button', 'btn step-btn', '+');
+        plus.type = 'button';
+        plus.setAttribute('aria-label', 'More ' + m.name);
+        minus.addEventListener('click', function(){ g.assignClass(m.id, (cls[m.id] || 0) - 1); });
+        plus.addEventListener('click', function(){ g.assignClass(m.id, (cls[m.id] || 0) + 1); });
+        row.appendChild(minus);
+        row.appendChild(plus);
+        grid.appendChild(row);
+      });
+      var idleRow = el('div', 'class-row idle');
+      idleRow.appendChild(el('span', 'dot idle-dot'));
+      var ii = el('div', 'class-info');
+      ii.appendChild(el('b', null, 'Idle civilians'));
+      ii.appendChild(el('span', 'class-desc', 'Unassigned. The governor staffs them.'));
+      idleRow.appendChild(ii);
+      idleRow.appendChild(el('span', 'class-n', String(pop.idle || 0)));
+      grid.appendChild(idleRow);
+    }
+    var gb = $('btn-governor');
+    if (gb) gb.textContent = 'Auto-governor: ' + (pop.governor ? 'ON' : 'OFF');
+    this.refreshTroopTrain();
+  },
+
+  refreshTroopTrain: function(){
+    var g = this.game, snap = g.lastSnap || {};
+    var list = $('troop-train-list');
+    if (!list) return;
+    list.innerHTML = '';
+    var self = this;
+    var TROOPS = NB.TROOPS || {};
+    var order = NB.TROOP_ORDER || Object.keys(TROOPS);
+    var pop = snap.pop || {};
+    var cls = pop.classes || {};
+    order.forEach(function(type){
+      var def = TROOPS[type];
+      if (!def) return;
+      var row = el('div', 'train-row');
+      var dot = el('span', 'dot');
+      dot.style.color = def.color; dot.style.background = def.color;
+      row.appendChild(dot);
+      var info = el('div', 'class-info');
+      info.appendChild(el('b', null, def.name || type));
+      info.appendChild(el('span', 'class-desc',
+        (def.costGold || 0) + 'g + ' + (def.costFood || 0) + ' food + 1 soldier (' +
+        (def.trainTime || 0) + 's)'));
+      row.appendChild(info);
+      var b = el('button', 'btn', 'Train');
+      b.type = 'button';
+      var can = (cls.soldier || 0) >= 1 && (snap.gold || 0) >= (def.costGold || 0) &&
+                (snap.food || 0) >= (def.costFood || 0) &&
+                ((snap.troops || []).length + (snap.training || []).length) < (snap.troopCap || 6);
+      b.disabled = !can;
+      b.addEventListener('click', function(){ g.trainTroop(type); });
+      row.appendChild(b);
+      list.appendChild(row);
+    });
+    /* training queue progress */
+    var tq = snap.training || [];
+    for (var i = 0; i < tq.length; i++){
+      var def2 = TROOPS[tq[i].type] || {};
+      list.appendChild(el('div', 'train-prog',
+        'Training ' + (def2.name || tq[i].type) + ': ' + tq[i].pct + '%'));
+    }
+    var st = $('troop-status');
+    if (st){
+      st.innerHTML = '';
+      var troops = snap.troops || [];
+      st.appendChild(el('span', null,
+        'Fielded: ' + troops.length + '/' + (snap.troopCap || 6) +
+        ' - tap a troop, then tap the battlefield to order it.'));
+    }
+  },
+
+  /* ---------------- troop inspector ---------------- */
+
+  openTroop: function(ref){
+    this.game.selection = { kind: 'troop', id: ref.id, ref: ref };
+    this.refreshTroopPanel();
+    this.openPanel('panel-troop');
+  },
+
+  findTroop: function(id){
+    var snap = this.game && this.game.lastSnap;
+    var list = (snap && snap.troops) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  },
+
+  refreshTroopPanel: function(){
+    var sel = this.game.selection;
+    var t = sel && sel.kind === 'troop' ? this.findTroop(sel.id) : null;
+    if (!t){ this.closePanels(); this.game.selection = null; return; }
+    var def = (NB.TROOPS || {})[t.type] || {};
+    $('troop-name').textContent = def.name || t.type || 'Troop';
+    $('troop-hp-v').textContent = t.hp + ' / ' + t.maxHp;
+    var frac = t.maxHp > 0 ? t.hp / t.maxHp : 0;
+    $('troop-hp-fill').style.width = Math.max(0, Math.min(100, frac * 100)) + '%';
+    $('troop-stats').innerHTML = '';
+    $('troop-stats').appendChild(this.statHtml('Damage', String(def.dmg || 0)));
+    $('troop-stats').appendChild(this.statHtml('Range', (def.range || 0) + ' cells'));
+    $('troop-stats').appendChild(this.statHtml('Order',
+      (t.order && t.order.kind) || 'attackmove'));
+    /* order mode buttons: pick the order kind for the next battlefield tap */
+    var modes = $('troop-order-modes');
+    if (modes){
+      modes.innerHTML = '';
+      var self = this, g = this.game;
+      (NB.TROOP_ORDERS || ['move', 'attackmove', 'hold']).forEach(function(k){
+        var b = el('button', 'btn seg-btn' + (g.troopOrderKind === k ? ' active' : ''));
+        b.type = 'button';
+        b.textContent = k === 'move' ? 'Move' : k === 'attackmove' ? 'Attack-move' : 'Hold';
+        b.addEventListener('click', function(){ g.setTroopOrderKind(k); });
+        modes.appendChild(b);
+      });
+    }
   },
 
   refreshSpirePanel: function(){
@@ -1172,6 +1395,15 @@ var UI = {
     this.on('btn-wall-repair', function(){ g().repairSelected(); });
     this.on('btn-wall-sell', function(){ g().sellSelected(); });
     this.on('btn-reactor-sell', function(){ g().sellSelected(); });
+    this.on('btn-governor', function(){ g().toggleGovernor(); });
+    var popWrap = $('hud-pop-wrap');
+    if (popWrap){
+      var openPop = function(){ self.openPop(); };
+      popWrap.addEventListener('click', openPop);
+      popWrap.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPop(); }
+      });
+    }
     this.on('btn-overclock', function(){ g().toggleOverclock(); });
     this.on('btn-spire-upgrade', function(){ g().upgradeSpire(); });
 

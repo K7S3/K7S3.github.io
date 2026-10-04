@@ -26,6 +26,7 @@ var MANIFEST = {
   struct_wall:     { file: 'wall_segment.glb',   size: 2.2 },
   struct_spire:    { file: 'command_spire.glb',  size: 14 },
   struct_reactor:  { file: 'reactor.glb',        size: 3.2 },
+  struct_extractor: { file: 'reactor.glb',       size: 3.4 },
   struct_barrel:   { file: 'fuel_barrel.glb',    size: 1.4 },
   struct_crate:    { file: 'supply_crate.glb',   size: 1.6 },
   struct_colonist: { file: 'colonist.glb',       size: 1.8 },

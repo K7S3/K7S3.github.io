@@ -325,11 +325,66 @@ Commander.prototype.act = function(){
   if (this.difficulty !== 'recruit' && this.doRepairs(snap, repairThreshold, 3)) return;
   if (this.doEventVote(snap)) return;
   if (this.doEdictVote(snap)) return;
+  if (this.doEconomy(snap)) return;
   if (this.doSpire(snap)) return;
 
   if (this.doctrine === 'vanguard') this.actVanguard(snap);
   else if (this.doctrine === 'engineer') this.actEngineer(snap);
   else this.actWarden(snap);
+};
+
+/* ----- Shared colony economy: extractors, hydroponics, governor -----
+ * Bots build light economy so the metal cost table (tier 3, branches,
+ * late-age towers) stays affordable. The auto-governor staffs everything;
+ * bots never micromanage classes. */
+Commander.prototype.doEconomy = function(snap){
+  if (this.difficulty === 'recruit') return false;
+  /* Defense first: no economy spending until the perimeter exists.
+   * Wave 1 hits ~20s in; spending 180g on extractor+hydro before any
+   * tower is up loses the game. Gate behind towers or wave 2. */
+  var towers = (snap.towers || []).length;
+  var defended = towers >= 3 || (snap.waveIndex || 0) >= 1;
+  if (!defended) return false;
+  var CFG = NB.CONFIG || {};
+  var hq = snap.hq || { cx: 32, cz: 20 };
+  var self = this;
+  function nearBuildable(cx, cz, maxR){
+    return self.findCellNear(cx, cz, maxR, function(x, z){
+      return self.sim.isBuildable(x, z);
+    });
+  }
+  /* 1. one extractor near a scrap node once gold is comfortable */
+  var exts = snap.extractors || [];
+  if (!exts.length && snap.gold > 300){
+    var nodes = snap.scrap || [];
+    for (var n = 0; n < nodes.length; n++){
+      var cell = nearBuildable(nodes[n].cx, nodes[n].cz, 3);
+      if (cell){
+        var er = this.intent('buildExtractor', { cx: cell.cx, cz: cell.cz });
+        if (er.ok){ this.say('extractor online, mining scrap'); return true; }
+      }
+    }
+  }
+  /* 2. hydroponics when the colony is actually hungry */
+  var hydros = snap.hydros || [];
+  var pop = snap.pop || {};
+  if (!hydros.length && snap.food < 18 && snap.gold > 260){
+    var hcell = nearBuildable(hq.cx + 4, hq.cz + 3, 8);
+    if (hcell){
+      var hr = this.intent('buildHydro', { cx: hcell.cx, cz: hcell.cz });
+      if (hr.ok){ this.say('hydroponics online, feeding the colony'); return true; }
+    }
+  }
+  /* 3. hab module when housing is tight */
+  var habs = snap.habs || [];
+  if (!habs.length && (pop.total || 0) >= (pop.cap || 12) - 2 && snap.gold > 240){
+    var bcell = nearBuildable(hq.cx - 5, hq.cz + 4, 8);
+    if (bcell){
+      var br = this.intent('buildHab', { cx: bcell.cx, cz: bcell.cz });
+      if (br.ok){ this.say('hab module online, room to grow'); return true; }
+    }
+  }
+  return false;
 };
 
 /* ----- Vanguard: forward damage, upgrades, expansion ----- */
@@ -442,6 +497,27 @@ Commander.prototype.pickForwardCell = function(snap, towerId){
         if (chk.ok && this.canAfford(chk.cost, snap)){
           return { cx: c.cx, cz: c.cz, dir: dir };
         }
+      }
+    }
+  }
+  /* Fallback: gate anchors are outside the early uplink (gates sit at the
+   * map edge, uplink starts at radius 9). Ring the HQ inside the uplink
+   * so the bot keeps building instead of stalling after wave 1. */
+  var maxR = Math.max(3, snap.uplinkRadius || 9);
+  for (var ring = 3; ring <= maxR; ring++){
+    var hcands = [];
+    for (var dz = -ring; dz <= ring; dz++){
+      for (var dx = -ring; dx <= ring; dx++){
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+        hcands.push({ cx: hq.cx + dx, cz: hq.cz + dz });
+      }
+    }
+    for (var i = 0; i < hcands.length; i++){
+      var c = hcands[i];
+      if (!this.inUplink(c.cx, c.cz, snap, 1)) continue;
+      var chk = this.sim.canPlaceTower(c.cx, c.cz, towerId, this.id);
+      if (chk.ok && this.canAfford(chk.cost, snap)){
+        return { cx: c.cx, cz: c.cz, dir: 'perimeter' };
       }
     }
   }

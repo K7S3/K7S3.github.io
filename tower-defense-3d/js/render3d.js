@@ -185,7 +185,7 @@ NB.Renderer3D = function(canvas){
     buildCraters();
     buildGhost();
     buildSelection();
-    buildColonists();
+    buildWorkers();
     buildIRA();
     buildCineSprite();
     buildFlashSprite();
@@ -1696,6 +1696,159 @@ NB.Renderer3D = function(canvas){
     }
   }
 
+  /* ================= colony economy buildings =================
+   * Extractor / Hydroponics / Hab: one system, per-kind visuals.
+   * Extractor reuses the reactor GLB (tinted amber) + a spinning drill prop.
+   * Hydroponics and Hab are designed primitives (glasshouse + hab block)
+   * with emissive accents that pulse while staffed. */
+  var econ = {};  /* instId -> entry */
+
+  function econAccent(kind){
+    return kind === 'extractor' ? 0xff9f43 : kind === 'hydro' ? 0x4ade80 : 0xa78bfa;
+  }
+
+  function buildEconEntry(kind, t, snap){
+    var g = new THREE.Group();
+    var p = structWorld(t);
+    var accent = econAccent(kind);
+    var glowMat = new THREE.MeshStandardMaterial({ color: 0x111111,
+      emissive: accent, emissiveIntensity: 1.4, roughness: 0.4 });
+    var anim = null;
+    if (kind === 'extractor'){
+      var ML = (globalThis.NB && NB.ModelLib) || null;
+      var emodel = null;
+      try { emodel = ML ? ML.structureModel('extractor') : null; } catch (e){ emodel = null; }
+      if (emodel && emodel.group){
+        g.add(emodel.group);
+        /* amber crown nub distinguishes it from reactors */
+        var nub = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), glowMat);
+        nub.position.y = 2.7;
+        g.add(nub);
+      } else {
+        g.add(cyl(0.9, 1.1, 0.7, gunmetal, 0, 0.35, 0, 8));
+        g.add(box(1.2, 0.9, 1.2, darkMetal, 0, 1.1, 0));
+      }
+      /* drill prop: spins while staffed */
+      var drill = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1.5, 8), gunmetal);
+      drill.position.y = -0.4;
+      drill.rotation.x = Math.PI;
+      g.add(drill);
+      anim = { drill: drill, glowMat: glowMat };
+    } else if (kind === 'hydro'){
+      /* glasshouse: transparent shell + glowing crop rows */
+      var glassMat = new THREE.MeshStandardMaterial({ color: 0x9fd8c9,
+        transparent: true, opacity: 0.28, roughness: 0.15, metalness: 0.1 });
+      var shell = box(2.6, 1.5, 2.6, glassMat, 0, 0.95, 0);
+      g.add(shell);
+      g.add(box(2.8, 0.25, 2.8, darkMetal, 0, 0.12, 0));
+      for (var ri = 0; ri < 3; ri++){
+        var row = box(2.2, 0.28, 0.5, glowMat, 0, 0.45, -0.8 + ri * 0.8);
+        g.add(row);
+      }
+      g.add(box(2.7, 0.18, 2.7, gunmetal, 0, 1.78, 0));
+      anim = { glowMat: glowMat };
+    } else { /* hab */
+      g.add(box(2.4, 1.7, 2.0, gunmetal, 0, 0.85, 0));
+      g.add(box(2.6, 0.3, 2.2, darkMetal, 0, 0.15, 0));
+      /* warm window strip */
+      var winMat = new THREE.MeshStandardMaterial({ color: 0x111111,
+        emissive: 0xffd9a0, emissiveIntensity: 1.6, roughness: 0.4 });
+      g.add(box(2.42, 0.4, 2.02, winMat, 0, 1.15, 0));
+      g.add(cyl(0.12, 0.12, 0.9, darkMetal, 0.9, 2.0, 0.6, 6));
+      anim = { glowMat: glowMat, winMat: winMat };
+    }
+    var ownerRing = addOwnerRing(g, playerColor(snap, t.ownerId));
+    var hit = makeHitMesh(kind, t.instId, 1.5, 3.0);
+    hit.position.set(p.x, 1.5, p.z);
+    g.position.set(p.x, 0, p.z);
+    scene.add(g);
+    return { instId: t.instId, kind: kind, group: g, hit: hit, x: p.x, z: p.z,
+             ownerRing: ownerRing, anim: anim, bornAt: time, seed: Math.random() * 10 };
+  }
+
+  function updateEcon(snap, dt){
+    var lists = [
+      { kind: 'extractor', arr: arr(snap && snap.extractors) },
+      { kind: 'hydro', arr: arr(snap && snap.hydros) },
+      { kind: 'hab', arr: arr(snap && snap.habs) }
+    ];
+    var seen = {}, li, i, t;
+    for (li = 0; li < lists.length; li++){
+      var kind = lists[li].kind, list = lists[li].arr;
+      for (i = 0; i < list.length; i++){
+        t = list[i];
+        if (!t || t.instId == null) continue;
+        seen[t.instId] = 1;
+        var e = econ[t.instId];
+        if (!e){ e = buildEconEntry(kind, t, snap); econ[t.instId] = e; }
+        else {
+          var p = structWorld(t);
+          e.x = p.x; e.z = p.z;
+          e.group.position.x = p.x; e.group.position.z = p.z;
+        }
+        var staffed = num(t.staffed, 0);
+        if (e.anim){
+          if (e.anim.drill){
+            /* drill spins while the rig is crewed */
+            e.anim.drill.rotation.y += (staffed > 0 ? 3.2 : 0.25) * dt;
+            e.anim.drill.position.y = -0.4 + (staffed > 0 ? Math.sin(time * 9 + e.seed) * 0.08 : 0);
+          }
+          if (e.anim.glowMat){
+            var target = staffed > 0 ? 1.5 + 0.5 * Math.sin(time * 3 + e.seed) : 0.35;
+            var gm = e.anim.glowMat;
+            gm.emissiveIntensity += (target - gm.emissiveIntensity) * Math.min(1, dt * 6);
+          }
+        }
+        e.ownerRing.material.color.set(playerColor(snap, t.ownerId));
+        var age = time - e.bornAt;
+        e.group.position.y = groundY(e.x, e.z) + (age < 0.8 ? -1.6 * (1 - age / 0.8) : 0);
+        e.hit.position.set(e.x, 1.5, e.z);
+      }
+    }
+    for (var k in econ){
+      if (!seen[k]){
+        scene.remove(econ[k].group);
+        scene.remove(econ[k].hit);
+        delete econ[k];
+      }
+    }
+  }
+
+  /* ================= scrap nodes =================
+   * Rocky debris piles with an amber glint: where extractors go. */
+  var scrapNodes = [];
+  function updateScrapNodes(snap, dt){
+    var list = arr(snap && snap.scrap);
+    while (scrapNodes.length < list.length){
+      var g = new THREE.Group();
+      var rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.95 });
+      for (var i = 0; i < 5; i++){
+        var rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35 + Math.random() * 0.5, 0), rockMat);
+        rock.position.set((Math.random() - 0.5) * 2.4, 0.25, (Math.random() - 0.5) * 2.4);
+        rock.rotation.set(Math.random() * 3, Math.random() * 3, 0);
+        g.add(rock);
+      }
+      var glintMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.7 });
+      var glint = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), glintMat);
+      glint.position.y = 1.1;
+      g.add(glint);
+      scene.add(g);
+      scrapNodes.push({ group: g, glint: glintMat, seed: Math.random() * 10 });
+    }
+    while (scrapNodes.length > list.length){
+      var old = scrapNodes.pop();
+      scene.remove(old.group);
+    }
+    for (var j = 0; j < list.length; j++){
+      var s = list[j], e = scrapNodes[j];
+      var p = structWorld(s);
+      e.group.position.set(p.x, groundY(p.x, p.z), p.z);
+      /* glint breathes so prospectors can spot the node */
+      e.glint.opacity = 0.45 + 0.35 * Math.sin(time * 2.4 + e.seed);
+      e.group.rotation.y = e.seed;
+    }
+  }
+
   /* ================= enemies ================= */
   function enemyBodyGeo(type){
     var g;
@@ -2602,75 +2755,202 @@ NB.Renderer3D = function(canvas){
     geo.computeVertexNormals();
   }
 
-  /* ================= colonists: ambient life ================= */
-  var colonistHasModel = false;
-  function buildColonists(){
-    var cap = 12;
+  /* ================= workers: sim-driven workforce =================
+   * Replaces the old ambient wanderers: every visible worker is a real
+   * sim laborer walking to its staffed building and working a harvest
+   * cycle. Orange vests via instance color. */
+  var workerBodies = null, workerHeads = null, workerHasModel = false;
+  var WORKER_CAP = 40;
+  function buildWorkers(){
     var ML = (globalThis.NB && NB.ModelLib) || null;
     var cgeo = null;
     try { cgeo = ML ? ML.geometryFor('struct_colonist') : null; } catch (e){ cgeo = null; }
-    colonistHasModel = !!cgeo;
-    colonistBodies = new THREE.InstancedMesh(
-      cgeo || new THREE.CapsuleGeometry(0.16, 0.5, 3, 8),
-      new THREE.MeshStandardMaterial({ color: 0x6a6a55, roughness: 0.8,
-        vertexColors: colonistHasModel }), cap);
-    colonistHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6),
-      new THREE.MeshStandardMaterial({ color: 0x8a6f5a, roughness: 0.8 }), cap);
-    colonistBodies.frustumCulled = false; colonistHeads.frustumCulled = false;
-    scene.add(colonistBodies); scene.add(colonistHeads);
-    for (var i = 0; i < cap; i++){
-      colonists.push({ x: hqPos.x + (Math.random() - 0.5) * 16,
-        z: hqPos.z + (Math.random() - 0.5) * 16,
-        tx: hqPos.x, tz: hqPos.z, wait: Math.random() * 3,
-        phase: Math.random() * 9, speed: 1.0 + Math.random() * 0.6 });
+    workerHasModel = !!cgeo;
+    var bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8,
+      vertexColors: workerHasModel });
+    workerBodies = new THREE.InstancedMesh(
+      cgeo || new THREE.CapsuleGeometry(0.16, 0.5, 3, 8), bodyMat, WORKER_CAP);
+    workerHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6),
+      new THREE.MeshStandardMaterial({ color: 0x8a6f5a, roughness: 0.8 }), WORKER_CAP);
+    workerBodies.frustumCulled = false; workerHeads.frustumCulled = false;
+    /* laborer orange vest tint */
+    var tint = new THREE.Color(0xd88a3a);
+    for (var i = 0; i < WORKER_CAP; i++) workerBodies.setColorAt(i, tint);
+    if (workerBodies.instanceColor) workerBodies.instanceColor.needsUpdate = true;
+    scene.add(workerBodies); scene.add(workerHeads);
+  }
+
+  var _wc = null;
+  function updateWorkers(snap, dt){
+    var list = arr(snap && snap.workers);
+    var show = quality === 'high' && cam.dist < 105 && list.length > 0;
+    workerBodies.visible = show; workerHeads.visible = show && !workerHasModel;
+    if (!show) return;
+    if (!_wc) _wc = new THREE.Color();
+    var n = Math.min(list.length, WORKER_CAP);
+    for (var i = 0; i < n; i++){
+      var w = list[i];
+      var working = w.state === 'working';
+      var gy = groundY(w.x, w.z);
+      /* harvest bob: rhythmic dip while working, walk bob otherwise */
+      var bob = working ? Math.abs(Math.sin(time * 7 + i * 1.7)) * 0.12
+                        : Math.abs(Math.sin(time * 9 + i * 2.3)) * 0.07;
+      _v1.set(w.x, gy + (workerHasModel ? bob : 0.62 + bob), w.z);
+      _e1.set(0, (i * 2.39) % 6.28, working ? Math.sin(time * 7 + i) * 0.12 : 0);
+      _q1.setFromEuler(_e1);
+      _s1.set(1, 1, 1);
+      _m1.compose(_v1, _q1, _s1);
+      workerBodies.setMatrixAt(i, _m1);
+      _v1.set(w.x, gy + 1.18 + bob, w.z);
+      _m1.compose(_v1, _q1, _s1);
+      workerHeads.setMatrixAt(i, _m1);
+    }
+    workerBodies.count = n;
+    workerHeads.count = n;
+    workerBodies.instanceMatrix.needsUpdate = true;
+    workerHeads.instanceMatrix.needsUpdate = true;
+  }
+
+  /* ================= troops: player-controlled infantry =================
+   * Individual groups (cap 6): engineer model + rifle prop + class accent.
+   * Driven by the NB.TROOPS registry: model key + accent per type. */
+  var troops = {};   /* id -> entry */
+  var troopHits = [];
+  var moveMarkers = [];
+
+  function troopAccent(type){
+    var T = (globalThis.NB && NB.TROOPS) || {};
+    var def = T[type] || {};
+    return num(def.accent, 0x7df9ff);
+  }
+  function buildTroopEntry(t, snap){
+    var g = new THREE.Group();
+    var ML = (globalThis.NB && NB.ModelLib) || null;
+    var model = null;
+    try {
+      var T = (globalThis.NB && NB.TROOPS) || {};
+      var def = T[t.type] || {};
+      model = ML ? ML.structureModel(def.model || 'engineer') : null;
+    } catch (e){ model = null; }
+    if (model && model.group) g.add(model.group);
+    else g.add(box(0.7, 1.4, 0.7, gunmetal, 0, 0.7, 0));
+    /* rifle prop */
+    var rifle = box(0.1, 0.1, 1.1, darkMetal, 0.35, 1.0, 0.4);
+    g.add(rifle);
+    /* class accent: glowing visor band */
+    var accentMat = new THREE.MeshStandardMaterial({ color: 0x111111,
+      emissive: troopAccent(t.type), emissiveIntensity: 2.0, roughness: 0.4 });
+    var visor = box(0.5, 0.12, 0.1, accentMat, 0, 1.45, 0.28);
+    g.add(visor);
+    /* selection ring (visible when this troop is selected) */
+    var selRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.1, 24),
+      new THREE.MeshBasicMaterial({ color: 0x7df9ff, transparent: true,
+        opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
+    selRing.rotation.x = -Math.PI / 2;
+    selRing.position.y = 0.15;
+    selRing.visible = false;
+    g.add(selRing);
+    var ownerRing = addOwnerRing(g, playerColor(snap, t.ownerId));
+    var hit = makeHitMesh('troop', t.id, 1.0, 2.2);
+    hit.position.set(t.x, 1.1, t.z);
+    g.position.set(t.x, 0, t.z);
+    scene.add(g);
+    return { id: t.id, type: t.type, group: g, hit: hit, x: t.x, z: t.z,
+             selRing: selRing, accentMat: accentMat, ownerRing: ownerRing,
+             seed: Math.random() * 10, muzzleT: 0 };
+  }
+
+  function updateTroops(snap, dt){
+    var list = arr(snap && snap.troops);
+    var seen = {}, i, t;
+    for (i = 0; i < list.length; i++){
+      t = list[i];
+      if (!t || t.id == null) continue;
+      seen[t.id] = 1;
+      var e = troops[t.id];
+      if (!e){ e = buildTroopEntry(t, snap); troops[t.id] = e; troopHits.push(e.hit); }
+      e.x = t.x; e.z = t.z;
+      e.group.position.set(t.x, groundY(t.x, t.z), t.z);
+      e.hit.position.set(t.x, groundY(t.x, t.z) + 1.1, t.z);
+      /* face movement / target */
+      var o = t.order || {};
+      var fx = 0, fz = 1;
+      if (t.targetId != null){ fx = 0; fz = 1; }
+      else if (o.x != null){ fx = o.x - t.x; fz = o.z - t.z; }
+      if (fx * fx + fz * fz > 0.01) e.group.rotation.y = Math.atan2(fx, fz);
+      /* muzzle flash accent when firing */
+      var firing = t.targetId != null;
+      e.muzzleT = firing ? 0.12 : Math.max(0, e.muzzleT - dt);
+      e.accentMat.emissiveIntensity = e.muzzleT > 0 ? 4.0 : 2.0;
+      /* selection ring */
+      var sel = view && view.selected && view.selected.kind === 'troop' && view.selected.id === t.id;
+      e.selRing.visible = !!sel;
+      if (sel) e.selRing.material.opacity = 0.6 + 0.3 * Math.sin(time * 5);
+      e.ownerRing.material.color.set(playerColor(snap, t.ownerId));
+    }
+    for (var k in troops){
+      if (!seen[k]){
+        scene.remove(troops[k].group);
+        scene.remove(troops[k].hit);
+        var hi = troopHits.indexOf(troops[k].hit);
+        if (hi >= 0) troopHits.splice(hi, 1);
+        delete troops[k];
+      }
+    }
+    /* move markers: expanding rings at ordered destinations */
+    for (var m = moveMarkers.length - 1; m >= 0; m--){
+      var mk = moveMarkers[m];
+      mk.t += dt;
+      var life = 1.2;
+      if (mk.t >= life){ scene.remove(mk.mesh); moveMarkers.splice(m, 1); continue; }
+      var f = mk.t / life;
+      mk.mesh.scale.setScalar(0.5 + f * 2.2);
+      mk.mesh.material.opacity = 0.9 * (1 - f);
     }
   }
 
-  function updateColonists(dt){
-    var show = quality === 'high' && cam.dist < 105;
-    colonistBodies.visible = show; colonistHeads.visible = show && !colonistHasModel;
-    if (!show) return;
-    for (var i = 0; i < colonists.length; i++){
-      var c = colonists[i];
-      if (c.wait > 0){
-        c.wait -= dt;
-      } else {
-        var dx = c.tx - c.x, dz = c.tz - c.z;
-        var d = Math.sqrt(dx * dx + dz * dz);
-        if (d < 0.6){
-          c.wait = 2 + Math.random() * 4;
-          var keys = Object.keys(towers);
-          if (keys.length && Math.random() < 0.7){
-            var te = towers[keys[(Math.random() * keys.length) | 0]];
-            c.tx = te.x + (Math.random() - 0.5) * 8;
-            c.tz = te.z + (Math.random() - 0.5) * 8;
-          } else {
-            c.tx = hqPos.x + (Math.random() - 0.5) * 24;
-            c.tz = hqPos.z + (Math.random() - 0.5) * 24;
-          }
-          c.tx = clamp(c.tx, 2, W - 2); c.tz = clamp(c.tz, 2, H - 2);
-        } else {
-          c.x += dx / d * c.speed * dt;
-          c.z += dz / d * c.speed * dt;
-          c.heading = Math.atan2(dx, dz);
-        }
+  r.moveMarker = function(x, z, kind){
+    if (!inited) return;
+    var color = kind === 'hold' ? 0xa78bfa : kind === 'move' ? 0x7df9ff : 0xffb347;
+    var mesh = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.0, 28),
+      new THREE.MeshBasicMaterial({ color: color, transparent: true,
+        opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(x, groundY(x, z) + 0.2, z);
+    scene.add(mesh);
+    moveMarkers.push({ mesh: mesh, t: 0 });
+  };
+
+  r.pickTroop = function(clientX, clientY){
+    if (!inited || !troopHits.length) return null;
+    var rect = { left: 0, top: 0, width: 800, height: 600 };
+    try { rect = canvas.getBoundingClientRect(); } catch (e) {}
+    camera3.updateMatrixWorld();
+    var nx = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+    var ny = -((clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+    _v1.set(nx, ny, 0.5);
+    var ray = new THREE.Raycaster();
+    ray.setFromCamera(_v1, camera3);
+    var best = null, bestD = 1e9, i, h;
+    for (i = 0; i < troopHits.length; i++){
+      h = troopHits[i];
+      h.updateMatrixWorld();
+      var hits = ray.intersectObject(h, false);
+      if (hits.length && hits[0].distance < bestD){
+        bestD = hits[0].distance;
+        best = h.userData.instId;
       }
-      var gy = groundY(c.x, c.z);
-      var bob = Math.abs(Math.sin(time * 8 + c.phase)) * (c.wait > 0 ? 0.01 : 0.09);
-      _v1.set(c.x, gy + (colonistHasModel ? bob : 0.62 + bob), c.z);
-      _e1.set(0, c.heading || 0, 0); _q1.setFromEuler(_e1);
-      _s1.set(1, 1, 1);
-      _m1.compose(_v1, _q1, _s1);
-      colonistBodies.setMatrixAt(i, _m1);
-      _v1.set(c.x, gy + 1.18 + bob, c.z);
-      _m1.compose(_v1, _q1, _s1);
-      colonistHeads.setMatrixAt(i, _m1);
     }
-    colonistBodies.count = colonists.length;
-    colonistHeads.count = colonists.length;
-    colonistBodies.instanceMatrix.needsUpdate = true;
-    colonistHeads.instanceMatrix.needsUpdate = true;
-  }
+    if (!best) return null;
+    /* resolve the snapshot ref for the panel */
+    var snap = lastSnap || {};
+    var list = arr(snap.troops);
+    for (var j = 0; j < list.length; j++){
+      if (list[j].id === best) return { id: best, ref: list[j] };
+    }
+    return { id: best, ref: null };
+  };
+
 
   /* ================= ghost / selection / hover / focus ================= */
   function buildGhost(){
@@ -3188,7 +3468,10 @@ NB.Renderer3D = function(canvas){
     var surgeI = updateEnvironment(snap, sdt);
     updateUplinkFx(view, sdt);
     updateIRA(view, sdt);
-    updateColonists(sdt);
+    updateEcon(snap, sdt);
+    updateScrapNodes(snap, sdt);
+    updateWorkers(snap, sdt);
+    updateTroops(snap, sdt);
     updateProps(snap, sdt);
     updateGhost(view);
     updateSelection(view);
@@ -3205,6 +3488,7 @@ NB.Renderer3D = function(canvas){
     var tk;
     for (tk in towers) hitPool.push(towers[tk].hit);
     for (tk in reactors) hitPool.push(reactors[tk].hit);
+    for (tk in econ) hitPool.push(econ[tk].hit);
     hitPool.push(R.hit);
 
     updateCamera(sdt);

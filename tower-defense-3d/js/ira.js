@@ -369,6 +369,74 @@ var TRIGGERS = [
       'Quiet sector, Commander. The rust is regrouping, which means so should we.'
     ];
     return v[Math.floor(Math.random() * v.length)];
+  } },
+
+/* ---------------- colony economy ---------------- */
+
+{ id:'food_negative', priority:55, cooldownSec:60,
+  when: function(s){
+    return num(s.foodRate, 0) < -0.05 && num(s.food, 999) < 40 && !s.starving;
+  },
+  line: function(s){
+    var v = [
+      'Food reserves are falling, Commander. Staff the hydroponics or build more.',
+      'We are eating faster than we grow. More laborers on the farms, please.',
+      'Hydroponics output is behind consumption. Fix it before the stores run dry.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'starving', priority:15, cooldownSec:45,
+  when: function(s){ return !!s.starving; },
+  line: function(){
+    var v = [
+      'The colony is STARVING. Hydroponics, now. Everything else can wait.',
+      'Empty stores, empty stomachs. Get food growing or morale collapses.',
+      'Starvation protocols, Commander. This is how bastions fall from the inside.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'idle_workers', priority:120, cooldownSec:90,
+  when: function(s){
+    var p = s.pop || {};
+    return num(p.idle, 0) >= 4 && (arr(s.extractors).length + arr(s.hydros).length) > 0;
+  },
+  line: function(s){
+    var n = Math.round(num((s.pop || {}).idle, 0));
+    var v = [
+      n + ' colonists are idle. The auto-governor can staff them, or assign them yourself.',
+      'Idle hands, Commander: ' + n + ' colonists waiting for work. Farms and extractors are hungry.',
+      n + ' idle colonists on the roster. Put them to work or turn the governor on.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'metal_stockpiled', priority:130, cooldownSec:120,
+  when: function(s){
+    return num(s.metal, 0) >= 60 && num(s.metalRate, 0) > 0.5;
+  },
+  line: function(s){
+    var v = [
+      'Metal stockpiled and the forges are warm. Tier-3 upgrades and branches are hungry for it.',
+      'We are sitting on ' + Math.floor(num(s.metal, 0)) + ' metal. Spend it on the top-end upgrades.',
+      'Scrap reserves looking healthy. That metal wants to be a tier-3 turret.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'pop_cap', priority:125, cooldownSec:120,
+  when: function(s){
+    var p = s.pop || {};
+    return num(p.total, 0) >= num(p.cap, 999) - 1 && num(p.cap, 0) > 0;
+  },
+  line: function(){
+    var v = [
+      'Housing is full. Build a Hab Module if you want the colony to keep growing.',
+      'No bunks left, Commander. Hab Modules mean more hands for the war.',
+      'The colony has outgrown its housing. Hab Modules, unless you like the smell of full.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
   } }
 
 ];
@@ -466,6 +534,11 @@ var RECOMMEND = {
   overclock_strain: 'Vent the Spire strain before it vents itself.',
   morale_low: 'Give the colonists a small victory. Any size counts.',
   power_shortage: 'Build a reactor. Unpowered turrets are statues.',
+  starving: 'Hydroponics, staffed with laborers. Nothing else matters until the colony eats.',
+  food_negative: 'Food is draining. More farms, or more laborers on the ones you have.',
+  idle_workers: 'Idle colonists are wasted hands. Governor on, or assign them yourself.',
+  metal_stockpiled: 'Spend that metal: tier-3 upgrades, branches, late-age towers.',
+  pop_cap: 'Hab Modules raise the housing cap. More people, more war.',
   dark_turrets: 'Extend the uplink, or move the dark turrets into the light.',
   coverage_gap: 'Build {counter} coverage on the threatened axis.',
   energy_surplus: 'Spend the surplus. An Arc coil is waiting.',

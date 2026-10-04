@@ -46,6 +46,9 @@
     <div class="hud-left">
       <div class="hud-stat" title="Gold"><span class="ico gold-dot"></span><span id="hud-gold-v" class="num">0</span></div>
       <div class="hud-stat" title="Energy used / capacity"><span class="ico energy-ico">&#9889;</span><span id="hud-energy-v" class="num">0/0</span></div>
+      <div class="hud-stat" title="Metal (scrap extractors)"><span class="ico metal-dot"></span><span id="hud-metal-v" class="num">0</span><span id="hud-metal-r" class="rate"></span></div>
+      <div class="hud-stat" title="Food (hydroponics)"><span class="ico food-ico">&#127806;</span><span id="hud-food-v" class="num">0</span><span id="hud-food-r" class="rate"></span></div>
+      <div class="hud-stat" title="Population (tap for colony panel)" id="hud-pop-wrap" role="button" tabindex="0"><span class="ico pop-ico">&#128101;</span><span id="hud-pop-v" class="num">0/0</span></div>
       <div class="hud-stat" title="Command Spire integrity">
         <span class="ico heart">&#9670;</span>
         <div class="bar hq-bar" aria-hidden="true"><div id="hud-hq-fill" class="fill"></div></div>
@@ -149,9 +152,38 @@
       </div>
     </section>
 
-    <!-- Command Spire panel -->
-    <section id="panel-spire" class="panel holo hidden" aria-label="Command Spire">
+    <!-- Colony population panel -->
+    <section id="panel-pop" class="panel holo hidden" aria-label="Colony population">
       <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2>Colony <span id="pop-count" class="pop-count"></span></h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-pop" aria-label="Close">&times;</button>
+      </div>
+      <div id="pop-econ-line" class="econ-line"></div>
+      <div id="pop-classes" class="class-grid"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-governor" class="btn wide">Auto-governor: ON</button>
+      </div>
+      <div class="panel-head sub"><h3>Ranger program</h3></div>
+      <div id="troop-train-list" class="train-list"></div>
+      <div id="troop-status" class="troop-status"></div>
+    </section>
+
+    <!-- Troop inspector -->
+    <section id="panel-troop" class="panel holo hidden" aria-label="Troop details">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2 id="troop-name">Troop</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-troop" aria-label="Close">&times;</button>
+      </div>
+      <div class="hp-line"><div class="bar"><div id="troop-hp-fill" class="fill"></div></div><span id="troop-hp-v"></span></div>
+      <div id="troop-stats" class="stat-grid"></div>
+      <div class="panel-head sub"><h3>Order mode (then tap battlefield)</h3></div>
+      <div class="seg" id="troop-order-modes" role="group" aria-label="Troop order mode"></div>
+    </section>
+
+    <!-- Command Spire panel -->
+    <section id="panel-spire" class="panel holo hidden" aria-label="Command Spire">      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
       <div class="panel-head">
         <h2>Command Spire</h2>
         <button type="button" class="btn icon-btn panel-close" data-close="panel-spire" aria-label="Close">&times;</button>
@@ -443,6 +475,7 @@
 <script src="js/cinematic.js"></script>
 <script src="js/towers.js"></script>
 <script src="js/enemies.js"></script>
+<script src="js/troops.js"></script>
 <script src="js/sectors.js"></script>
 <script src="js/events.js"></script>
 <script src="js/story.js"></script>

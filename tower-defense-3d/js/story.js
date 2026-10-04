@@ -89,7 +89,8 @@ chapters: [
       'broadcasting your evacuation orders to colonists who were already gone. ' +
       'The Bastion does not have a second Spire. Try again, Commander. ' +
       'The Rust will not grade on a curve.',
-    codexUnlocks: ['the-arcologies', 'command-spire', 'ira-adjutant', 'pulse-turret'],
+    codexUnlocks: ['the-arcologies', 'command-spire', 'ira-adjutant', 'pulse-turret',
+                   'the-workforce', 'scrap-extractor', 'hydroponics-bay', 'hab-module', 'rangers'],
     rustLines: [
       'WE ARE THE RUST. YOUR WALLS ARE A CURIOSITY.'
     ]
@@ -295,6 +296,43 @@ codex: [
       'Veteran pulse crews are the backbone of every wall, and the rust has ' +
       'learned to respect the sound they make. Upgrades tune the coils; ' +
       'branches trade punch for speed or single shots for piercing bolts.' },
+  { id: 'the-workforce',
+    title: 'The Workforce',
+    body: 'The Bastion is not just guns: it is people. Colonists are ' +
+      'assigned to four callings. Laborers harvest scrap metal and farm ' +
+      'hydroponics. Engineers walk the walls, repairing damage and ' +
+      'streamlining construction. Soldiers drill for the ranger program. ' +
+      'Scientists push the research that unlocks new ages of war ahead of ' +
+      'schedule. The auto-governor staffs the colony by priority; a ' +
+      'commander may take the roster by hand, but the war rarely waits.' },
+  { id: 'scrap-extractor',
+    title: 'Scrap Extractor',
+    body: 'A mining rig sunk beside a scrap field, chewing rust wrecks and ' +
+      'dead arcology hulls into usable metal. Laborers crew it, three to a ' +
+      'rig. Metal is the currency of the war\u2019s top end: tier-three ' +
+      'upgrades, branch specializations, late-age towers, and Spire refits ' +
+      'all demand it. Gold wins battles. Metal wins wars.' },
+  { id: 'hydroponics-bay',
+    title: 'Hydroponics Bay',
+    body: 'Stacked green light and recycled water: the colony\u2019s farms. ' +
+      'Two laborers to a bay keep the harvest ahead of the mess halls. A ' +
+      'hungry colony stops growing; a starving one stops believing. ' +
+      'Surplus food steadies morale and brings new mouths, and new hands, ' +
+      'to the Bastion.' },
+  { id: 'hab-module',
+    title: 'Hab Module',
+    body: 'Pressurized housing for eight more souls. The Bastion\u2019s ' +
+      'population is its engine: every colonist eats, and every colonist ' +
+      'can work. Overseer Okafor signs every manifest by hand. She says a ' +
+      'hab block is a promise, and she intends to keep every one of them.' },
+  { id: 'rangers',
+    title: 'Rangers',
+    body: 'Volunteers, trained from the soldier pool and deployed in small ' +
+      'squads. Fast, hard-hitting, and utterly mortal: a ranger who falls ' +
+      'does not come back. Commanders move them like chess pieces, ' +
+      'attack-moving through rust packs or holding a breach. The program ' +
+      'began when a work crew held a service tunnel with welding torches ' +
+      'for eleven minutes. The Bastion has honored volunteers ever since.' },
   { id: 'cryo-projector',
     title: 'Cryo Projector',
     body: 'Pulses a chilling aura that slows everything it touches. It does ' +

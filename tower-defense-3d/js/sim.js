@@ -113,7 +113,56 @@ NB.createSim = function(sectorDef, opts){
     MELEE_RANGE_CELLS: num(CONFIG.MELEE_RANGE_CELLS, 1.6),
     SEEK_RANGE_CELLS: num(CONFIG.SEEK_RANGE_CELLS, 14),
     SAPPER_SEEK_RANGE_CELLS: num(CONFIG.SAPPER_SEEK_RANGE_CELLS, 20),
-    BREACH_RANGE_CELLS: num(CONFIG.BREACH_RANGE_CELLS, 3)
+    BREACH_RANGE_CELLS: num(CONFIG.BREACH_RANGE_CELLS, 3),
+
+    /* ---- colony economy: population, workers, farming ---- */
+    POP_BASE_CAP: num(CONFIG.POP_BASE_CAP, 12),
+    POP_START: num(CONFIG.POP_START, 10),
+    POP_GROWTH_TIME: num(CONFIG.POP_GROWTH_TIME, 40),
+    POP_FOOD_PER_SEC: num(CONFIG.POP_FOOD_PER_SEC, 0.05),
+    FOOD_START: num(CONFIG.FOOD_START, 30),
+    METAL_START: num(CONFIG.METAL_START, 20),
+    FOOD_SURPLUS_MORALE: num(CONFIG.FOOD_SURPLUS_MORALE, 60),
+    STARVE_MORALE_PER_SEC: num(CONFIG.STARVE_MORALE_PER_SEC, 0.6),
+    EXTRACTOR_COST: num(CONFIG.EXTRACTOR_COST, 100),
+    EXTRACTOR_HP: num(CONFIG.EXTRACTOR_HP, 350),
+    EXTRACTOR_METAL_PER_SEC: num(CONFIG.EXTRACTOR_METAL_PER_SEC, 1.2),
+    EXTRACTOR_SLOTS: Math.max(1, Math.round(num(CONFIG.EXTRACTOR_SLOTS, 3))),
+    EXTRACTOR_NODE_RANGE: num(CONFIG.EXTRACTOR_NODE_RANGE, 3),
+    HYDRO_COST: num(CONFIG.HYDRO_COST, 80),
+    HYDRO_HP: num(CONFIG.HYDRO_HP, 300),
+    HYDRO_FOOD_PER_SEC: num(CONFIG.HYDRO_FOOD_PER_SEC, 1.5),
+    HYDRO_SLOTS: Math.max(1, Math.round(num(CONFIG.HYDRO_SLOTS, 2))),
+    HAB_COST: num(CONFIG.HAB_COST, 60),
+    HAB_HP: num(CONFIG.HAB_HP, 250),
+    HAB_POP: Math.max(1, Math.round(num(CONFIG.HAB_POP, 8))),
+    ENGINEER_REPAIR_PER_SEC: num(CONFIG.ENGINEER_REPAIR_PER_SEC, 6),
+    ENGINEER_COST_DISCOUNT: num(CONFIG.ENGINEER_COST_DISCOUNT, 0.02),
+    ENGINEER_MAX_DISCOUNT: num(CONFIG.ENGINEER_MAX_DISCOUNT, 0.20),
+    ENGINEER_GOV_CAP: Math.max(0, Math.round(num(CONFIG.ENGINEER_GOV_CAP, 3))),
+    SCIENTIST_RESEARCH_PER_SEC: num(CONFIG.SCIENTIST_RESEARCH_PER_SEC, 1),
+    SCIENTIST_GOV_CAP: Math.max(0, Math.round(num(CONFIG.SCIENTIST_GOV_CAP, 3))),
+    AGE_RESEARCH: CONFIG.AGE_RESEARCH || [60, 180],
+    GOVERNOR_TICK: num(CONFIG.GOVERNOR_TICK, 2),
+    RANGER_COST_GOLD: num(CONFIG.RANGER_COST_GOLD, 150),
+    RANGER_COST_FOOD: num(CONFIG.RANGER_COST_FOOD, 20),
+    RANGER_HP: num(CONFIG.RANGER_HP, 120),
+    RANGER_DMG: num(CONFIG.RANGER_DMG, 25),
+    RANGER_RANGE: num(CONFIG.RANGER_RANGE, 7),
+    RANGER_SPEED: num(CONFIG.RANGER_SPEED, 9),
+    RANGER_FIRE_INTERVAL: num(CONFIG.RANGER_FIRE_INTERVAL, 0.9),
+    RANGER_CAP: Math.max(1, Math.round(num(CONFIG.RANGER_CAP, 6))),
+    /* NOTE: per-type troop stats/costs/train time live in NB.TROOPS
+     * (js/troops.js). RANGER_* keys above are legacy fallbacks if the
+     * registry is missing. */
+    TROOP_CAP: Math.max(1, Math.round(num(CONFIG.TROOP_CAP, num(CONFIG.RANGER_CAP, 6)))),
+    WORKER_CAP: Math.max(1, Math.round(num(CONFIG.WORKER_CAP, 40))),
+    WORKER_SPEED: num(CONFIG.WORKER_SPEED, 4.5),
+    METAL_TOWER_FORT: num(CONFIG.METAL_TOWER_FORT, 10),
+    METAL_TOWER_DOMINION: num(CONFIG.METAL_TOWER_DOMINION, 15),
+    METAL_TIER3: num(CONFIG.METAL_TIER3, 15),
+    METAL_BRANCH: num(CONFIG.METAL_BRANCH, 25),
+    METAL_SPIRE: CONFIG.METAL_SPIRE || [20, 40, 80]
   };
 
   var rng = mulberry32(num(opts.seed, 1234));
@@ -182,7 +231,15 @@ NB.createSim = function(sectorDef, opts){
     grades: [], lastGrade: null,
     barrels: [],
     drops: [],
-    hero: null
+    hero: null,
+    /* ---- colony economy ---- */
+    metal: 0, food: 0,
+    foodRate: 0, metalRate: 0, foodCons: 0, starving: false,
+    pop: null,
+    scrap: [],
+    extractors: [], hydros: [], habs: [],
+    workers: [], troops: [], trainQueue: [],
+    govT: 0
   };
 
   var sim = {
@@ -337,16 +394,20 @@ NB.createSim = function(sectorDef, opts){
     var r = uplinkRadius() + st.mods.darkBonus;
     var hc = hqCenterCell();
     var i, s, dx, dz;
-    for (i = 0; i < st.towers.length; i++){
-      s = st.towers[i];
-      dx = (s.cx + 0.5) - (hc.cx + 0.5); dz = (s.cz + 0.5) - (hc.cz + 0.5);
-      s.dark = Math.sqrt(dx*dx + dz*dz) > r;
+    function mark(list){
+      for (var k = 0; k < list.length; k++){
+        s = list[k];
+        dx = (s.cx + 0.5) - (hc.cx + 0.5); dz = (s.cz + 0.5) - (hc.cz + 0.5);
+        s.dark = Math.sqrt(dx*dx + dz*dz) > r;
+      }
     }
-    for (i = 0; i < st.reactors.length; i++){
-      s = st.reactors[i];
-      dx = (s.cx + 0.5) - (hc.cx + 0.5); dz = (s.cz + 0.5) - (hc.cz + 0.5);
-      s.dark = Math.sqrt(dx*dx + dz*dz) > r;
-    }
+    mark(st.towers); mark(st.reactors);
+    /* civilian infrastructure (extractors, hydros, habs) runs on local
+     * power, not the tactical uplink: never dark, so the colony economy
+     * works at any distance from the Spire. */
+    var civ = [st.extractors, st.hydros, st.habs];
+    for (var c = 0; c < civ.length; c++)
+      for (var k2 = 0; k2 < civ[c].length; k2++) civ[c][k2].dark = false;
   }
   function afterLayoutChange(){
     recomputeFlow();
@@ -437,6 +498,12 @@ NB.createSim = function(sectorDef, opts){
   function buildCostMult(){
     var m = st.mods.buildCost * moraleCostMult();
     if (st.costTemp.wavesLeft > 0) m *= st.costTemp.mult;
+    /* engineers streamline construction across the colony */
+    if (st.pop){
+      var disc = Math.min(CFG.ENGINEER_MAX_DISCOUNT,
+                          (st.pop.classes.engineer || 0) * CFG.ENGINEER_COST_DISCOUNT);
+      m *= (1 - disc);
+    }
     return m;
   }
 
@@ -613,7 +680,12 @@ NB.createSim = function(sectorDef, opts){
   }
 
   function destroyStructure(s, kind){
-    var arr = kind === 'tower' ? st.towers : kind === 'wall' ? st.walls : st.reactors;
+    var arr = kind === 'tower' ? st.towers : kind === 'wall' ? st.walls :
+              kind === 'reactor' ? st.reactors :
+              kind === 'extractor' ? st.extractors :
+              kind === 'hydro' ? st.hydros :
+              kind === 'hab' ? st.habs : null;
+    if (!arr) return;
     for (var i = 0; i < arr.length; i++){
       if (arr[i] === s){ arr.splice(i, 1); break; }
     }
@@ -621,13 +693,17 @@ NB.createSim = function(sectorDef, opts){
     st.stats.structuresLost++;
     st.structsLostWave++;
     if (s.ownerId && st.playerStats[s.ownerId]) st.playerStats[s.ownerId].structuresLost++;
+    var label = kind === 'wall' ? 'Wall' : kind === 'reactor' ? 'Reactor' :
+                kind === 'extractor' ? 'Extractor' : kind === 'hydro' ? 'Hydroponics' :
+                kind === 'hab' ? 'Hab Module' : 'Tower';
     evq.push({ t: 'structureDown', x: s.x, z: s.z, color: '#ff7744',
-               text: (kind === 'wall' ? 'Wall' : kind === 'reactor' ? 'Reactor' : 'Tower') + ' destroyed' });
+               text: label + ' destroyed' });
     if (st.moraleLossStruct < CFG.MORALE_STRUCT_LOSS_CAP){
       st.moraleLossStruct += CFG.MORALE_STRUCT_LOSS;
       adjustMorale(-CFG.MORALE_STRUCT_LOSS, s.ownerId);
     }
     afterLayoutChange();
+    distributeLabor();
   }
 
   function meleeStructure(e, s, kind, dt){
@@ -804,6 +880,7 @@ NB.createSim = function(sectorDef, opts){
       var adj = nearestAttackable(e.x, e.z, CFG.MELEE_RANGE_CELLS);
       if (adj){
         if (adj.kind === 'barrel') damageBarrel(adj.ref, e.melee * dt);
+        else if (adj.kind === 'troop') damageTroop(adj.ref, e.melee * dt);
         else meleeStructure(e, adj.ref, adj.kind, dt);
         acted = true;
       }
@@ -1222,7 +1299,17 @@ NB.createSim = function(sectorDef, opts){
     consider(st.towers, 'tower');
     consider(st.walls, 'wall');
     consider(st.reactors, 'reactor');
+    consider(st.extractors, 'extractor');
+    consider(st.hydros, 'hydro');
+    consider(st.habs, 'hab');
     consider(st.barrels, 'barrel');
+    /* troops fight in the field: enemies melee them like structures */
+    for (var ti = 0; ti < st.troops.length; ti++){
+      var tp = st.troops[ti];
+      var tdx = (tp.x - x) / CELL, tdz = (tp.z - z) / CELL;
+      var tdd = tdx * tdx + tdz * tdz;
+      if (tdd < bestD){ bestD = tdd; best = tp; bestKind = 'troop'; }
+    }
     return best ? { ref: best, kind: bestKind } : null;
   }
 
@@ -1487,6 +1574,7 @@ NB.createSim = function(sectorDef, opts){
       }
     }
     if (typeof fx.nextWaveMult === 'number') st.nextWaveHpMult *= fx.nextWaveMult;
+    if (typeof fx.pop === 'number' && fx.pop > 0) addPopulation(fx.pop, 'refugees join the workforce');
     if (typeof fx.reactorBoost === 'number') st.reactorBoost += fx.reactorBoost;
     if (fx.costMultTemp){
       st.costTemp = { mult: num(fx.costMultTemp.mult, 1),
@@ -1820,7 +1908,9 @@ NB.createSim = function(sectorDef, opts){
     var free = num(st.freeBuilds[towerId], 0) > 0;
     var cost = free ? 0 : towerCostFor(def, playerId);
     if (st.gold < cost) return { ok: false, reason: 'gold' };
-    return { ok: true, cost: cost };
+    var mcost = free ? 0 : towerMetalCost(towerId);
+    if (st.metal < mcost) return { ok: false, reason: 'metal' };
+    return { ok: true, cost: cost, metalCost: mcost };
   }
 
   function buildTower(cx, cz, towerId, playerId){
@@ -1831,6 +1921,7 @@ NB.createSim = function(sectorDef, opts){
     if (!chk.ok) return chk;
     var def = TOWERS[towerId];
     st.gold -= chk.cost;
+    st.metal = Math.max(0, st.metal - (chk.metalCost || 0));
     if (num(st.freeBuilds[towerId], 0) > 0) st.freeBuilds[towerId]--;
     var t = {
       instId: ++sim.nextInstId, id: towerId, def: def, ownerId: playerId,
@@ -1879,7 +1970,11 @@ NB.createSim = function(sectorDef, opts){
     if (!td) return { ok: false, reason: 'max' };
     var cost = towerUpgradeCostFor(td.cost, playerId);
     if (st.gold < cost) return { ok: false, reason: 'gold' };
+    /* tier 3 is top-end tech: gates metal */
+    var mcost = (t.tier === 2) ? CFG.METAL_TIER3 : 0;
+    if (st.metal < mcost) return { ok: false, reason: 'metal' };
     st.gold -= cost;
+    st.metal = Math.max(0, st.metal - mcost);
     t.totalSpent += cost;
     t.tier++;
     applyOverrides(t, td);
@@ -1903,7 +1998,9 @@ NB.createSim = function(sectorDef, opts){
     if (!bd) return { ok: false, reason: 'branch' };
     var cost = towerUpgradeCostFor(bd.cost, playerId);
     if (st.gold < cost) return { ok: false, reason: 'gold' };
+    if (st.metal < CFG.METAL_BRANCH) return { ok: false, reason: 'metal' };
     st.gold -= cost;
+    st.metal = Math.max(0, st.metal - CFG.METAL_BRANCH);
     t.totalSpent += cost;
     t.branch = which;
     applyOverrides(t, bd);
@@ -1919,8 +2016,17 @@ NB.createSim = function(sectorDef, opts){
     var kind = 'tower';
     var r = null;
     if (!t){
-      for (var i = 0; i < st.reactors.length; i++){
-        if (st.reactors[i].instId === instId){ r = st.reactors[i]; kind = 'reactor'; break; }
+      var sellLists = [
+        { arr: st.reactors, k: 'reactor' },
+        { arr: st.extractors, k: 'extractor' },
+        { arr: st.hydros, k: 'hydro' },
+        { arr: st.habs, k: 'hab' }
+      ];
+      for (var li = 0; li < sellLists.length && !r; li++){
+        var la = sellLists[li].arr;
+        for (var i = 0; i < la.length; i++){
+          if (la[i].instId === instId){ r = la[i]; kind = sellLists[li].k; break; }
+        }
       }
       if (!r) return { ok: false, reason: 'tower' };
     }
@@ -1934,12 +2040,16 @@ NB.createSim = function(sectorDef, opts){
         if (st.towers[j].instId === instId){ st.towers.splice(j, 1); break; }
       }
     } else {
-      for (var k = 0; k < st.reactors.length; k++){
-        if (st.reactors[k].instId === instId){ st.reactors.splice(k, 1); break; }
+      var sellArr = kind === 'reactor' ? st.reactors :
+                    kind === 'extractor' ? st.extractors :
+                    kind === 'hydro' ? st.hydros : st.habs;
+      for (var k = 0; k < sellArr.length; k++){
+        if (sellArr[k].instId === instId){ sellArr.splice(k, 1); break; }
       }
     }
     delete occ[key(ref.cx, ref.cz)];
     afterLayoutChange();
+    distributeLabor();
     return { ok: true, gold: refund };
   }
 
@@ -2063,7 +2173,10 @@ NB.createSim = function(sectorDef, opts){
     if (st.spireTier === 2 && st.age < 2) return { ok: false, reason: 'age' };
     var cost = Math.ceil(num(CFG.SPIRE_UPGRADE_COSTS[st.spireTier], 150) * buildCostMult());
     if (st.gold < cost) return { ok: false, reason: 'gold' };
+    var mcost = num((CFG.METAL_SPIRE || [])[st.spireTier], 0);
+    if (st.metal < mcost) return { ok: false, reason: 'metal' };
     st.gold -= cost;
+    st.metal = Math.max(0, st.metal - mcost);
     st.spireTier++;
     recomputeDark();
     announce('SPIRE UPGRADED', 'uplink radius +' + CFG.SPIRE_RADIUS_PER_TIER, '#7df9ff');
@@ -2085,8 +2198,495 @@ NB.createSim = function(sectorDef, opts){
     return { ok: true, active: oc.active };
   }
 
+  /* ============================================================
+   * COLONY ECONOMY: population, classes, farming, workers, rangers
+   *
+   * Layered on top of the tower-defense core: gold stays the main tower
+   * currency; metal (scrap extractors) gates the top end (tier 3, branches,
+   * late-age towers, spire upgrades); food (hydroponics) feeds the colony.
+   * Population is assigned to classes: laborers (harvest/farm), engineers
+   * (repair + build discount), soldiers (ranger pool), scientists (research
+   * ages early). The auto-governor staffs jobs by priority so the player
+   * can focus on the fight; manual assignment disables it.
+   * ============================================================ */
+  var nextWorkerId = 0, nextTroopId = 0;
+
+  function popCap(){
+    var habs = 0;
+    for (var i = 0; i < st.habs.length; i++) habs++;
+    return CFG.POP_BASE_CAP + habs * CFG.HAB_POP;
+  }
+  function idlePop(){
+    var c = st.pop.classes;
+    var used = (c.laborer || 0) + (c.engineer || 0) + (c.soldier || 0) + (c.scientist || 0);
+    return Math.max(0, st.pop.total - used);
+  }
+  function copyClasses(){
+    var c = st.pop.classes;
+    return { laborer: c.laborer || 0, engineer: c.engineer || 0,
+             soldier: c.soldier || 0, scientist: c.scientist || 0 };
+  }
+  function addPopulation(n, why){
+    n = Math.round(num(n, 0));
+    if (n <= 0) return 0;
+    var room = popCap() - st.pop.total;
+    var added = Math.max(0, Math.min(n, room));
+    if (added > 0){
+      st.pop.total += added;
+      announce('REFUGEES SHELTERED', added + ' souls join the bastion' +
+               (why ? ': ' + why : ''), '#4ade80');
+    }
+    return added;
+  }
+
+  /* scrap nodes: explicit per-sector def, else 3 deterministic near-HQ */
+  function initScrap(defs){
+    st.scrap = [];
+    var list = (defs && defs.length) ? defs : null;
+    if (!list){
+      var hc = hqCenterCell();
+      list = [{ x: hc.cx - 8, z: hc.cz - 6 },
+              { x: hc.cx + 7, z: hc.cz - 7 },
+              { x: hc.cx, z: hc.cz + 9 }];
+    }
+    for (var i = 0; i < list.length; i++){
+      var cx = Math.max(1, Math.min(COLS - 2, Math.round(num(list[i].x, 0))));
+      var cz = Math.max(1, Math.min(ROWS - 2, Math.round(num(list[i].z, 0))));
+      var tries = 0;
+      while (tries < 60 && (terrainAt(cx, cz) || hqAt(cx, cz) || gateAt(cx, cz))){
+        cx = Math.max(1, Math.min(COLS - 2, cx + ((tries % 2) ? 1 : -1)));
+        if (tries % 3 === 0) cz = Math.max(1, Math.min(ROWS - 2, cz + 1));
+        tries++;
+      }
+      st.scrap.push({ cx: cx, cz: cz, x: cellWX(cx), z: cellWZ(cz) });
+    }
+  }
+
+  /* ---------- economy buildings ---------- */
+  function econKindCost(kind){
+    var base = kind === 'extractor' ? CFG.EXTRACTOR_COST :
+               kind === 'hydro' ? CFG.HYDRO_COST : CFG.HAB_COST;
+    return Math.ceil(base * buildCostMult());
+  }
+  function canPlaceEcon(kind, cx, cz){
+    if (st.over) return { ok: false, reason: 'over' };
+    if (!inB(cx, cz) || terrainAt(cx, cz) || hqAt(cx, cz) || gateAt(cx, cz))
+      return { ok: false, reason: 'blocked' };
+    if (structAt(cx, cz)) return { ok: false, reason: 'occupied' };
+    var cost = econKindCost(kind);
+    if (st.gold < cost) return { ok: false, reason: 'gold' };
+    if (kind === 'extractor'){
+      var near = false;
+      for (var i = 0; i < st.scrap.length; i++){
+        var s = st.scrap[i];
+        var dx = s.cx - cx, dz = s.cz - cz;
+        if (Math.sqrt(dx * dx + dz * dz) <= CFG.EXTRACTOR_NODE_RANGE){ near = true; break; }
+      }
+      if (!near) return { ok: false, reason: 'node' };
+    }
+    return { ok: true, cost: cost };
+  }
+  function buildEcon(kind, cx, cz, playerId){
+    playerId = playerId || 'p0';
+    var blocked = buildBlocked();
+    if (blocked) return { ok: false, reason: blocked };
+    var chk = canPlaceEcon(kind, cx, cz);
+    if (!chk.ok) return chk;
+    st.gold -= chk.cost;
+    var hp = kind === 'extractor' ? CFG.EXTRACTOR_HP :
+             kind === 'hydro' ? CFG.HYDRO_HP : CFG.HAB_HP;
+    var b = {
+      instId: ++sim.nextInstId, kind: kind, ownerId: playerId,
+      cx: cx, cz: cz, x: cellWX(cx), z: cellWZ(cz),
+      hp: hp, maxHp: hp, dark: false, staffed: 0, totalSpent: chk.cost
+    };
+    var arr = kind === 'extractor' ? st.extractors : kind === 'hydro' ? st.hydros : st.habs;
+    arr.push(b);
+    occ[key(cx, cz)] = { kind: kind, ref: b };
+    afterLayoutChange();
+    distributeLabor();
+    evq.push({ t: 'boom', x: b.x, z: b.z, color: '#ffb347', n: 6 });
+    var label = kind === 'extractor' ? 'EXTRACTOR ONLINE' :
+                kind === 'hydro' ? 'HYDROPONICS ONLINE' : 'HAB MODULE ONLINE';
+    var sub = kind === 'hab' ? '+' + CFG.HAB_POP + ' housing'
+                            : 'staff it with laborers to produce';
+    announce(label, sub, '#ffb347');
+    return { ok: true, instId: b.instId };
+  }
+
+  /* ---------- metal cost table (gold stays primary) ---------- */
+  function towerMetalCost(towerId){
+    if (towerId === 'chrono') return CFG.METAL_TOWER_DOMINION;
+    if (towerId === 'sniper' || towerId === 'arc' || towerId === 'amplify')
+      return CFG.METAL_TOWER_FORT;
+    return 0;
+  }
+
+  /* ---------- classes & governor ---------- */
+  function assignClass(cls, n){
+    var valid = { laborer: 1, engineer: 1, soldier: 1, scientist: 1 };
+    if (!valid[cls]) return { ok: false, reason: 'class' };
+    if (st.over) return { ok: false, reason: 'over' };
+    n = Math.max(0, Math.round(num(n, 0)));
+    var cur = st.pop.classes[cls] || 0;
+    var maxN = cur + idlePop();
+    if (n > maxN) n = maxN;
+    st.pop.classes[cls] = n;
+    if (st.pop.governor){
+      st.pop.governor = false;
+      announce('MANUAL STAFFING', 'auto-governor off: the workforce is yours to run', '#ffb347');
+    }
+    distributeLabor();
+    return { ok: true, classes: copyClasses(), governor: st.pop.governor };
+  }
+  function setGovernor(on){
+    if (st.over) return { ok: false, reason: 'over' };
+    st.pop.governor = !!on;
+    if (st.pop.governor) governorTick();
+    return { ok: true, governor: st.pop.governor };
+  }
+  function activeHydros(){
+    var out = [];
+    for (var i = 0; i < st.hydros.length; i++) if (!st.hydros[i].dark) out.push(st.hydros[i]);
+    return out;
+  }
+  function activeExtractors(){
+    var out = [];
+    for (var i = 0; i < st.extractors.length; i++) if (!st.extractors[i].dark) out.push(st.extractors[i]);
+    return out;
+  }
+  /* derive per-building staffing from the laborer class count.
+   * food security first when stores are low, else metal first. */
+  function distributeLabor(){
+    var i;
+    for (i = 0; i < st.extractors.length; i++) st.extractors[i].staffed = 0;
+    for (i = 0; i < st.hydros.length; i++) st.hydros[i].staffed = 0;
+    var remaining = st.pop.classes.laborer || 0;
+    var hydros = activeHydros(), exts = activeExtractors();
+    var cons = st.pop.total * CFG.POP_FOOD_PER_SEC;
+    var needFood = (st.food < 25) || (st.foodRate < cons * 0.2 && st.food < 60);
+    function fill(list, slots){
+      for (var k = 0; k < list.length && remaining > 0; k++){
+        var take = Math.min(slots, remaining);
+        list[k].staffed = take;
+        remaining -= take;
+      }
+    }
+    if (needFood){ fill(hydros, CFG.HYDRO_SLOTS); fill(exts, CFG.EXTRACTOR_SLOTS); }
+    else { fill(exts, CFG.EXTRACTOR_SLOTS); fill(hydros, CFG.HYDRO_SLOTS); }
+    st.pop.idleLaborers = remaining;
+  }
+  function governorTick(){
+    if (!st.pop.governor || st.over) return;
+    var idle = idlePop();
+    if (idle <= 0) return;
+    var i;
+    /* 1. food: staff hydros until production covers consumption with margin */
+    var cons = st.pop.total * CFG.POP_FOOD_PER_SEC;
+    var hydros = activeHydros();
+    var foodProd = 0;
+    for (i = 0; i < hydros.length; i++) foodProd += (hydros[i].staffed || 0) * CFG.HYDRO_FOOD_PER_SEC;
+    var hneed = 0;
+    for (i = 0; i < hydros.length; i++)
+      hneed += Math.max(0, CFG.HYDRO_SLOTS - (hydros[i].staffed || 0));
+    var foodShort = Math.max(0, cons * 1.25 - foodProd);
+    var hadd = Math.min(hneed, idle, Math.ceil(foodShort / CFG.HYDRO_FOOD_PER_SEC));
+    st.pop.classes.laborer += hadd; idle -= hadd;
+    /* 2. metal: fill every extractor slot */
+    var exts = activeExtractors();
+    var xneed = 0;
+    for (i = 0; i < exts.length; i++)
+      xneed += Math.max(0, CFG.EXTRACTOR_SLOTS - (exts[i].staffed || 0));
+    var xadd = Math.min(xneed, idle);
+    st.pop.classes.laborer += xadd; idle -= xadd;
+    /* 3. engineers, then 4. scientists (caps; soldiers stay manual) */
+    while (idle > 0 && st.pop.classes.engineer < CFG.ENGINEER_GOV_CAP){
+      st.pop.classes.engineer++; idle--;
+    }
+    while (idle > 0 && st.pop.classes.scientist < CFG.SCIENTIST_GOV_CAP){
+      st.pop.classes.scientist++; idle--;
+    }
+    distributeLabor();
+  }
+
+  /* ---------- per-tick economy ---------- */
+  function engineerRepair(amount){
+    if (amount <= 0) return;
+    var best = null, bestMissing = 0, i;
+    function consider(arr){
+      for (var k = 0; k < arr.length; k++){
+        var s = arr[k];
+        if (s.dark || s.hp >= s.maxHp) continue;
+        var miss = s.maxHp - s.hp;
+        if (miss > bestMissing){ bestMissing = miss; best = s; }
+      }
+    }
+    consider(st.towers); consider(st.walls); consider(st.reactors);
+    consider(st.extractors); consider(st.hydros); consider(st.habs);
+    if (best) best.hp = Math.min(best.maxHp, best.hp + amount);
+  }
+  function researchTick(dt){
+    var n = st.pop.classes.scientist || 0;
+    if (n <= 0 || st.age >= 2) return;
+    st.pop.research += n * CFG.SCIENTIST_RESEARCH_PER_SEC * dt;
+    var th = CFG.AGE_RESEARCH[st.age];
+    if (th && st.pop.research >= th){
+      st.age++;
+      st.pop.research = 0;
+      var ageName = ((NB.AGES || [])[st.age] || 'Age').toUpperCase() + ' AGE';
+      announce(ageName, 'research breakthrough: new options unlocked', '#ffd34d');
+    }
+  }
+  function economyTick(dt){
+    var i;
+    distributeLabor();
+    var metalProd = 0, foodProd = 0;
+    for (i = 0; i < st.extractors.length; i++){
+      var ex = st.extractors[i];
+      if (!ex.dark) metalProd += (ex.staffed || 0) * CFG.EXTRACTOR_METAL_PER_SEC;
+    }
+    for (i = 0; i < st.hydros.length; i++){
+      var hy = st.hydros[i];
+      if (!hy.dark) foodProd += (hy.staffed || 0) * CFG.HYDRO_FOOD_PER_SEC;
+    }
+    var cons = st.pop.total * CFG.POP_FOOD_PER_SEC;
+    st.metal = Math.max(0, st.metal + metalProd * dt);
+    st.food = Math.max(0, st.food + (foodProd - cons) * dt);
+    st.metalRate = metalProd;
+    st.foodCons = cons;
+    st.foodRate = foodProd - cons;
+    /* starvation */
+    st.starving = (st.food <= 0.001 && cons > foodProd + 0.001);
+    if (st.starving){
+      adjustMorale(-CFG.STARVE_MORALE_PER_SEC * dt, 'p0');
+      st.pop.growT = 0;
+      st.pop.starveT += dt;
+      if (st.pop.starveT > 12){
+        st.pop.starveT = 0;
+        announce('STARVATION', 'the colony is starving: build hydroponics, staff laborers', '#ff5544');
+      }
+    } else {
+      st.pop.starveT = 0;
+      if (st.food > CFG.FOOD_SURPLUS_MORALE){
+        st.pop.surplusT = (st.pop.surplusT || 0) + dt;
+        if (st.pop.surplusT >= 10){ st.pop.surplusT = 0; adjustMorale(1, 'p0'); }
+      } else st.pop.surplusT = 0;
+      /* growth: fed, housed, content */
+      if (st.pop.total < popCap() && st.morale >= 40 && foodProd > cons * 1.1 && st.food > 10){
+        st.pop.growT += dt;
+        if (st.pop.growT >= CFG.POP_GROWTH_TIME){
+          st.pop.growT = 0;
+          st.pop.total++;
+          announce('COLONY GROWS', 'a new colonist joins the bastion (' + st.pop.total + ')', '#4ade80');
+        }
+      } else st.pop.growT = 0;
+    }
+    /* engineers: field repair across the uplink */
+    var eng = st.pop.classes.engineer || 0;
+    if (eng > 0) engineerRepair(eng * CFG.ENGINEER_REPAIR_PER_SEC * dt);
+    /* governor on its own cadence */
+    st.govT += dt;
+    if (st.govT >= CFG.GOVERNOR_TICK){ st.govT = 0; governorTick(); }
+    researchTick(dt);
+  }
+
+  /* ---------- workers: visible laborer agents ---------- */
+  function staffedSites(){
+    var out = [], i;
+    for (i = 0; i < st.hydros.length; i++)
+      if ((st.hydros[i].staffed || 0) > 0 && !st.hydros[i].dark) out.push(st.hydros[i]);
+    for (i = 0; i < st.extractors.length; i++)
+      if ((st.extractors[i].staffed || 0) > 0 && !st.extractors[i].dark) out.push(st.extractors[i]);
+    return out;
+  }
+  function workerTick(dt){
+    var want = Math.min(st.pop.classes.laborer || 0, CFG.WORKER_CAP);
+    var hwc = hqCenterWorld();
+    while (st.workers.length < want){
+      st.workers.push({ id: 'w' + (++nextWorkerId),
+        x: hwc.x + (rnd() - 0.5) * 10, z: hwc.z + (rnd() - 0.5) * 10,
+        tx: hwc.x, tz: hwc.z, state: 'idle', bId: null,
+        phase: rnd() * 6.28, wait: rnd() * 2 });
+    }
+    if (st.workers.length > want) st.workers.length = want;
+    var sites = staffedSites();
+    for (var i = 0; i < st.workers.length; i++){
+      var w = st.workers[i];
+      var b = null, j;
+      if (w.bId != null){
+        for (j = 0; j < sites.length; j++){
+          if (sites[j].instId === w.bId){ b = sites[j]; break; }
+        }
+      }
+      if (!b && sites.length){
+        b = sites[i % sites.length];
+        w.bId = b.instId;
+        var a = (i * 2.4) % 6.28;
+        w.tx = b.x + Math.cos(a) * 2.4;
+        w.tz = b.z + Math.sin(a) * 2.4;
+        w.state = 'toWork';
+      }
+      if (!b){ w.state = 'idle'; w.bId = null; continue; }
+      if (w.state === 'toWork'){
+        var dx = w.tx - w.x, dz = w.tz - w.z;
+        var d = Math.sqrt(dx * dx + dz * dz);
+        if (d < 0.4) w.state = 'working';
+        else {
+          var sp = CFG.WORKER_SPEED * dt, step = Math.min(sp, d);
+          w.x += dx / d * step;
+          w.z += dz / d * step;
+          w.phase += dt * 10;
+        }
+      } else if (w.state === 'working'){
+        /* harvest cycle: rhythmic work motion; resources tick globally */
+        w.phase += dt * 6;
+      }
+    }
+  }
+
+  /* ============================================================
+   * TROOPS: general infantry system built on the NB.TROOPS registry.
+   *
+   * Troop types (ranger today; riflemen, heavies, ... in the Barracks
+   * task) are defined in js/troops.js. Training takes time via a queue;
+   * every troop understands three orders: move, attackmove, hold.
+   * Troops are precious: death is permanent.
+   * ============================================================ */
+  function troopDef(type){
+    var T = NB.TROOPS || {};
+    return T[type] || null;
+  }
+  function troopCap(){
+    return CFG.TROOP_CAP;
+  }
+  function trainTroop(type, playerId){
+    playerId = playerId || 'p0';
+    var def = troopDef(type);
+    if (!def) return { ok: false, reason: 'troop' };
+    if (st.over) return { ok: false, reason: 'over' };
+    var blocked = buildBlocked();
+    if (blocked) return { ok: false, reason: blocked };
+    var fielded = st.troops.length + st.trainQueue.length;
+    if (fielded >= troopCap()) return { ok: false, reason: 'cap' };
+    if ((st.pop.classes.soldier || 0) < 1) return { ok: false, reason: 'soldier' };
+    var cg = Math.ceil(num(def.costGold, 0) * buildCostMult());
+    var cf = Math.round(num(def.costFood, 0));
+    if (st.gold < cg) return { ok: false, reason: 'gold' };
+    if (st.food < cf) return { ok: false, reason: 'food' };
+    st.gold -= cg;
+    st.food -= cf;
+    st.pop.classes.soldier--;
+    st.pop.total--;
+    var total = Math.max(1, num(def.trainTime, 8));
+    st.trainQueue.push({ type: type, t: total, total: total, ownerId: playerId });
+    announce('TRAINING ' + String(def.name || type).toUpperCase(),
+             'a volunteer reports for duty (' + Math.ceil(total) + 's)', '#7df9ff');
+    return { ok: true, type: type, trainTime: total };
+  }
+  function spawnTroop(type, ownerId){
+    var def = troopDef(type);
+    if (!def) return null;
+    var hwc = hqCenterWorld();
+    var t = { id: 'tr' + (++nextTroopId), type: type,
+      x: hwc.x + (rnd() - 0.5) * 8, z: hwc.z + (rnd() - 0.5) * 8,
+      hp: num(def.hp, 100), maxHp: num(def.hp, 100),
+      cooldown: 0, targetId: null, ownerId: ownerId || 'p0',
+      order: { kind: 'attackmove', x: hwc.x, z: hwc.z } };
+    st.troops.push(t);
+    evq.push({ t: 'boom', x: t.x, z: t.z, color: def.color || '#a5f3fc', n: 6 });
+    return t;
+  }
+  function trainQueueTick(dt){
+    for (var i = st.trainQueue.length - 1; i >= 0; i--){
+      var q = st.trainQueue[i];
+      q.t -= dt;
+      if (q.t <= 0){
+        st.trainQueue.splice(i, 1);
+        var t = spawnTroop(q.type, q.ownerId);
+        if (t){
+          var def = troopDef(q.type) || {};
+          announce(String(def.name || q.type).toUpperCase() + ' READY',
+                   'deployed at the Command Spire (' +
+                   st.troops.length + '/' + troopCap() + ')', '#7df9ff');
+        }
+      }
+    }
+  }
+  var TROOP_ORDER_KINDS = { move: 1, attackmove: 1, hold: 1 };
+  function troopOrder(id, kind, x, z, playerId){
+    playerId = playerId || 'p0';
+    if (!TROOP_ORDER_KINDS[kind]) return { ok: false, reason: 'order' };
+    if (st.over) return { ok: false, reason: 'over' };
+    var t = null;
+    for (var i = 0; i < st.troops.length; i++){
+      if (st.troops[i].id === id){ t = st.troops[i]; break; }
+    }
+    if (!t) return { ok: false, reason: 'troop' };
+    if (t.ownerId !== playerId) return { ok: false, reason: 'owner' };
+    t.order = {
+      kind: kind,
+      x: Math.max(1, Math.min(COLS * CELL - 1, num(x, t.x))),
+      z: Math.max(1, Math.min(ROWS * CELL - 1, num(z, t.z)))
+    };
+    return { ok: true };
+  }
+  function damageTroop(t, amount){
+    if (!t || t.hp <= 0) return;
+    t.hp -= amount;
+    if (t.hp <= 0){
+      for (var i = 0; i < st.troops.length; i++){
+        if (st.troops[i] === t){ st.troops.splice(i, 1); break; }
+      }
+      var def = troopDef(t.type) || {};
+      announce(String(def.name || 'Troop').toUpperCase() + ' DOWN',
+               'a volunteer has fallen. They do not come back.', '#ff5544');
+      evq.push({ t: 'boom', x: t.x, z: t.z, color: '#ff5544', n: 10 });
+    }
+  }
+  function troopTick(dt){
+    var i, j;
+    var dmgM = moraleDmgMult();
+    for (i = 0; i < st.troops.length; i++){
+      var t = st.troops[i];
+      var def = troopDef(t.type) || {};
+      var R = num(def.range, 7) * CELL;
+      var R2 = R * R;
+      var order = t.order || { kind: 'attackmove', x: t.x, z: t.z };
+      var fights = order.kind !== 'move';
+      var best = null, bestD = R2;
+      if (fights){
+        for (j = 0; j < st.enemies.length; j++){
+          var e = st.enemies[j];
+          if (e.dead) continue;
+          var dx = e.x - t.x, dz = e.z - t.z;
+          var dd = dx * dx + dz * dz;
+          if (dd < bestD){ bestD = dd; best = e; }
+        }
+      }
+      t.targetId = best ? best.id : null;
+      if (best){
+        t.cooldown -= dt;
+        if (t.cooldown <= 0){
+          t.cooldown = num(def.fireInterval, 0.9);
+          damageEnemy(best, num(def.dmg, 25) * dmgM, { troop: t });
+          evq.push({ t: 'beam', x1: t.x, z1: t.z, x2: best.x, z2: best.z,
+                     color: def.color || '#a5f3fc' });
+        }
+      } else if (order.kind !== 'hold'){
+        var mx = order.x - t.x, mz = order.z - t.z;
+        var md = Math.sqrt(mx * mx + mz * mz);
+        if (md > 0.6){
+          var sp = num(def.speed, 9) * dt, step = Math.min(sp, md);
+          t.x += mx / md * step;
+          t.z += mz / md * step;
+        }
+      }
+    }
+  }
+
   /* ---------- intent protocol ---------- */
-  var BUILD_KINDS = { buildTower: 1, buildWall: 1, buildReactor: 1, upgrade: 1, branch: 1 };
+  var BUILD_KINDS = { buildTower: 1, buildWall: 1, buildReactor: 1, upgrade: 1, branch: 1,
+                    buildExtractor: 1, buildHydro: 1, buildHab: 1, trainTroop: 1 };
 
   function applyIntent(intent){
     intent = intent || {};
@@ -2104,6 +2704,13 @@ NB.createSim = function(sectorDef, opts){
       case 'buildWall': return buildWall(num(intent.x1, 0), num(intent.z1, 0),
                                          num(intent.x2, 0), num(intent.z2, 0), playerId);
       case 'buildReactor': return buildReactor(num(intent.cx, -1), num(intent.cz, -1), playerId);
+      case 'buildExtractor': return buildEcon('extractor', num(intent.cx, -1), num(intent.cz, -1), playerId);
+      case 'buildHydro': return buildEcon('hydro', num(intent.cx, -1), num(intent.cz, -1), playerId);
+      case 'buildHab': return buildEcon('hab', num(intent.cx, -1), num(intent.cz, -1), playerId);
+      case 'assignClass': return assignClass(intent.cls, num(intent.n, 0));
+      case 'governor': return setGovernor(!!intent.on);
+      case 'trainTroop': return trainTroop(intent.type, playerId);
+      case 'troopOrder': return troopOrder(intent.id, intent.order, num(intent.x, 0), num(intent.z, 0), playerId);
       case 'upgrade': return upgrade(num(intent.instId, -1), playerId);
       case 'branch': return chooseBranch(num(intent.instId, -1), intent.which, playerId);
       case 'sell': return sell(num(intent.instId, -1), playerId);
@@ -2169,7 +2776,25 @@ NB.createSim = function(sectorDef, opts){
         var r = st.reactors[i];
         if (r.hp < r.maxHp) r.hp = Math.min(r.maxHp, r.hp + r.maxHp * rg);
       }
+      for (i = 0; i < st.extractors.length; i++){
+        var ex = st.extractors[i];
+        if (ex.hp < ex.maxHp) ex.hp = Math.min(ex.maxHp, ex.hp + ex.maxHp * rg);
+      }
+      for (i = 0; i < st.hydros.length; i++){
+        var hy = st.hydros[i];
+        if (hy.hp < hy.maxHp) hy.hp = Math.min(hy.maxHp, hy.hp + hy.maxHp * rg);
+      }
+      for (i = 0; i < st.habs.length; i++){
+        var hb = st.habs[i];
+        if (hb.hp < hb.maxHp) hb.hp = Math.min(hb.maxHp, hb.hp + hb.maxHp * rg);
+      }
     }
+
+    /* colony economy: farming, staffing, workers, rangers, research */
+    economyTick(dt);
+    workerTick(dt);
+    troopTick(dt);
+    trainQueueTick(dt);
 
     if (!st.waveActive && st.waveIndex < st.wavesTotal &&
         !st.pendingEvent && !st.pendingEdict){
@@ -2265,6 +2890,13 @@ NB.createSim = function(sectorDef, opts){
     return { active: false, warningIn: 0 };
   }
 
+  function econSnap(arr){
+    return arr.map(function(b){
+      return { instId: b.instId, kind: b.kind, cx: b.cx, cz: b.cz, x: b.x, z: b.z,
+               hp: Math.ceil(b.hp), maxHp: b.maxHp, dark: !!b.dark,
+               staffed: b.staffed || 0, ownerId: b.ownerId };
+    });
+  }
   function snapshot(){
     var sc = {};
     for (var k in st.stats) sc[k] = st.stats[k];
@@ -2282,6 +2914,41 @@ NB.createSim = function(sectorDef, opts){
     }
     return {
       gold: Math.floor(st.gold),
+      metal: Math.floor(st.metal),
+      food: Math.floor(st.food),
+      metalRate: Math.round(st.metalRate * 100) / 100,
+      foodRate: Math.round(st.foodRate * 100) / 100,
+      foodCons: Math.round(st.foodCons * 100) / 100,
+      starving: !!st.starving,
+      research: Math.floor(st.pop.research),
+      researchNeed: st.age < 2 ? num(CFG.AGE_RESEARCH[st.age], 0) : 0,
+      pop: {
+        total: st.pop.total, cap: popCap(), idle: idlePop(),
+        governor: !!st.pop.governor,
+        classes: copyClasses(),
+        growthPct: Math.min(100, Math.round(st.pop.growT / CFG.POP_GROWTH_TIME * 100))
+      },
+      scrap: st.scrap.map(function(s){ return { cx: s.cx, cz: s.cz, x: s.x, z: s.z }; }),
+      extractors: econSnap(st.extractors),
+      hydros: econSnap(st.hydros),
+      habs: econSnap(st.habs),
+      workers: st.workers.map(function(w){
+        return { id: w.id, x: Math.round(w.x * 100) / 100, z: Math.round(w.z * 100) / 100,
+                 state: w.state };
+      }),
+      troops: st.troops.map(function(t){
+        return { id: t.id, type: t.type, x: Math.round(t.x * 100) / 100,
+                 z: Math.round(t.z * 100) / 100,
+                 hp: Math.ceil(t.hp), maxHp: t.maxHp, ownerId: t.ownerId,
+                 targetId: t.targetId,
+                 order: t.order ? { kind: t.order.kind,
+                                    x: Math.round(t.order.x * 100) / 100,
+                                    z: Math.round(t.order.z * 100) / 100 } : null };
+      }),
+      troopCap: troopCap(),
+      training: st.trainQueue.map(function(q){
+        return { type: q.type, pct: Math.round((1 - q.t / q.total) * 100) };
+      }),
       energyUsed: pw.used, energyCap: pw.cap,
       hqHp: Math.ceil(st.hqHp), hqMaxHp: st.hqMaxHp,
       hq: { cx: hqCell.x + 1, cz: hqCell.z + 1, x: (hqCell.x + 1) * CELL, z: (hqCell.z + 1) * CELL },
@@ -2372,6 +3039,16 @@ NB.createSim = function(sectorDef, opts){
   sim.wallCells = wallCells;
   sim.repairWall = function(id, playerId){ return repairWall(id, playerId); };
   sim.buildReactor = function(cx, cz, playerId){ return buildReactor(cx, cz, playerId); };
+  sim.buildExtractor = function(cx, cz, playerId){ return buildEcon('extractor', cx, cz, playerId); };
+  sim.buildHydro = function(cx, cz, playerId){ return buildEcon('hydro', cx, cz, playerId); };
+  sim.buildHab = function(cx, cz, playerId){ return buildEcon('hab', cx, cz, playerId); };
+  sim.canPlaceEcon = function(kind, cx, cz){ return canPlaceEcon(kind, cx, cz); };
+  sim.assignClass = function(cls, n){ return assignClass(cls, n); };
+  sim.setGovernor = function(on){ return setGovernor(on); };
+  sim.trainTroop = function(type, playerId){ return trainTroop(type, playerId); };
+  sim.troopOrder = function(id, kind, x, z, playerId){ return troopOrder(id, kind, x, z, playerId); };
+  sim.popCap = popCap;
+  sim.addPopulation = addPopulation;
   sim.upgrade = function(instId, playerId){ return upgrade(instId, playerId); };
   sim.chooseBranch = function(instId, which, playerId){ return chooseBranch(instId, which, playerId); };
   sim.sell = function(instId, playerId){ return sell(instId, playerId); };
@@ -2414,6 +3091,14 @@ NB.createSim = function(sectorDef, opts){
   var hwc = hqCenterWorld();
   st.hero = { id: 'hero', x: hwc.x, z: hwc.z, hp: 200, maxHp: 200,
               alive: true, respawnAtWave: -1 };
+  /* colony economy init */
+  st.metal = num(sd.startMetal, CFG.METAL_START);
+  st.food = num(sd.startFood, CFG.FOOD_START);
+  initScrap(sd.scrap);
+  st.pop = { total: Math.max(0, Math.round(num(sd.startPop, CFG.POP_START))),
+             classes: { laborer: 0, engineer: 0, soldier: 0, scientist: 0 },
+             governor: true, growT: 0, research: 0, starveT: 0, surplusT: 0,
+             idleLaborers: 0 };
   recomputeFlow();
   recomputeDark();
   allocatePower();
