@@ -66,8 +66,8 @@ NB.Renderer3D = function(canvas){
 
   /* camera rig: desired values ease toward actual */
   var cam = {
-    dtx: 64, dtz: 40, ddist: 55, dpol: 52 * Math.PI / 180, daz: 0,
-    tx: 64, tz: 40, dist: 55, pol: 52 * Math.PI / 180, az: 0,
+    dtx: 64, dtz: 40, ddist: 88, dpol: 58 * Math.PI / 180, daz: 0,
+    tx: 64, tz: 40, dist: 88, pol: 58 * Math.PI / 180, az: 0,
     trauma: 0,
     cine: null /* {fx,fz,fdist, tx,tz,tdist, t, dur} */
   };
@@ -92,7 +92,7 @@ NB.Renderer3D = function(canvas){
   var iraSmall = null, iraBig = null, iraShimmer = null;
   var uplinkGroup = null, hexRings = [], edgeRing = null, edgeGlow = null, lightCone = null;
   var hemi = null, sun = null, spireLight = null, flashLight = null, flashSprite = null;
-  var baseExposure = 1.38, baseHemi = 0.95, baseSun = 1.2, brightnessV = 1;
+  var baseExposure = 1.6, baseHemi = 1.15, baseSun = 1.6, brightnessV = 1;
   var wallMesh = null;
   var enemyPools = {};   /* type -> {mesh, cap} */
   var eyeMesh = null, legMesh = null, shieldMesh = null;
@@ -135,22 +135,28 @@ NB.Renderer3D = function(canvas){
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     /* brightness system: base exposure for a clearly-readable scene;
        setBrightness(v) scales it (v=1 is the default). */
-    baseExposure = 1.38;
+    baseExposure = 1.6;
     renderer.toneMappingExposure = baseExposure;
 
     scene = new THREE.Scene();
-    fogBase = new THREE.Color(0x0a0c14);
+    fogBase = new THREE.Color(0x10141f);
     fogSurge = new THREE.Color(0x1c0a0c);
     scene.background = new THREE.Color(0x05060b);
     scene.fog = new THREE.FogExp2(fogBase.getHex(), 0.006);
 
+    /* Procedural environment map. Metallic PBR surfaces with no env map
+       render near-black; this gives them something to reflect. One-time
+       PMREM cost at boot. Palette matches ember-and-hologram: warm key,
+       cyan fill, cool bounce. */
+    try { buildEnvironment(); } catch (e) {}
+
     camera3 = new THREE.PerspectiveCamera(52, 16 / 9, 0.5, 900);
 
-    hemi = new THREE.HemisphereLight(0x8a9ac0, 0x3a2c20, 0.95);
-    baseHemi = 0.95;
+    hemi = new THREE.HemisphereLight(0x9aabcc, 0x4a3a28, 1.15);
+    baseHemi = 1.15;
     scene.add(hemi);
-    sun = new THREE.DirectionalLight(0xffd9a0, 1.2);
-    baseSun = 1.2;
+    sun = new THREE.DirectionalLight(0xffe0b0, 1.6);
+    baseSun = 1.6;
     sun.position.set(70, 110, 35);
     scene.add(sun);
     spireLight = new THREE.PointLight(0xffb347, 1.6, 70, 2);
@@ -263,8 +269,8 @@ NB.Renderer3D = function(canvas){
     reset: function(hx, hz){
       hx = num(hx, hqPos.x); hz = num(hz, hqPos.z);
       cam.dtx = cam.tx = hx; cam.dtz = cam.tz = hz;
-      cam.ddist = cam.dist = 55;
-      cam.dpol = cam.pol = 52 * Math.PI / 180;
+      cam.ddist = cam.dist = 88;
+      cam.dpol = cam.pol = 58 * Math.PI / 180;
       cam.daz = cam.az = 0;
       cam.cine = null;
     },
@@ -362,6 +368,32 @@ NB.Renderer3D = function(canvas){
     }
     return best;
   };
+
+  /* Procedural PMREM environment: gradient sky + warm key card + cyan
+     fill + cool bounce. Gives metallic materials something to reflect so
+     they read as metal instead of black. */
+  function buildEnvironment(){
+    var es = new THREE.Scene();
+    es.background = new THREE.Color(0x11141f);
+    function card(hex, mult, w, h, x, y, z){
+      var m = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+      m.material.color.setHex(hex).multiplyScalar(mult);
+      m.position.set(x, y, z);
+      m.lookAt(0, 0, 0);
+      es.add(m);
+    }
+    card(0xffb347, 5.0, 34, 34, 45, 65, 25);    /* warm key sun */
+    card(0x22d3ee, 2.0, 44, 20, -55, 28, -12);  /* cyan hologram fill */
+    card(0x8a9ac0, 1.1, 70, 70, 0, -35, 0);     /* cool ground bounce */
+    card(0xfff2df, 0.9, 22, 22, -25, 45, 55);   /* soft top fill */
+    card(0xff5a2a, 1.4, 26, 12, 30, 8, -60);    /* ember rim */
+    var pm = new THREE.PMREMGenerator(renderer);
+    var rt = pm.fromScene(es, 0.04);
+    scene.environment = rt.texture;
+    pm.dispose();
+  }
 
   /* ================= ground ================= */
   function groundHeight(x, z){
@@ -461,11 +493,11 @@ NB.Renderer3D = function(canvas){
     var cw = groundCanvas.width, ch = groundCanvas.height;
     var sx = cw / W, sz = ch / H;
     ctx.clearRect(0, 0, cw, ch);
-    /* base: dusty concrete/metal, lifted for readability (dramatic, not pitch black) */
+    /* base: dusty concrete/metal, clearly readable (dramatic, not pitch black) */
     var grad = ctx.createLinearGradient(0, 0, cw, ch);
-    grad.addColorStop(0, '#3b3644');
-    grad.addColorStop(0.5, '#4c4237');
-    grad.addColorStop(1, '#3a3442');
+    grad.addColorStop(0, '#5e636e');
+    grad.addColorStop(0.5, '#6f6357');
+    grad.addColorStop(1, '#5a5f6a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cw, ch);
     var rng = mulberry(4242);
@@ -2384,7 +2416,7 @@ NB.Renderer3D = function(canvas){
   }
 
   function updateColonists(dt){
-    var show = quality === 'high' && cam.dist < 75;
+    var show = quality === 'high' && cam.dist < 105;
     colonistBodies.visible = show; colonistHeads.visible = show && !colonistHasModel;
     if (!show) return;
     for (var i = 0; i < colonists.length; i++){
@@ -2791,8 +2823,11 @@ NB.Renderer3D = function(canvas){
     var wv = num(snap && snap.waveIndex, 0);
     var warm = 0.5 + 0.5 * Math.sin((wv % 4) / 4 * 6.2832);
     sun.color.setHex(0xffd9a0).lerp(_c2.setHex(0x9ab8ff), (1 - warm) * 0.35);
-    sun.intensity = 0.75 * (1 - I * 0.55);
-    hemi.intensity = 0.55 * (1 - I * 0.3);
+    /* base lights scaled by the brightness slider every frame (init values
+       alone would be clobbered here); surge dims from there. */
+    var bv = 0.55 + 0.45 * brightnessV;
+    sun.intensity = baseSun * bv * (1 - I * 0.55);
+    hemi.intensity = baseHemi * bv * (1 - I * 0.3);
     updateArcs(dt, I);
     updateAsh(dt, I);
     return I;
