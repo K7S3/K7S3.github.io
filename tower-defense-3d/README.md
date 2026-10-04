@@ -28,19 +28,26 @@ This is the **Beta 1** public test build. It lives at
 
 ## Controls (quick map)
 
-- **Mouse**: left-click select and place, right-click or Esc cancels,
-  drag with the wall tool to draw wall lines, click barrels to detonate,
-  click supply drops to collect, click an enemy to focus fire.
-- **Keyboard**: 1-7 select tower palette, W wall tool, R reactor,
-  Space starts the next wave, F speeds the game, P pauses,
-  O toggles Spire overclock, U upgrades selected, X sells selected,
-  Esc cancels or closes panels, ? opens help.
-- **Gamepad**: left stick moves cursor, right stick aims, RT/LT confirm
-  and cancel, Y opens the radial build menu, LB/RB cycle palette,
-  Start opens the menu, Back toggles help.
-- **Menus**: title screen (New Campaign, Continue, Co-op, How to Play,
-  Settings, Credits), pause menu, sector select, event choice cards,
-  edict picker, game over and victory screens.
+- **Mouse / touch**: left-click selects and places, right-click or Esc
+  cancels, drag with the wall tool to draw wall lines, click barrels to
+  detonate them, click supply drops to collect, click an enemy to focus
+  fire on it, hover for tooltips.
+- **Keyboard**: Space pauses, Esc cancels place mode and closes panels,
+  1/2/3 set game speed, Q/E rotate the camera.
+- **Gamepad**: left stick moves a virtual cursor, A confirms and places,
+  B cancels (also skips briefings), X starts the next wave early for
+  bonus gold, Y cycles game speed, Start starts from the title or opens
+  the pause menu, Back asks IRA for a situation report, LS recenters the
+  cursor, RS jumps the camera back to the Spire, LB/RB zoom, LT/RT rotate,
+  D-pad navigates menus.
+- **HUD**: pause, mute, menu, wave start, call-early, overclock, and
+  Spire upgrade buttons; selected towers offer upgrade, sell, and
+  branch A/B; walls offer repair and sell; reactors offer sell.
+- **Screens**: title (Start/Continue, Co-op, How to Play, Codex), co-op
+  lobby (host with a room code, join with a code), sector briefing
+  (read or skip), colony event cards and edict picker, pause menu,
+  disconnect overlay with a rejoin countdown, and end-of-sector
+  debrief with replay.
 
 ## Known rough edges in Beta 1
 
