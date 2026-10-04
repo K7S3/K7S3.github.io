@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nova Bastion - Neon Tower Defense</title>
+<meta name="description" content="Nova Bastion: a neon space tower-defense game. Build turrets, chain synergies, and hold the line against the void swarm.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- HUD -->
+  <header id="hud" class="hidden" aria-label="Game HUD">
+    <div class="hud-stats">
+      <div class="hud-stat" id="hud-gold" title="Gold"><span class="ico gold-dot"></span><span id="hud-gold-v">0</span></div>
+      <div class="hud-stat" id="hud-lives" title="Lives"><span class="ico heart">&hearts;</span><span id="hud-lives-v">20</span></div>
+      <div class="hud-stat" id="hud-wave" title="Wave"><span class="ico wave-ico">&#9670;</span><span id="hud-wave-v">-</span></div>
+    </div>
+    <div class="hud-controls">
+      <div class="seg" id="speed-seg" role="group" aria-label="Game speed">
+        <button type="button" data-speed="1" class="seg-btn active">1x</button>
+        <button type="button" data-speed="2" class="seg-btn">2x</button>
+        <button type="button" data-speed="3" class="seg-btn">3x</button>
+      </div>
+      <button type="button" id="btn-wave" class="btn hud-btn hidden" title="Wave preview">Wave</button>
+      <button type="button" id="btn-pause" class="btn hud-btn" title="Pause (Space)">&#10074;&#10074;</button>
+      <button type="button" id="btn-restart" class="btn hud-btn" title="Restart level">&#10227;</button>
+      <button type="button" id="btn-mute" class="btn hud-btn" title="Mute sound">♪</button>
+      <button type="button" id="btn-menu" class="btn hud-btn" title="Levels menu">&#9776;</button>
+    </div>
+  </header>
+
+  <!-- Stage -->
+  <div id="stage-wrap">
+    <canvas id="game" width="960" height="600" aria-label="Nova Bastion game board"></canvas>
+    <div id="toast-wrap" aria-live="polite"></div>
+    <div id="banner" class="hidden"><div id="banner-title"></div><div id="banner-sub"></div></div>
+
+    <!-- Build panel -->
+    <section id="panel-build" class="panel sheet hidden" aria-label="Build tower">
+      <div class="panel-head"><h2 id="build-title">Build Tower</h2><button type="button" class="btn icon-btn panel-close" data-close="panel-build">&times;</button></div>
+      <div id="build-grid" class="build-grid"></div>
+    </section>
+
+    <!-- Tower panel -->
+    <section id="panel-tower" class="panel sheet hidden" aria-label="Tower details">
+      <div class="panel-head"><h2 id="tower-name">Tower</h2><button type="button" class="btn icon-btn panel-close" data-close="panel-tower">&times;</button></div>
+      <div id="tower-tier" class="tier-pips"></div>
+      <p id="tower-desc" class="muted"></p>
+      <div id="tower-stats" class="stat-grid"></div>
+      <div id="tower-synergy" class="synergy-line hidden"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-upgrade" class="btn primary">Upgrade</button>
+        <button type="button" id="btn-sell" class="btn danger">Sell</button>
+      </div>
+      <div id="branch-row" class="hidden">
+        <p class="muted">Max tier reached. Choose a specialization:</p>
+        <div class="btn-row">
+          <button type="button" id="btn-branch-a" class="btn branch-a"></button>
+          <button type="button" id="btn-branch-b" class="btn branch-b"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wave panel -->
+    <section id="panel-wave" class="panel sheet hidden" aria-label="Next wave preview">
+      <div class="panel-head"><h2 id="wave-title">Next Wave</h2><button type="button" class="btn icon-btn panel-close" data-close="panel-wave">&times;</button></div>
+      <div id="wave-list" class="wave-list"></div>
+      <p id="wave-note" class="muted"></p>
+      <p id="wave-bonus" class="bonus-note"></p>
+      <div class="btn-row">
+        <button type="button" id="btn-wave-start" class="btn primary">Start Wave</button>
+        <button type="button" id="btn-wave-early" class="btn">Call Early</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Screens -->
+  <div id="screens">
+    <div id="screen-title" class="screen">
+      <div class="title-inner">
+        <div class="logo">NOVA<br>BASTION</div>
+        <p class="subtitle">Hold the line. Light the void.</p>
+        <div class="btn-col">
+          <button type="button" id="btn-title-start" class="btn primary big">Start</button>
+          <button type="button" id="btn-title-howto" class="btn big">How to Play</button>
+        </div>
+        <p class="muted tiny">A neon tower-defense stand &middot; vanilla JS, zero assets</p>
+      </div>
+    </div>
+
+    <div id="screen-howto" class="screen hidden">
+      <div class="doc">
+        <h1>How to Play</h1>
+        <p>Enemies stream along the glowing path toward your bastion. Build towers on the hex plots, upgrade them, and keep your lives above zero through every wave.</p>
+        <h2>Tower Roster</h2>
+        <div id="howto-towers" class="roster"></div>
+        <h2>Know Your Enemy</h2>
+        <div id="howto-enemies" class="roster"></div>
+        <h2>Synergies</h2>
+        <div id="howto-synergies" class="roster"></div>
+        <h2>Controls</h2>
+        <ul class="controls-list">
+          <li><b>Tap / Click</b> a hex plot to build, a tower to inspect, empty space to deselect.</li>
+          <li><b>Space</b> pause / resume. <b>1 / 2 / 3</b> game speed. <b>Esc</b> close panel or pause.</li>
+          <li><b>Hover</b> a tower on desktop to preview its range.</li>
+          <li>Calling a wave early grants <b>bonus gold</b>. Clearing waves grants more.</li>
+          <li>Selling a tower refunds part of what you spent. Plan ahead.</li>
+        </ul>
+        <div class="btn-row center"><button type="button" id="btn-howto-back" class="btn primary big">Back</button></div>
+      </div>
+    </div>
+
+    <div id="screen-levels" class="screen hidden">
+      <div class="doc narrow">
+        <h1>Select Sector</h1>
+        <p class="muted">Beat a sector to unlock the next. Earn up to 3 stars per sector.</p>
+        <div id="level-grid" class="level-grid"></div>
+        <div class="btn-row center"><button type="button" id="btn-levels-back" class="btn big">Back</button></div>
+      </div>
+    </div>
+
+    <div id="screen-pause" class="screen hidden">
+      <div class="doc narrow center">
+        <h1>Paused</h1>
+        <p class="muted">The void waits for no one. Except now.</p>
+        <div class="btn-col">
+          <button type="button" id="btn-resume" class="btn primary big">Resume</button>
+          <button type="button" id="btn-pause-restart" class="btn big">Restart</button>
+          <button type="button" id="btn-pause-howto" class="btn big">How to Play</button>
+          <button type="button" id="btn-quit" class="btn big">Quit to Sectors</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-end" class="screen hidden">
+      <div class="doc narrow center">
+        <p id="end-kicker" class="kicker">Victory</p>
+        <h1 id="end-title">Sector Cleared</h1>
+        <div id="end-stars" class="stars"></div>
+        <table id="end-stats" class="stats-table"><tbody></tbody></table>
+        <div class="btn-col">
+          <button type="button" id="btn-end-next" class="btn primary big">Next Sector</button>
+          <button type="button" id="btn-end-retry" class="btn big">Retry</button>
+          <button type="button" id="btn-end-levels" class="btn big">Sectors</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/towers.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
