@@ -322,6 +322,11 @@ NB.Renderer3D = function(canvas){
     camera3.lookAt(cam.tx, 2.5, cam.tz);
   }
 
+  /* Terrain-aware picking: sphere-trace the ray against the real height
+   * field (NB.Pick.rayGroundHit) instead of the y=0 plane. The old y=0
+   * math missed hilltops by 3+ cells, which is why towers seemed to place
+   * "randomly". groundY is the exact function displacing the visible mesh.
+   * Returns null for sky clicks and for hits outside the world margin. */
   r.screenToGround = function(clientX, clientY){
     if (!inited) return null;
     var rect = { left: 0, top: 0, width: 800, height: 600 };
@@ -331,10 +336,11 @@ NB.Renderer3D = function(canvas){
     var ny = -((clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
     _v1.set(nx, ny, 0.5).unproject(camera3);
     _v2.copy(_v1).sub(camera3.position).normalize();
-    if (Math.abs(_v2.y) < 1e-5) return null;
-    var t = -camera3.position.y / _v2.y;
-    if (t < 0) return null;
-    return { x: camera3.position.x + _v2.x * t, z: camera3.position.z + _v2.z * t };
+    var hit = NB.Pick.rayGroundHit(camera3.position.x, camera3.position.y,
+      camera3.position.z, _v2.x, _v2.y, _v2.z, groundY);
+    if (!hit) return null;
+    if (hit.x < -8 || hit.x > W + 8 || hit.z < -8 || hit.z > H + 8) return null;
+    return hit;
   };
 
   r.pickStructure = function(clientX, clientY){
@@ -1377,6 +1383,8 @@ NB.Renderer3D = function(canvas){
     hit.position.set(p.x, 2.2, p.z);
     scene.add(g);
     spawnRing(p.x, p.z, { color: '#c8b89a', maxR: 3.2, life: 0.8 }); /* dust ring on build */
+    spawnDebris(p.x, groundY(p.x, p.z) + 0.6, p.z,
+      { count: 10, color: '#9a8a6a', speed: 6, up: 4, life: 0.9, size: 0.8 }); /* placement thud */
     return {
       instId: t.instId, id: id, group: g, parts: built.parts, accent: A,
       ownerRing: ownerRing, trim: trim, standby: standby, scaffold: scaffold,
@@ -2489,8 +2497,12 @@ NB.Renderer3D = function(canvas){
   function groundY(x, z){
     if (heightFn){
       try {
-        var v = heightFn(x, z);
-        if (typeof v === 'number' && isFinite(v)) return v;
+        /* Bilinearly smooth the per-cell staircase (sim.heightAt) so the
+         * height matches the GPU-interpolated ground mesh. Without this,
+         * picking against the raw staircase disagrees with the visible
+         * surface by up to a cell at hill borders. Gameplay keeps using
+         * the discrete cell heights; this is visuals/picking only. */
+        return NB.Pick.smoothSample(heightFn, CELL, x, z);
       } catch (e) {}
     }
     return groundHeight(x, z);
@@ -2606,9 +2618,9 @@ NB.Renderer3D = function(canvas){
   /* ================= ghost / selection / hover / focus ================= */
   function buildGhost(){
     ghostMats.valid = new THREE.MeshBasicMaterial({ color: 0x2bff88, transparent: true,
-      opacity: 0.3, depthWrite: false });
+      opacity: 0.45, depthWrite: false });
     ghostMats.invalid = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true,
-      opacity: 0.32, depthWrite: false });
+      opacity: 0.45, depthWrite: false });
     for (var i = 0; i < 24; i++){
       var m = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.5, 1.9), ghostMats.valid);
       m.visible = false;
@@ -2625,7 +2637,10 @@ NB.Renderer3D = function(canvas){
       var m = ghostMeshes[i];
       if (i < n){
         var c = cells[i];
-        var wx = (num(c.x, 0) + 0.5) * CELL, wz = (num(c.z, 0) + 0.5) * CELL;
+        /* game.js and sim.wallCells write cx/cz; accept x/z too */
+        var ccx = (c.cx != null) ? c.cx : num(c.x, 0);
+        var ccz = (c.cz != null) ? c.cz : num(c.z, 0);
+        var wx = (ccx + 0.5) * CELL, wz = (ccz + 0.5) * CELL;
         m.position.set(wx, groundY(wx, wz) + 0.75, wz);
         m.material = (gh && gh.valid) ? ghostMats.valid : ghostMats.invalid;
         m.visible = true;
@@ -2640,7 +2655,7 @@ NB.Renderer3D = function(canvas){
     selRing.visible = false;
     scene.add(selRing);
     hoverBox = new THREE.Mesh(new THREE.BoxGeometry(2, 0.25, 2),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.16,
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3,
         depthWrite: false }));
     hoverBox.visible = false;
     scene.add(hoverBox);
@@ -2671,6 +2686,12 @@ NB.Renderer3D = function(canvas){
       selRing.scale.set(s, s, 1);
     } else selRing.visible = false;
     var hc = view && view.hoverCell;
+    if (!hc && view && view.ghost && view.ghost.cells && view.ghost.cells.length){
+      /* bright cell highlight under the placement ghost */
+      var gc = view.ghost.cells[0];
+      var gx = (gc.cx != null) ? gc.cx : gc.x, gz = (gc.cz != null) ? gc.cz : gc.z;
+      if (gx != null && gz != null) hc = { x: gx, z: gz };
+    }
     if (hc && hc.x != null){
       var wx = (hc.x + 0.5) * CELL, wz = (hc.z + 0.5) * CELL;
       hoverBox.visible = true;
