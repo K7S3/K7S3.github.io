@@ -81,6 +81,13 @@ var Game = {
       if (this.renderer && typeof this.renderer.setBrightness === 'function'){
         try { this.renderer.setBrightness((this.ui.save && this.ui.save.brightness) || 1); } catch (e){}
       }
+      /* adaptive graphics quality: auto-detect tier, FPS governor drives it;
+         manual override from the pause menu persists in the save */
+      if (this.renderer && typeof this.renderer.perfInit === 'function'){
+        try {
+          this.renderer.perfInit(null, (this.ui.save && this.ui.save.quality) || 'auto');
+        } catch (e){}
+      }
     } catch (e){
       this.renderer = null;
       var fb = document.getElementById('fallback');

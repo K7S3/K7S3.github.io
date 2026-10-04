@@ -61,6 +61,7 @@ NB.Renderer3D = function(canvas){
   var W = 128, H = 80, CELL = 2, COLS = 64, ROWS = 40;
   var time = 0;
   var quality = 'high';
+  var perfGov = null; /* NB.Perf adaptive governor, created by r.perfInit */
   var lastSnap = null;
   var sectorSig = '';
 
@@ -190,6 +191,18 @@ NB.Renderer3D = function(canvas){
     buildFlashSprite();
     buildProps();
 
+    /* Cinematic layer: post-processing chain, dynamic shadows, pooled FX.
+       Fully optional: if the vendored post pieces fail to load, the game
+       renders directly exactly as before. */
+    try {
+      if (NB.Cine && globalThis.NBPost && NBPost.EffectComposer){
+        NB.Cine.init(renderer, scene, camera3);
+        NB.Cine.enableShadows(sun);
+        NB.Cine.setGroundMesh(groundMesh);
+        NB.Cine.setQuality(quality);
+      }
+    } catch (e){}
+
     inited = true;
     var w = num(cv.width, 800), h = num(cv.height, 600);
     r.resize(w, h);
@@ -202,13 +215,39 @@ NB.Renderer3D = function(canvas){
     try { renderer.setSize(w, h, false); } catch (e) {}
     camera3.aspect = w / h;
     camera3.updateProjectionMatrix();
+    try { if (NB.Cine) NB.Cine.resize(w, h); } catch (e) {}
   };
 
+  /* Three quality tiers: high (full post chain + 2048 shadows), medium
+     (bloom only + 1024 shadows), low (direct render, no shadows). */
   r.setQuality = function(q){
-    quality = (q === 'low') ? 'low' : 'high';
+    quality = (q === 'low') ? 'low' : ((q === 'medium') ? 'medium' : 'high');
     var dpr = 1;
     try { dpr = num(globalThis.devicePixelRatio, 1); } catch (e) {}
-    if (inited) renderer.setPixelRatio(quality === 'low' ? Math.min(dpr, 1.25) : Math.min(dpr, 2));
+    if (inited){
+      if (quality === 'low') renderer.setPixelRatio(Math.min(dpr, 1));
+      else if (quality === 'medium') renderer.setPixelRatio(Math.min(dpr, 1.5));
+      else renderer.setPixelRatio(Math.min(dpr, 2));
+      try { if (NB.Cine) NB.Cine.setQuality(quality); } catch (e){}
+    }
+  };
+  r.getQuality = function(){ return quality; };
+
+  /* Adaptive quality: rolling-FPS governor steps tiers up/down with
+     hysteresis; manual override locks the tier. Called once at boot. */
+  r.perfInit = function(initialQ, manualQ){
+    if (!NB.Perf) return;
+    try {
+      perfGov = NB.Perf.create({
+        initial: initialQ || NB.Perf.autoDetect(),
+        onChange: function(q){ r.setQuality(q); }
+      });
+      if (manualQ && manualQ !== 'auto') perfGov.setManual(manualQ);
+      else r.setQuality(perfGov.tier);
+    } catch (e){}
+  };
+  r.perfSetManual = function(q){
+    try { if (perfGov) perfGov.setManual(q); } catch (e){}
   };
 
   /* manual blackout-surge override; OR-combined with snapshot.surge */
@@ -320,6 +359,8 @@ NB.Renderer3D = function(canvas){
     }
     camera3.position.set(px, py, pz);
     camera3.lookAt(cam.tx, 2.5, cam.tz);
+    /* keep the shadow frustum centered on the camera target */
+    try { if (NB.Cine) NB.Cine.followCamera(cam.tx, cam.tz); } catch (e){}
   }
 
   /* Terrain-aware picking: sphere-trace the ray against the real height
@@ -635,12 +676,16 @@ NB.Renderer3D = function(canvas){
     sun.position.set(
       Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)
     ).multiplyScalar(140);
+    /* shadow rig follows the new sun direction */
+    try { if (NB.Cine) NB.Cine.syncSunDir(); } catch (e){}
     skyUniforms.sunDir.value.copy(sun.position).normalize();
     skyUniforms.sunColor.value.set(scol);
     starMat.opacity = num(pick('stars'), 0) * 0.9;
     var au = num(pick('aurora'), 0);
     for (var i = 0; i < auroraMats.length; i++)
       auroraMats[i].uniforms.uIntensity.value = au;
+    /* cinematic color grade for this sector (teal-orange dusk, cold night...) */
+    try { if (NB.Cine) NB.Cine.setGrade(env.grade); } catch (e){}
     currentEnv = env;
   }
 
@@ -1684,6 +1729,9 @@ NB.Renderer3D = function(canvas){
       var mat = new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0.5,
         transparent: transparent, opacity: transparent ? 0.55 : 1,
         vertexColors: hasModel });
+      /* PBR: armored-machine response + roughness variation (one material
+         serves the whole merged body, so a mid response, not per-part) */
+      try { if (NB.PBR) NB.PBR.tuneEnemyMaterial(mat); } catch (e){}
       var mesh = new THREE.InstancedMesh(mgeo || enemyBodyGeo(type), mat, bodyCap);
       mesh.frustumCulled = false;
       mesh.count = 0;
@@ -1791,24 +1839,31 @@ NB.Renderer3D = function(canvas){
         var hd = headings[en.id];
         if (!hd){ hd = { x: en.x, z: en.z, a: 0 }; headings[en.id] = hd; }
         var dx = en.x - hd.x, dz = en.z - hd.z;
-        if (dx * dx + dz * dz > 0.0004){
+        var moved2 = dx * dx + dz * dz;
+        var bank = 0;
+        if (moved2 > 0.0004){
           var na = Math.atan2(dx, dz);
           var da = na - hd.a;
           while (da > Math.PI) da -= Math.PI * 2;
           while (da < -Math.PI) da += Math.PI * 2;
+          bank = clamp(da * 1.2, -0.3, 0.3); /* lean into turns */
           hd.a += da * Math.min(1, dt * 10);
           hd.x = en.x; hd.z = en.z;
         }
-        var wob = 0, bobY = 0.55 * s, pitch = 0;
+        /* procedural walk cycle: full stride when moving, soft idle sway
+           when still, banking into turns. Nothing looks frozen. */
+        var spdF = clamp(Math.sqrt(moved2) / Math.max(dt, 0.001) / 9, 0, 1.2);
+        var ampF = 0.25 + 0.75 * Math.min(1, spdF);
+        var wob = bank, bobY = 0.55 * s, pitch = 0;
         if (isSkitter){
-          wob = Math.sin(time * 15 + en.id * 1.7) * 0.13;
-          bobY += Math.abs(Math.sin(time * 15 + en.id * 1.7)) * 0.1 * s;
+          wob += Math.sin(time * 15 + en.id * 1.7) * 0.13 * ampF;
+          bobY += Math.abs(Math.sin(time * 15 + en.id * 1.7)) * 0.1 * s * ampF;
         } else if (isWalker){
           var st = Math.abs(Math.sin(time * 4.2 + en.id));
-          bobY += st * 0.3 * s;
-          pitch = Math.sin(time * 4.2 + en.id) * 0.05;
+          bobY += st * 0.3 * s * ampF;
+          pitch = Math.sin(time * 4.2 + en.id) * 0.05 * ampF;
         } else {
-          bobY += Math.sin(time * 3 + en.id * 2.3) * 0.08 * s;
+          bobY += Math.sin(time * 3 + en.id * 2.3) * 0.08 * s * ampF;
         }
         var egy = groundY(en.x, en.z);
         _v1.set(en.x, egy + bobY, en.z);
@@ -2480,6 +2535,8 @@ NB.Renderer3D = function(canvas){
     flashSprite.visible = true;
     flashLife = 0.07;
     spawnBurst(_v1.x, _v1.y, _v1.z, { count: 4, color: '#ffd27a', speed: 5, life: 0.22, size: 2.4, up: 1 });
+    /* pooled light: every shot gets its own flicker, no single-light choke */
+    try { if (NB.Cine) NB.Cine.muzzleFlash(_v1.x, _v1.y, _v1.z); } catch (e){}
   }
 
   function updateFlash(dt){
@@ -2943,7 +3000,21 @@ NB.Renderer3D = function(canvas){
           speed: big ? 10 : 7, life: big ? 1.6 : 1.2, size: big ? 1.1 : 0.7 });
         /* radial impulse: the blast shoves nearby debris outward (juice) */
         if (debrisSys) debrisSys.kick(x, z, big ? 14 : 8, big ? 16 : 9);
-        if (big) r.camera.addTrauma(0.3);
+        /* cinematic: fireball flash light + electrical discharge arcs */
+        try {
+          if (NB.Cine){
+            NB.Cine.blastFlash(x, gy + 1, z, big);
+            if (big){
+              for (var arcI = 0; arcI < 3; arcI++){
+                var aa = Math.random() * 6.2832;
+                NB.Cine.arc(x, gy + 0.6, z,
+                  x + Math.cos(aa) * (6 + Math.random() * 4), gy + 0.6,
+                  z + Math.sin(aa) * (6 + Math.random() * 4), 0xffc37a);
+              }
+            }
+          }
+        } catch (e){}
+        if (big) r.camera.addTrauma(0.45);
         break;
       }
       case 'announce':
@@ -2955,6 +3026,8 @@ NB.Renderer3D = function(canvas){
           speed: 6, life: 0.45, size: 2.2, up: 4 });
         spawnDebris(x, gy + 1.2, z, { count: 2, color: '#6a625a', speed: 4,
           life: 0.9, size: 0.45 });
+        /* impact glint: hot spark flash on the wall face */
+        try { if (NB.Cine) NB.Cine.impactSpark(x, gy + 1.4, z); } catch (e2){}
         break;
       case 'structureDown':
         spawnBurst(x, gy + 1.5, z, { count: 30, color: e.color || '#ff7744',
@@ -2964,7 +3037,18 @@ NB.Renderer3D = function(canvas){
         spawnDebris(x, gy + 1.5, z, { count: 5, color: '#5a4a3c', speed: 9, life: 1.5, size: 1.0 });
         if (debrisSys) debrisSys.kick(x, z, 12, 13);
         spawnCrater(x, z, 6);
-        r.camera.addTrauma(0.35);
+        /* cinematic: big flash + discharge arcs crawling outward */
+        try {
+          if (NB.Cine){
+            NB.Cine.blastFlash(x, gy + 1.5, z, true);
+            for (var sdI = 0; sdI < 2; sdI++){
+              var sa = Math.random() * 6.2832;
+              NB.Cine.arc(x, gy + 0.6, z,
+                x + Math.cos(sa) * 8, gy + 0.6, z + Math.sin(sa) * 8, 0x9fdcff);
+            }
+          }
+        } catch (e){}
+        r.camera.addTrauma(0.45);
         break;
       case 'gold':
         spawnBurst(x, gy + 1, z, { count: 6, color: '#ffd34d', speed: 2.5, life: 0.7, size: 2, up: 6 });
@@ -3034,6 +3118,8 @@ NB.Renderer3D = function(canvas){
     if (!inited) return;
     frameNo++;
     dt = clamp(num(dt, 1 / 60), 0.0001, 0.1);
+    /* adaptive quality governor: rolling FPS steps tiers with hysteresis */
+    try { if (perfGov) perfGov.update(dt); } catch (e){}
     var sdt = dt * num(r.timeScale, 1);
     time += sdt;
     view = view || {};
@@ -3045,7 +3131,7 @@ NB.Renderer3D = function(canvas){
     if (snap) lastSnap = snap;
     else snap = lastSnap;
     if (!snap){
-      try { renderer.render(scene, camera3); } catch (e) {}
+      try { if (NB.Cine) NB.Cine.render(); else renderer.render(scene, camera3); } catch (e) {}
       return;
     }
 
@@ -3097,6 +3183,7 @@ NB.Renderer3D = function(canvas){
     updateDebris(sdt);
     updateRings(sdt);
     updateFlash(sdt);
+    try { if (NB.Cine) NB.Cine.update(sdt); } catch (e){}
 
     var surgeI = updateEnvironment(snap, sdt);
     updateUplinkFx(view, sdt);
@@ -3121,7 +3208,7 @@ NB.Renderer3D = function(canvas){
     hitPool.push(R.hit);
 
     updateCamera(sdt);
-    try { renderer.render(scene, camera3); } catch (e) {}
+    try { if (NB.Cine) NB.Cine.render(); else renderer.render(scene, camera3); } catch (e) {}
   };
 
   return r;

@@ -37,7 +37,7 @@ var UI = {
   /* ---------------- save ---------------- */
 
   loadSave: function(){
-    var s = { stars:{}, unlocked:1, codex:[], iraMuted:false, brightness:1 };
+    var s = { stars:{}, unlocked:1, codex:[], iraMuted:false, brightness:1, quality:'auto' };
     try {
       var raw = localStorage.getItem(SAVE_KEY);
       if (raw){
@@ -48,6 +48,7 @@ var UI = {
           if (Array.isArray(p.codex)) s.codex = p.codex.filter(function(x){ return typeof x === 'string'; });
           if (typeof p.iraMuted === 'boolean') s.iraMuted = p.iraMuted;
           if (typeof p.brightness === 'number' && isFinite(p.brightness)) s.brightness = Math.max(0.55, Math.min(1.8, p.brightness));
+          if (typeof p.quality === 'string' && /^(auto|high|medium|low)$/.test(p.quality)) s.quality = p.quality;
         }
       }
     } catch (e){}
@@ -222,6 +223,20 @@ var UI = {
   },
   applyBrightness: function(){
     this.setBrightness(this.save.brightness || 1);
+  },
+
+  /* graphics quality: 'auto' lets the FPS governor drive the tiers,
+     otherwise the chosen tier is locked. Persisted like brightness. */
+  setQuality: function(q){
+    q = /^(auto|high|medium|low)$/.test(q) ? q : 'auto';
+    this.save.quality = q;
+    this.persist();
+    var r = this.game && this.game.renderer;
+    if (r && typeof r.perfSetManual === 'function'){
+      try { r.perfSetManual(q); } catch (e){}
+    }
+    var el = $('sel-quality');
+    if (el && el.value !== q) el.value = q;
   },
 
   /* ---------------- HUD ---------------- */
@@ -1171,6 +1186,14 @@ var UI = {
       });
       rngB.addEventListener('change', function(){
         self.setBrightness((parseInt(rngB.value, 10) || 100) / 100, true);
+      });
+    }
+    /* graphics quality: auto (FPS governor) or a locked tier */
+    var selQ = $('sel-quality');
+    if (selQ){
+      selQ.value = self.save.quality || 'auto';
+      selQ.addEventListener('change', function(){
+        self.setQuality(selQ.value);
       });
     }
     this.on('btn-quit', function(){ g().quitToLevels(); });

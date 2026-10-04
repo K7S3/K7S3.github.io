@@ -62,7 +62,8 @@ NB.SECTORS = [
     fog:'#6e3524', fogDensity:0.0058,
     sunColor:'#ffb36b', sunIntensity:1.7, sunElev:24, sunAzim:145,
     hemiSky:'#c48a6a', hemiGround:'#3a2418', hemiIntensity:1.2,
-    ground:['#6b5a4e','#7a5f4a','#5e4f45'], dust:'#c47a3a', stars:0.0, aurora:0.0
+    ground:['#6b5a4e','#7a5f4a','#5e4f45'], dust:'#c47a3a', stars:0.0, aurora:0.0,
+    grade:{sat:1.08, con:1.05, warm:0.06, vig:0.32, lift:[0.01,0.0,-0.01]}
   },
   cols:64, rows:40,
   blocked:[
@@ -151,7 +152,8 @@ NB.SECTORS = [
     fog:'#0a1826', fogDensity:0.0062,
     sunColor:'#9ab8ff', sunIntensity:0.7, sunElev:55, sunAzim:230,
     hemiSky:'#3a5a8a', hemiGround:'#0c1420', hemiIntensity:0.85,
-    ground:['#5a6478','#626c82','#4f586c'], dust:'#4a6a9a', stars:1.0, aurora:0.85
+    ground:['#5a6478','#626c82','#4f586c'], dust:'#4a6a9a', stars:1.0, aurora:0.85,
+    grade:{sat:0.95, con:1.08, warm:-0.08, vig:0.38, lift:[0.0,0.01,0.03]}
   },
   cols:64, rows:40,
   blocked:[
@@ -246,7 +248,8 @@ NB.SECTORS = [
     fog:'#c89858', fogDensity:0.0048,
     sunColor:'#fff2d8', sunIntensity:2.0, sunElev:68, sunAzim:100,
     hemiSky:'#9ac2e8', hemiGround:'#6a5232', hemiIntensity:1.35,
-    ground:['#8a7355','#96795a','#7d6850'], dust:'#d8a85e', stars:0.0, aurora:0.0
+    ground:['#8a7355','#96795a','#7d6850'], dust:'#d8a85e', stars:0.0, aurora:0.0,
+    grade:{sat:1.05, con:1.02, warm:0.10, vig:0.28, lift:[0.02,0.01,0.0]}
   },
   cols:64, rows:40,
   blocked:[
@@ -351,7 +354,8 @@ NB.SECTORS = [
     fog:'#241a38', fogDensity:0.0068,
     sunColor:'#c48aff', sunIntensity:0.9, sunElev:18, sunAzim:300,
     hemiSky:'#5a3f8a', hemiGround:'#1a1226', hemiIntensity:1.0,
-    ground:['#655a76','#6e6380','#5a5068'], dust:'#8a5fc2', stars:0.55, aurora:0.0
+    ground:['#655a76','#6e6380','#5a5068'], dust:'#8a5fc2', stars:0.55, aurora:0.0,
+    grade:{sat:1.0, con:1.06, warm:-0.04, vig:0.36, lift:[0.01,0.0,0.02]}
   },
   cols:64, rows:40,
   blocked:[
@@ -465,7 +469,8 @@ NB.SECTORS = [
     fog:'#8a6a4a', fogDensity:0.0052,
     sunColor:'#ffe8b0', sunIntensity:1.9, sunElev:32, sunAzim:75,
     hemiSky:'#8ab8d8', hemiGround:'#4a3a28', hemiIntensity:1.3,
-    ground:['#6e6258','#7a6a58','#655a50'], dust:'#e8b878', stars:0.0, aurora:0.0
+    ground:['#6e6258','#7a6a58','#655a50'], dust:'#e8b878', stars:0.0, aurora:0.0,
+    grade:{sat:1.1, con:1.03, warm:0.08, vig:0.30, lift:[0.02,0.01,-0.01]}
   },
   cols:64, rows:40,
   blocked:[

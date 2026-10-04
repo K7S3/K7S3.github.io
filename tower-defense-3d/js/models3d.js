@@ -253,6 +253,9 @@ var Lib = {
                     else self._failed[name] = true;
                   } else {
                     var grp = self.normalizeGroup(scene, entry.size);
+                    /* PBR pass: classify parts (metal / paint / glow) once at
+                       load; clones inherit the tuned materials */
+                    try { if (NB.PBR) NB.PBR.tuneTemplate(grp); } catch (eP){}
                     self._templates[name] = grp;
                     try {
                       var hbb = new THREE.Box3().setFromObject(grp);

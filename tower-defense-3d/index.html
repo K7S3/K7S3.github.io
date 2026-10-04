@@ -378,6 +378,15 @@
             <label for="rng-bright">Display brightness</label>
             <input type="range" id="rng-bright" min="55" max="180" step="5" value="100" aria-label="Display brightness">
           </div>
+          <div class="slider-row">
+            <label for="sel-quality">Graphics quality</label>
+            <select id="sel-quality" aria-label="Graphics quality">
+              <option value="auto" selected>Auto</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
           <button type="button" id="btn-quit" class="btn big">Quit to Sectors</button>
         </div>
       </div>
@@ -419,8 +428,19 @@
 
 <script src="js/vendor/three.min.js"></script>
 <script src="js/vendor/GLTFLoader.js"></script>
+<script src="js/vendor/post/CopyShader.js"></script>
+<script src="js/vendor/post/LuminosityHighPassShader.js"></script>
+<script src="js/vendor/post/Pass.js"></script>
+<script src="js/vendor/post/MaskPass.js"></script>
+<script src="js/vendor/post/ShaderPass.js"></script>
+<script src="js/vendor/post/RenderPass.js"></script>
+<script src="js/vendor/post/EffectComposer.js"></script>
+<script src="js/vendor/post/UnrealBloomPass.js"></script>
 <script src="js/vendor/peerjs.min.js"></script>
 <script src="js/config.js"></script>
+<script src="js/pbr.js"></script>
+<script src="js/perf.js"></script>
+<script src="js/cinematic.js"></script>
 <script src="js/towers.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/sectors.js"></script>

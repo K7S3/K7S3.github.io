@@ -395,3 +395,4 @@ h1,h2,.kicker,.btn{font-family:var(--label);letter-spacing:0.06em}
 .slider-row{display:flex;align-items:center;gap:12px;justify-content:center;margin:6px 0;flex-wrap:wrap}
 .slider-row label{font-size:13px;letter-spacing:0.08em;color:#9fb4cc}
 .slider-row input[type=range]{width:180px;accent-color:#37e6ff;cursor:pointer}
+.slider-row select{background:#0b1626;color:#cfe6ff;border:1px solid #2a4a66;border-radius:8px;padding:6px 10px;font-size:13px;letter-spacing:0.06em;cursor:pointer}
