@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Nova Bastion - Colony Defense</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/refinement.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0c14">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+<div id="app">
+
+  <!-- full-screen fx layers -->
+  <div id="panic-vignette" class="hidden" aria-hidden="true"></div>
+  <div id="screen-pulse" class="hidden" aria-hidden="true"></div>
+  <div id="click-fx" aria-hidden="true"></div>
+
+  <!-- gamepad: virtual cursor, connection badge, contextual hints -->
+  <div id="gamepad-cursor" class="hidden" aria-hidden="true"><span class="ring"></span></div>
+  <div id="gamepad-badge" class="hidden" aria-hidden="true"><span class="pad-dot"></span>Controller connected</div>
+  <div id="gamepad-hints" class="hidden" aria-hidden="true"></div>
+
+  <!-- rich hover tooltip -->
+  <div id="tooltip" class="hidden" aria-hidden="true"></div>
+
+  <!-- interactive minimap -->
+  <div id="minimap-wrap" class="hidden" title="Tactical map: click or drag to move the camera">
+    <canvas id="minimap" width="188" height="118"></canvas>
+    <div class="minimap-label">TAC-MAP</div>
+  </div>
+
+  <!-- combo meter -->
+  <div id="combo-meter" class="hidden" aria-hidden="true"><span id="combo-x">x2</span></div>
+
+  <!-- IRA advisor hologram line (click for a situation report) -->
+  <div id="ira-line" class="hidden" role="button" tabindex="0" title="Click for IRA's situation report" aria-live="polite"><span class="ira-prefix">IRA:</span><span id="ira-text"></span><span class="ira-hint">[tap for report]</span></div>
+
+  <!-- Top HUD bar -->
+  <header id="hud" class="hidden" aria-label="Game HUD">
+    <div class="hud-left">
+      <div class="hud-stat" title="Gold"><span class="ico gold-dot"></span><span id="hud-gold-v" class="num">0</span></div>
+      <div class="hud-stat" title="Energy used / capacity"><span class="ico energy-ico">&#9889;</span><span id="hud-energy-v" class="num">0/0</span></div>
+      <div class="hud-stat" title="Command Spire integrity">
+        <span class="ico heart">&#9670;</span>
+        <div class="bar hq-bar" aria-hidden="true"><div id="hud-hq-fill" class="fill"></div></div>
+        <span id="hud-hq-v" class="num">2000</span>
+      </div>
+      <div class="hud-stat" title="Colony morale">
+        <span class="ico morale-ico">&#9733;</span>
+        <div class="bar morale-bar" aria-hidden="true"><div id="hud-morale-fill" class="fill"></div></div>
+        <span id="hud-morale-v" class="num">70</span>
+        <span id="hud-morale-state" class="morale-state">steady</span>
+      </div>
+      <div class="hud-stat" title="Wave"><span class="ico wave-ico">&#9670;</span><span id="hud-wave-v" class="num">-</span></div>
+      <div class="hud-stat muted" id="hud-inter-wrap" title="Time until next wave"><span id="hud-inter-v"></span></div>
+      <div class="hud-stat muted" id="hud-net" title="Connection"> <span id="hud-net-v"></span></div>
+    </div>
+    <div class="hud-right">
+      <button type="button" id="btn-wave" class="btn hud-btn wide" title="Preview the next wave">Wave</button>
+      <button type="button" id="btn-start-quick" class="btn hud-btn primary hidden" title="Start the next wave now">Start</button>
+      <div class="seg" id="speed-seg" role="group" aria-label="Game speed">
+        <button type="button" data-speed="1" class="seg-btn active">1x</button>
+        <button type="button" data-speed="2" class="seg-btn">2x</button>
+        <button type="button" data-speed="3" class="seg-btn">3x</button>
+      </div>
+      <button type="button" id="btn-pause" class="btn hud-btn" title="Pause (Space)">&#10074;&#10074;</button>
+      <button type="button" id="btn-mute" class="btn hud-btn" title="Mute sound">&#9834;</button>
+      <button type="button" id="btn-menu" class="btn hud-btn" title="Sectors menu">&#9776;</button>
+    </div>
+  </header>
+
+  <!-- Blackout surge warning banner -->
+  <div id="surge-banner" class="hidden" role="alert"></div>
+
+  <!-- Placement mode hint -->
+  <div id="place-hint" class="hidden" aria-live="polite"></div>
+
+  <!-- Game stage: WebGL canvas is the bottom layer, DOM overlays on top -->
+  <div id="stage-wrap">
+    <canvas id="game" aria-label="Nova Bastion 3D battlefield"></canvas>
+    <div id="fallback" class="hidden" role="alert"></div>
+    <div id="toast-wrap" aria-live="polite"></div>
+    <div id="banner" class="hidden"><div id="banner-title"></div><div id="banner-sub"></div></div>
+
+    <!-- Build palette -->
+    <nav id="palette" class="hidden" aria-label="Build palette">
+      <div id="palette-grid"></div>
+    </nav>
+
+    <!-- Tower inspector -->
+    <section id="panel-tower" class="panel holo hidden" aria-label="Tower details">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2 id="tower-name">Tower</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-tower" aria-label="Close">&times;</button>
+      </div>
+      <div id="tower-tier" class="tier-pips" aria-hidden="true"></div>
+      <p id="tower-tag" class="tag-line"></p>
+      <p id="tower-desc" class="muted"></p>
+      <div id="tower-badges" class="badge-row"></div>
+      <div id="tower-hp" class="hp-line hidden"><div class="bar"><div id="tower-hp-fill" class="fill"></div></div><span id="tower-hp-v"></span></div>
+      <div id="tower-stats" class="stat-grid"></div>
+      <div id="tower-synergy" class="synergy-line hidden"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-upgrade" class="btn primary">Upgrade</button>
+        <button type="button" id="btn-sell" class="btn danger">Sell</button>
+      </div>
+      <div id="branch-row" class="hidden">
+        <p class="muted small">Max tier reached. Choose a specialization:</p>
+        <div class="btn-row">
+          <button type="button" id="btn-branch-a" class="btn branch-a"></button>
+          <button type="button" id="btn-branch-b" class="btn branch-b"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wall panel -->
+    <section id="panel-wall" class="panel holo hidden" aria-label="Wall details">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2>Wall Segment</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-wall" aria-label="Close">&times;</button>
+      </div>
+      <div class="hp-line"><div class="bar"><div id="wall-hp-fill" class="fill"></div></div><span id="wall-hp-v"></span></div>
+      <p class="muted small">Walls block the Rust and force it to chew through. Repair keeps the line.</p>
+      <div class="btn-row">
+        <button type="button" id="btn-wall-repair" class="btn primary">Repair</button>
+        <button type="button" id="btn-wall-sell" class="btn danger">Sell</button>
+      </div>
+    </section>
+
+    <!-- Reactor panel -->
+    <section id="panel-reactor" class="panel holo hidden" aria-label="Reactor details">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2>Reactor</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-reactor" aria-label="Close">&times;</button>
+      </div>
+      <div class="hp-line"><div class="bar"><div id="reactor-hp-fill" class="fill"></div></div><span id="reactor-hp-v"></span></div>
+      <div id="reactor-stats" class="stat-grid"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-reactor-sell" class="btn danger">Sell</button>
+      </div>
+    </section>
+
+    <!-- Command Spire panel -->
+    <section id="panel-spire" class="panel holo hidden" aria-label="Command Spire">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2>Command Spire</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-spire" aria-label="Close">&times;</button>
+      </div>
+      <div id="spire-stats" class="stat-grid"></div>
+      <div class="overclock-box">
+        <div class="oc-head"><span>OVERCLOCK</span><span id="oc-pips" class="oc-pips" title="Overclock charges"></span><span id="oc-state" class="muted small"></span></div>
+        <div class="bar strain-bar"><div id="oc-strain-fill" class="fill"></div></div>
+        <div class="btn-row">
+          <button type="button" id="btn-overclock" class="btn warn big-red">Overclock the Spire</button>
+        </div>
+        <p class="muted small">Wider uplink, +25% tower damage. Strain climbs while active; at 100% the Spire burns.</p>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="btn-spire-upgrade" class="btn primary">Upgrade Spire</button>
+      </div>
+    </section>
+
+    <!-- Wave preview -->
+    <section id="panel-wave" class="panel holo hidden" aria-label="Wave preview">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2 id="wave-title">Next Wave</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-wave" aria-label="Close">&times;</button>
+      </div>
+      <div id="wave-anomaly" class="anomaly-line hidden"></div>
+      <div id="wave-list" class="wave-list"></div>
+      <div id="wave-totals" class="stat-grid"></div>
+      <p id="wave-note" class="muted"></p>
+      <p id="wave-bonus" class="bonus-note"></p>
+      <div class="btn-row">
+        <button type="button" id="btn-wave-start" class="btn primary">Start Wave</button>
+        <button type="button" id="btn-wave-early" class="btn">Call Early</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Crossroads event modal -->
+  <div id="modal-event" class="modal hidden" role="dialog" aria-modal="true" aria-label="Crossroads event">
+    <div class="modal-card holo pop">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <p class="kicker">Crossroads</p>
+      <h2 id="event-title">Event</h2>
+      <p id="event-text" class="event-text"></p>
+      <div id="event-choices" class="choice-col"></div>
+      <div id="event-votes" class="votes-line hidden"></div>
+    </div>
+  </div>
+
+  <!-- Edict modal -->
+  <div id="modal-edict" class="modal hidden" role="dialog" aria-modal="true" aria-label="Choose an edict">
+    <div class="modal-card holo pop">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <p class="kicker">Colony Edict</p>
+      <h2>Choose an edict</h2>
+      <p class="muted small">The council demands a decree. It lasts for the rest of the sector.</p>
+      <div id="edict-cards" class="edict-col"></div>
+      <div id="edict-votes" class="votes-line hidden"></div>
+    </div>
+  </div>
+
+  <!-- Story briefing modal -->
+  <div id="modal-briefing" class="modal hidden" role="dialog" aria-modal="true" aria-label="Mission briefing">
+    <div class="modal-card holo pop wide">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <p class="kicker">Mission Briefing</p>
+      <h2 id="briefing-title">Briefing</h2>
+      <div id="briefing-lines" class="story-lines"></div>
+      <div class="btn-row center">
+        <button type="button" id="btn-briefing-skip" class="btn">Skip</button>
+        <button type="button" id="btn-briefing-go" class="btn primary big">Deploy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story debrief modal -->
+  <div id="modal-debrief" class="modal hidden" role="dialog" aria-modal="true" aria-label="Debrief">
+    <div class="modal-card holo pop wide">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <p class="kicker">Debrief</p>
+      <h2 id="debrief-title">Debrief</h2>
+      <div id="debrief-lines" class="story-lines"></div>
+      <div class="btn-row center">
+        <button type="button" id="btn-debrief-ok" class="btn primary big">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Codex screen -->
+  <div id="screen-codex" class="screen hidden">
+    <div class="screen-card holo wide">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <h1>Codex</h1>
+      <p class="muted"> recovered records. Briefings unlock new entries.</p>
+      <div id="codex-list" class="codex-list"></div>
+      <div class="btn-row center"><button type="button" id="btn-codex-back" class="btn big">Back</button></div>
+    </div>
+  </div>
+
+  <!-- Full-screen overlays -->
+  <div id="screens">
+    <div id="screen-loading" class="screen">
+      <div class="screen-card holo center-card">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1 class="game-title small">NOVA BASTION</h1>
+        <div class="loader"><div class="loader-bar"></div></div>
+        <p id="loading-tip" class="muted tip"></p>
+      </div>
+    </div>
+
+    <div id="screen-title" class="screen hidden">
+      <div class="parallax-stage" aria-hidden="true">
+        <div class="parallax-layer pl-1"></div>
+        <div class="parallax-layer pl-2"></div>
+        <div class="parallax-layer pl-3"></div>
+      </div>
+      <div class="title-wrap">
+        <p class="kicker">Year 2100. The sealed arcologies hold.</p>
+        <h1 class="game-title glow">NOVA<br>BASTION</h1>
+        <p class="tagline">Hold the line. Humanity endures.</p>
+        <div class="btn-row center col">
+          <button type="button" id="btn-title-start" class="btn primary big">Start</button>
+          <button type="button" id="btn-title-coop" class="btn big">Co-op</button>
+          <button type="button" id="btn-title-howto" class="btn big">How to Play</button>
+          <button type="button" id="btn-title-codex" class="btn big">Codex</button>
+        </div>
+        <p class="muted small">Progress saves in this browser.</p>
+      </div>
+    </div>
+
+    <div id="screen-howto" class="screen hidden">
+      <div class="screen-card holo wide">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1>How to Play</h1>
+        <h2>Goal</h2>
+        <p>Year 2100. Humanity endures inside sealed arcologies, and the rogue machine swarm called the RUST is coming for them. You are a Bastion Commander defending the COMMAND SPIRE, the heart of the colony and anchor of its tactical uplink network.</p>
+        <p>The Rust marches on the Spire from the gates. If machines reach it, the Spire takes damage. If it falls, the sector goes dark. Clear every wave to secure the sector and earn up to 3 stars. Every wave you hold keeps the colonists' morale alive.</p>
+        <h2>Controls</h2>
+        <ul class="howto-list">
+          <li><b>Build palette</b>: pick a tower, then click a free cell inside the uplink to place it. Right-click or Esc cancels. The mode stays on so you can place several in a row.</li>
+          <li><b>Wall tool</b>: drag across the ground to draw a wall line. Release to build. Walls block the Rust and buy time.</li>
+          <li><b>Reactor</b>: raises your energy capacity. Hungry towers go silent without power.</li>
+          <li><b>Click a structure</b>: inspect, upgrade, specialize (branch A / B at tier 3), repair walls, or sell.</li>
+          <li><b>Drag empty ground</b>: pan the camera. <b>Wheel</b>: zoom. <b>Right-drag or Q/E</b>: rotate.</li>
+          <li><b>Space</b>: pause. <b>1 / 2 / 3</b>: game speed. <b>Esc</b>: cancel placement / close panel.</li>
+          <li><b>Start Wave</b> sends the next wave early for bonus gold. <b>Call Early</b> rushes the remaining enemies of the active wave.</li>
+        </ul>
+        <h2>Command Spire</h2>
+        <p class="muted">The Spire projects the <b>tactical uplink</b>: structures outside its radius go <b>DARK</b> and dormant. Upgrade the Spire to push the light further. <b>OVERCLOCK</b> widens the uplink and boosts damage while strain climbs; at 100% the Spire burns itself.</p>
+        <h2>Morale</h2>
+        <p class="muted">Colony <b>morale</b> shifts with every wave: inspired, steady, despair, unrest. At unrest, construction freezes until order returns.</p>
+        <h2>Towers</h2>
+        <div id="howto-towers" class="roster"></div>
+        <h2>Synergies</h2>
+        <p class="muted" id="howto-synergy-hint">Certain towers empower each other when built near one another.</p>
+        <div id="howto-synergies" class="roster"></div>
+        <h2>Blackout Surges</h2>
+        <p class="muted">Watch the wave preview for surges. A <b>BLACKOUT SURGE INCOMING</b> warning means the uplink is about to shrink. Weather it for salvage bonuses.</p>
+        <div class="btn-row center"><button type="button" id="btn-howto-back" class="btn primary big">Back</button></div>
+      </div>
+    </div>
+
+    <div id="screen-levels" class="screen hidden">
+      <div class="screen-card holo wide">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1>Select Sector</h1>
+        <p class="muted">Clear a sector to unlock the next. Keep the Spire untouched for 3 stars.</p>
+        <div id="level-grid" class="level-grid"></div>
+        <div class="btn-row center"><button type="button" id="btn-levels-back" class="btn big">Back</button></div>
+      </div>
+    </div>
+
+    <div id="screen-lobby" class="screen hidden">
+      <div class="screen-card holo wide">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1>Co-op Command</h1>
+        <div id="lobby-setup">
+          <div class="form-row">
+            <label for="lobby-name">Commander name</label>
+            <input id="lobby-name" class="text-input" maxlength="16" placeholder="Commander" autocomplete="off">
+          </div>
+          <h2>Doctrine</h2>
+          <div id="doctrine-cards" class="doctrine-row"></div>
+          <div id="lobby-host-only">
+            <h2>Sector</h2>
+            <div id="lobby-sectors" class="level-grid small"></div>
+            <label class="check-row"><input type="checkbox" id="lobby-aifill" checked> Fill empty slots with AI commanders</label>
+          </div>
+          <div id="lobby-join-row" class="form-row hidden">
+            <label for="lobby-code">Room code</label>
+            <input id="lobby-code" class="text-input code" maxlength="9" placeholder="NOVA-XXXX" autocomplete="off">
+          </div>
+          <div class="btn-row center">
+            <button type="button" id="btn-lobby-create" class="btn primary big">Create Room</button>
+            <button type="button" id="btn-lobby-join" class="btn big">Join Room</button>
+          </div>
+        </div>
+        <div id="lobby-room" class="hidden">
+          <p class="kicker">Room code</p>
+          <div id="lobby-room-code" class="room-code">NOVA-XXXX</div>
+          <h2>Commanders</h2>
+          <div id="lobby-players" class="player-list"></div>
+          <div class="btn-row center">
+            <button type="button" id="btn-lobby-start" class="btn primary big">Start Operation</button>
+            <button type="button" id="btn-lobby-leave" class="btn big">Leave</button>
+          </div>
+          <p id="lobby-wait" class="muted hidden">Waiting for the host to start...</p>
+        </div>
+        <div class="btn-row center"><button type="button" id="btn-lobby-back" class="btn big">Back</button></div>
+        <p id="lobby-note" class="muted small hidden"></p>
+      </div>
+    </div>
+
+    <div id="screen-pause" class="screen hidden">
+      <div class="screen-card holo">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1>Paused</h1>
+        <div class="btn-row center col">
+          <button type="button" id="btn-resume" class="btn primary big">Resume</button>
+          <button type="button" id="btn-pause-restart" class="btn big">Restart Sector</button>
+          <button type="button" id="btn-pause-howto" class="btn big">How to Play</button>
+          <button type="button" id="btn-pause-ira" class="btn big">IRA Voice: On</button>
+          <button type="button" id="btn-quit" class="btn big">Quit to Sectors</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-end" class="screen hidden">
+      <div class="screen-card holo wide">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <p id="end-kicker" class="kicker">Victory</p>
+        <h1 id="end-title">Sector Cleared</h1>
+        <div id="end-stars" class="stars" aria-label="Stars earned"></div>
+        <h2 id="end-mvp" class="mvp hidden"></h2>
+        <div id="end-players" class="player-cards"></div>
+        <h2>Battle Record</h2>
+        <canvas id="sparkline" width="520" height="120" aria-label="Kills over time"></canvas>
+        <table id="end-stats" class="stats-table"><tbody></tbody></table>
+        <div class="btn-row center">
+          <button type="button" id="btn-end-replay" class="btn primary big">Replay</button>
+          <button type="button" id="btn-end-sectors" class="btn big">Sectors</button>
+          <button type="button" id="btn-end-title" class="btn big">Title</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-disconnect" class="screen hidden">
+      <div class="screen-card holo center-card">
+        <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+        <h1>Connection Lost</h1>
+        <p class="muted">Reconnecting to the host<span id="dc-dots">...</span></p>
+        <div id="dc-count" class="num big-num">30</div>
+        <div class="btn-row center">
+          <button type="button" id="btn-dc-quit" class="btn big">Abandon Operation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/peerjs.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/towers.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/sectors.js"></script>
+<script src="js/events.js"></script>
+<script src="js/story.js"></script>
+<script src="js/ira.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/render3d.js"></script>
+<script src="js/demo3d.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/gamepad.js"></script>
+<script src="js/main.js"></script>
+<script>
+/* PWA: register the offline service worker. Guarded so a failure (private
+ * mode, file://, old browser) can never break the game itself. */
+try {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function (err) {
+        console.warn('[NB3D] service worker registration failed:', err);
+      });
+    });
+  }
+} catch (err) {
+  console.warn('[NB3D] service worker unavailable:', err);
+}
+</script>
+</body>
+</html>
