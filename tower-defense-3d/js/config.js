@@ -111,6 +111,25 @@ NB.CONFIG = {
 
   TROOP_CAP: 6,                 /* max fielded + training troops (all types) */
 
+  /* Barracks: military infrastructure. Each live Barracks raises the
+   * global troop cap and owns one squad of up to SQUAD_CAP troops. */
+  BARRACKS_COST: 250,         /* gold (buildCostMult applies) */
+  BARRACKS_METAL: 15,         /* metal (flat gate, no multiplier) */
+  BARRACKS_HP: 800,
+  BARRACKS_CAP_BONUS: 6,      /* +troop cap per live Barracks */
+  SQUAD_CAP: 6,               /* max troops per squad */
+
+  /* Troop weapon/armor research: 2 tiers per track. Scientists speed it. */
+  TROOP_UPGRADE_COST: [        /* per track, per tier */
+    { gold: 200, metal: 20 },
+    { gold: 400, metal: 40 }
+  ],
+  TROOP_RESEARCH_TIME: 45,    /* seconds at 0 scientists */
+  TROOP_RESEARCH_SCI_MULT: 0.08, /* -8% time per scientist */
+  TROOP_RESEARCH_MIN_TIME: 15,
+  TROOP_WEAPON_DMG_PER_TIER: 0.25, /* +25% damage per tier */
+  TROOP_ARMOR_HP_PER_TIER: 0.30,   /* +30% max HP per tier */
+
   WORKER_CAP: 40,            /* visible worker agents */
   WORKER_SPEED: 4.5,
 

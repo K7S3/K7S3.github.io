@@ -387,6 +387,92 @@ Commander.prototype.doEconomy = function(snap){
   return false;
 };
 
+/* ----- Troops: shared muster logic for combat personas -----
+ * Vanguard pushes squads to the flanks (attack-move); Warden holds them
+ * near the colony. Both build a Barracks if they lack one and train into
+ * free squad slots. One action per call; callers return after. */
+Commander.prototype.actTroops = function(snap, posture){
+  var sim = this.sim;
+  if (!sim || typeof sim.buildBarracks !== 'function') return false;
+  var myBarracks = [];
+  var i;
+  for (i = 0; i < (snap.barracks || []).length; i++){
+    if (snap.barracks[i].ownerId === this.id) myBarracks.push(snap.barracks[i]);
+  }
+  /* 1. no barracks: build one near the HQ if the war chest allows */
+  if (!myBarracks.length && this.difficulty !== 'recruit'){
+    var bcost = (NB.CONFIG && NB.CONFIG.BARRACKS_COST) || 250;
+    var bmetal = (NB.CONFIG && NB.CONFIG.BARRACKS_METAL) || 15;
+    if (this.canAfford(bcost, snap) && (snap.metal || 0) >= bmetal){
+      var hq = snap.hq || { cx: 32, cz: 20 };
+      var self = this;
+      var cell = this.findCellNear(hq.cx, hq.cz, 6, function(x, z){
+        var chk = sim.canPlaceBarracks(x, z);
+        return chk.ok && self.canAfford(chk.cost, snap);
+      });
+      if (cell){
+        var br = this.intent('buildBarracks', { cx: cell.cx, cz: cell.cz });
+        if (br.ok){ this.say('Barracks raising near the Spire'); return true; }
+      }
+    }
+    return false;
+  }
+  /* 2. train into free squad slots */
+  var mySquads = [];
+  for (i = 0; i < (snap.squads || []).length; i++){
+    var sq = snap.squads[i];
+    var owned = false;
+    for (var b2 = 0; b2 < myBarracks.length; b2++){
+      if (myBarracks[b2].instId === sq.barracksId){ owned = true; break; }
+    }
+    if (!owned && sq.id !== 'sq-spire') continue;
+    if (sq.id === 'sq-spire' && myBarracks.length) continue; /* use own squads first */
+    if (sq.alive + sq.queued < sq.cap) mySquads.push(sq);
+  }
+  var soldiers = ((snap.pop || {}).classes || {}).soldier || 0;
+  if (mySquads.length && soldiers > 0 && this.difficulty !== 'recruit'){
+    /* Vanguard favors breachers once armor shows; Warden likes riflemen */
+    var type = 'rifleman';
+    if (posture === 'flank'){
+      var armored = false;
+      for (var e = 0; e < (snap.enemies || []).length; e++){
+        var et = snap.enemies[e].type || '';
+        if ((NB.ARMORED_TYPES || []).indexOf(et) >= 0){ armored = true; break; }
+      }
+      if (armored || (snap.wave || 0) >= 8) type = 'breacher';
+    }
+    var def = (NB.TROOPS || {})[type] || {};
+    if (this.canAfford(def.costGold || 0, snap) && (snap.food || 0) >= (def.costFood || 0)){
+      var tr = this.intent('trainTroop', { type: type, squadId: mySquads[0].id });
+      if (tr.ok){ this.say(def.name + ' mustering for ' + mySquads[0].name); return true; }
+    }
+  }
+  /* 3. posture orders for idle squads */
+  for (i = 0; i < mySquads.length; i++){
+    var msq = mySquads[i];
+    if (!msq.alive) continue;
+    var hq2 = snap.hq || { x: 64, z: 40 };
+    var tx, tz, kind;
+    if (posture === 'flank'){
+      /* secondary gate anchor = the flank; meet them halfway */
+      var anchors = this._spawns.slice().sort(function(a, b){ return a.w - b.w; });
+      var anchor = anchors[0] || { cx: hq2.cx || 32, cz: hq2.cz || 20 };
+      var ax = (anchor.cx + 0.5) * 2, az = (anchor.cz + 0.5) * 2;
+      tx = (ax + (hq2.x || 64)) / 2; tz = (az + (hq2.z || 40)) / 2;
+      kind = 'attackmove';
+    } else {
+      tx = hq2.x || 64; tz = hq2.z || 40;
+      kind = 'hold';
+    }
+    var or = this.intent('squadOrder', { squadId: msq.id, order: kind, x: tx, z: tz });
+    if (or.ok){
+      this.say(msq.name + (kind === 'hold' ? ' holding the colony' : ' pushing the flank'));
+      return true;
+    }
+  }
+  return false;
+};
+
 /* ----- Vanguard: forward damage, upgrades, expansion ----- */
 Commander.prototype.actVanguard = function(snap){
   var avail = snap.availableTowers || [];
@@ -429,7 +515,11 @@ Commander.prototype.actVanguard = function(snap){
   }
   /* 2. build a forward damage tower */
   var choice = this.pickDamageTower(avail, snap);
-  if (!choice) return;
+  if (!choice){
+    /* 3. no tower worth building: muster troops for the flank */
+    this.actTroops(snap, 'flank');
+    return;
+  }
   var cell = this.pickForwardCell(snap, choice.id);
   if (!cell) return;
   var res = this.intent('buildTower', { cx: cell.cx, cz: cell.cz, towerId: choice.id });
@@ -642,6 +732,8 @@ Commander.prototype.pickChokeWall = function(snap){
 
 /* ----- Warden: support near allies, colonist-friendly votes, safe builds ----- */
 Commander.prototype.actWarden = function(snap){
+  /* troops first: holding the colony is the Warden's identity */
+  if (this.actTroops(snap, 'guard')) return;
   var avail = snap.availableTowers || [];
   /* pick the best support available: chrono late, amplify mid, mint early */
   var pick = null, i, id;

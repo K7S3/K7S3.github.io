@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const CACHE_NAME = "novabastion-3d-beta7";
+const CACHE_NAME = "novabastion-3d-beta8";
 const INDEX_URL = 'index.html';
 const PRECACHE = [
   "assets/models/CREDITS.md",

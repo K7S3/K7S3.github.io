@@ -162,7 +162,19 @@ NB.createSim = function(sectorDef, opts){
     METAL_TOWER_DOMINION: num(CONFIG.METAL_TOWER_DOMINION, 15),
     METAL_TIER3: num(CONFIG.METAL_TIER3, 15),
     METAL_BRANCH: num(CONFIG.METAL_BRANCH, 25),
-    METAL_SPIRE: CONFIG.METAL_SPIRE || [20, 40, 80]
+    METAL_SPIRE: CONFIG.METAL_SPIRE || [20, 40, 80],
+    BARRACKS_COST: num(CONFIG.BARRACKS_COST, 250),
+    BARRACKS_METAL: num(CONFIG.BARRACKS_METAL, 15),
+    BARRACKS_HP: num(CONFIG.BARRACKS_HP, 800),
+    BARRACKS_CAP_BONUS: num(CONFIG.BARRACKS_CAP_BONUS, 6),
+    SQUAD_CAP: num(CONFIG.SQUAD_CAP, 6),
+    TROOP_CAP: num(CONFIG.TROOP_CAP, 6),
+    TROOP_UPGRADE_COST: CONFIG.TROOP_UPGRADE_COST || [{ gold: 200, metal: 20 }, { gold: 400, metal: 40 }],
+    TROOP_RESEARCH_BASE: num(CONFIG.TROOP_RESEARCH_BASE, 45),
+    TROOP_RESEARCH_MIN: num(CONFIG.TROOP_RESEARCH_MIN, 15),
+    TROOP_RESEARCH_PER_SCIENTIST: num(CONFIG.TROOP_RESEARCH_PER_SCIENTIST, 0.08),
+    TROOP_WEAPON_PER_TIER: num(CONFIG.TROOP_WEAPON_PER_TIER, 0.25),
+    TROOP_ARMOR_PER_TIER: num(CONFIG.TROOP_ARMOR_PER_TIER, 0.30)
   };
 
   var rng = mulberry32(num(opts.seed, 1234));
@@ -237,8 +249,11 @@ NB.createSim = function(sectorDef, opts){
     foodRate: 0, metalRate: 0, foodCons: 0, starving: false,
     pop: null,
     scrap: [],
-    extractors: [], hydros: [], habs: [],
+    extractors: [], hydros: [], habs: [], barracks: [],
     workers: [], troops: [], trainQueue: [],
+    squads: [],                 /* {id, name, barracksId} — one per Barracks + Spire Guard */
+    troopUpg: { weapon: 0, armor: 0 },  /* research tiers 0..2 */
+    troopResearch: null,        /* {track, t, total} while researching */
     govT: 0
   };
 
@@ -402,10 +417,10 @@ NB.createSim = function(sectorDef, opts){
       }
     }
     mark(st.towers); mark(st.reactors);
-    /* civilian infrastructure (extractors, hydros, habs) runs on local
-     * power, not the tactical uplink: never dark, so the colony economy
+    /* civilian infrastructure (extractors, hydros, habs, barracks) runs on
+     * local power, not the tactical uplink: never dark, so the colony
      * works at any distance from the Spire. */
-    var civ = [st.extractors, st.hydros, st.habs];
+    var civ = [st.extractors, st.hydros, st.habs, st.barracks];
     for (var c = 0; c < civ.length; c++)
       for (var k2 = 0; k2 < civ[c].length; k2++) civ[c][k2].dark = false;
   }
@@ -684,7 +699,8 @@ NB.createSim = function(sectorDef, opts){
               kind === 'reactor' ? st.reactors :
               kind === 'extractor' ? st.extractors :
               kind === 'hydro' ? st.hydros :
-              kind === 'hab' ? st.habs : null;
+              kind === 'hab' ? st.habs :
+              kind === 'barracks' ? st.barracks : null;
     if (!arr) return;
     for (var i = 0; i < arr.length; i++){
       if (arr[i] === s){ arr.splice(i, 1); break; }
@@ -695,7 +711,8 @@ NB.createSim = function(sectorDef, opts){
     if (s.ownerId && st.playerStats[s.ownerId]) st.playerStats[s.ownerId].structuresLost++;
     var label = kind === 'wall' ? 'Wall' : kind === 'reactor' ? 'Reactor' :
                 kind === 'extractor' ? 'Extractor' : kind === 'hydro' ? 'Hydroponics' :
-                kind === 'hab' ? 'Hab Module' : 'Tower';
+                kind === 'hab' ? 'Hab Module' :
+                kind === 'barracks' ? 'Barracks' : 'Tower';
     evq.push({ t: 'structureDown', x: s.x, z: s.z, color: '#ff7744',
                text: label + ' destroyed' });
     if (st.moraleLossStruct < CFG.MORALE_STRUCT_LOSS_CAP){
@@ -1302,6 +1319,7 @@ NB.createSim = function(sectorDef, opts){
     consider(st.extractors, 'extractor');
     consider(st.hydros, 'hydro');
     consider(st.habs, 'hab');
+    consider(st.barracks, 'barracks');
     consider(st.barrels, 'barrel');
     /* troops fight in the field: enemies melee them like structures */
     for (var ti = 0; ti < st.troops.length; ti++){
@@ -2020,7 +2038,8 @@ NB.createSim = function(sectorDef, opts){
         { arr: st.reactors, k: 'reactor' },
         { arr: st.extractors, k: 'extractor' },
         { arr: st.hydros, k: 'hydro' },
-        { arr: st.habs, k: 'hab' }
+        { arr: st.habs, k: 'hab' },
+        { arr: st.barracks, k: 'barracks' }
       ];
       for (var li = 0; li < sellLists.length && !r; li++){
         var la = sellLists[li].arr;
@@ -2042,7 +2061,8 @@ NB.createSim = function(sectorDef, opts){
     } else {
       var sellArr = kind === 'reactor' ? st.reactors :
                     kind === 'extractor' ? st.extractors :
-                    kind === 'hydro' ? st.hydros : st.habs;
+                    kind === 'hydro' ? st.hydros :
+                    kind === 'barracks' ? st.barracks : st.habs;
       for (var k = 0; k < sellArr.length; k++){
         if (sellArr[k].instId === instId){ sellArr.splice(k, 1); break; }
       }
@@ -2450,6 +2470,14 @@ NB.createSim = function(sectorDef, opts){
       if (!hy.dark) foodProd += (hy.staffed || 0) * CFG.HYDRO_FOOD_PER_SEC;
     }
     var cons = st.pop.total * CFG.POP_FOOD_PER_SEC;
+    /* troop upkeep: standing armies eat */
+    var upkeep = 0, ui;
+    for (ui = 0; ui < st.troops.length; ui++){
+      var ud = troopDef(st.troops[ui].type) || {};
+      upkeep += num(ud.upkeep, 0);
+    }
+    st.troopUpkeep = upkeep;
+    cons += upkeep;
     st.metal = Math.max(0, st.metal + metalProd * dt);
     st.food = Math.max(0, st.food + (foodProd - cons) * dt);
     st.metalRate = metalProd;
@@ -2557,17 +2585,113 @@ NB.createSim = function(sectorDef, opts){
     return T[type] || null;
   }
   function troopCap(){
-    return CFG.TROOP_CAP;
+    var bonus = 0;
+    for (var i = 0; i < st.barracks.length; i++){
+      if (!st.barracks[i].dark) bonus += CFG.BARRACKS_CAP_BONUS;
+    }
+    return CFG.TROOP_CAP + bonus;
   }
-  function trainTroop(type, playerId){
+  function liveBarracks(){
+    var out = [];
+    for (var i = 0; i < st.barracks.length; i++){
+      if (!st.barracks[i].dark) out.push(st.barracks[i]);
+    }
+    return out;
+  }
+  function squadById(squadId){
+    for (var i = 0; i < st.squads.length; i++){
+      if (st.squads[i].id === squadId) return st.squads[i];
+    }
+    return null;
+  }
+  function squadTroops(squadId, aliveOnly){
+    var out = [];
+    for (var i = 0; i < st.troops.length; i++){
+      if (st.troops[i].squadId === squadId) out.push(st.troops[i]);
+    }
+    return out;
+  }
+  function squadQueued(squadId){
+    var n = 0;
+    for (var i = 0; i < st.trainQueue.length; i++){
+      if (st.trainQueue[i].squadId === squadId) n++;
+    }
+    return n;
+  }
+  /* ---------- Barracks ---------- */
+  function canPlaceBarracks(cx, cz){
+    if (st.over) return { ok: false, reason: 'over' };
+    if (!inB(cx, cz) || terrainAt(cx, cz) || hqAt(cx, cz) || gateAt(cx, cz))
+      return { ok: false, reason: 'blocked' };
+    if (structAt(cx, cz)) return { ok: false, reason: 'occupied' };
+    var cost = Math.ceil(CFG.BARRACKS_COST * buildCostMult());
+    if (st.gold < cost) return { ok: false, reason: 'gold' };
+    if (st.metal < CFG.BARRACKS_METAL) return { ok: false, reason: 'metal' };
+    return { ok: true, cost: cost };
+  }
+  function buildBarracks(cx, cz, playerId){
+    playerId = playerId || 'p0';
+    var blocked = buildBlocked();
+    if (blocked) return { ok: false, reason: blocked };
+    var chk = canPlaceBarracks(cx, cz);
+    if (!chk.ok) return chk;
+    st.gold -= chk.cost;
+    st.metal = Math.max(0, st.metal - CFG.BARRACKS_METAL);
+    var hp = CFG.BARRACKS_HP;
+    var b = {
+      instId: ++sim.nextInstId, kind: 'barracks', ownerId: playerId,
+      cx: cx, cz: cz, x: cellWX(cx), z: cellWZ(cz),
+      hp: hp, maxHp: hp, dark: false, totalSpent: chk.cost,
+      rally: { x: cellWX(cx), z: cellWZ(cz) }
+    };
+    st.barracks.push(b);
+    occ[key(cx, cz)] = { kind: 'barracks', ref: b };
+    var sqId = 'sq-' + b.instId;
+    st.squads.push({ id: sqId,
+      name: 'Squad ' + st.squads.length, barracksId: b.instId });
+    afterLayoutChange();
+    evq.push({ t: 'boom', x: b.x, z: b.z, color: '#a3e635', n: 8 });
+    announce('BARRACKS ONLINE', 'muster a squad here: +' + CFG.BARRACKS_CAP_BONUS +
+             ' troop cap. Set a rally point.', '#a3e635');
+    return { ok: true, instId: b.instId, squadId: sqId };
+  }
+  function setRally(instId, x, z, playerId){
+    playerId = playerId || 'p0';
+    if (st.over) return { ok: false, reason: 'over' };
+    var b = null;
+    for (var i = 0; i < st.barracks.length; i++){
+      if (st.barracks[i].instId === instId){ b = st.barracks[i]; break; }
+    }
+    if (!b) return { ok: false, reason: 'barracks' };
+    if (b.ownerId !== playerId) return { ok: false, reason: 'owner' };
+    b.rally = {
+      x: Math.max(1, Math.min(COLS * CELL - 1, num(x, b.x))),
+      z: Math.max(1, Math.min(ROWS * CELL - 1, num(z, b.z)))
+    };
+    return { ok: true, rally: { x: b.rally.x, z: b.rally.z } };
+  }
+  function trainTroop(type, playerId, squadId){
     playerId = playerId || 'p0';
     var def = troopDef(type);
     if (!def) return { ok: false, reason: 'troop' };
     if (st.over) return { ok: false, reason: 'over' };
     var blocked = buildBlocked();
     if (blocked) return { ok: false, reason: blocked };
+    var sq = squadById(squadId || 'sq-spire');
+    if (!sq) return { ok: false, reason: 'squad' };
+    /* squad ownership: barracks squads belong to the barracks owner;
+     * the Spire Guard (no barracks) is communal */
+    if (sq.barracksId){
+      var bOwn = null;
+      for (var bi = 0; bi < st.barracks.length; bi++){
+        if (st.barracks[bi].instId === sq.barracksId){ bOwn = st.barracks[bi]; break; }
+      }
+      if (!bOwn || bOwn.ownerId !== playerId) return { ok: false, reason: 'owner' };
+    }
     var fielded = st.troops.length + st.trainQueue.length;
     if (fielded >= troopCap()) return { ok: false, reason: 'cap' };
+    if (squadTroops(sq.id).length + squadQueued(sq.id) >= CFG.SQUAD_CAP)
+      return { ok: false, reason: 'squadcap' };
     if ((st.pop.classes.soldier || 0) < 1) return { ok: false, reason: 'soldier' };
     var cg = Math.ceil(num(def.costGold, 0) * buildCostMult());
     var cf = Math.round(num(def.costFood, 0));
@@ -2578,20 +2702,43 @@ NB.createSim = function(sectorDef, opts){
     st.pop.classes.soldier--;
     st.pop.total--;
     var total = Math.max(1, num(def.trainTime, 8));
-    st.trainQueue.push({ type: type, t: total, total: total, ownerId: playerId });
+    st.trainQueue.push({ type: type, t: total, total: total, ownerId: playerId,
+                         squadId: sq.id });
     announce('TRAINING ' + String(def.name || type).toUpperCase(),
-             'a volunteer reports for duty (' + Math.ceil(total) + 's)', '#7df9ff');
-    return { ok: true, type: type, trainTime: total };
+             'a volunteer reports to ' + sq.name + ' (' + Math.ceil(total) + 's)',
+             def.color || '#7df9ff');
+    return { ok: true, type: type, trainTime: total, squadId: sq.id };
   }
-  function spawnTroop(type, ownerId){
+  function troopDmgMult(){
+    return 1 + num(CFG.TROOP_WEAPON_PER_TIER, 0.25) * (st.troopUpg.weapon || 0);
+  }
+  function troopHpMult(){
+    return 1 + num(CFG.TROOP_ARMOR_PER_TIER, 0.30) * (st.troopUpg.armor || 0);
+  }
+  function squadRally(squadId){
+    var sq = squadById(squadId);
+    if (sq && sq.barracksId){
+      for (var i = 0; i < st.barracks.length; i++){
+        if (st.barracks[i].instId === sq.barracksId && st.barracks[i].rally)
+          return st.barracks[i].rally;
+      }
+    }
+    var hwc = hqCenterWorld();
+    return { x: hwc.x, z: hwc.z };
+  }
+  function spawnTroop(type, ownerId, squadId){
     var def = troopDef(type);
     if (!def) return null;
-    var hwc = hqCenterWorld();
+    var sq = squadById(squadId || 'sq-spire') || squadById('sq-spire');
+    var rally = squadRally(sq ? sq.id : 'sq-spire');
+    var maxHp = Math.round(num(def.hp, 100) * troopHpMult());
     var t = { id: 'tr' + (++nextTroopId), type: type,
-      x: hwc.x + (rnd() - 0.5) * 8, z: hwc.z + (rnd() - 0.5) * 8,
-      hp: num(def.hp, 100), maxHp: num(def.hp, 100),
+      squadId: sq ? sq.id : 'sq-spire',
+      x: rally.x + (rnd() - 0.5) * 6, z: rally.z + (rnd() - 0.5) * 6,
+      hp: maxHp, maxHp: maxHp,
+      dmg: Math.round(num(def.dmg, 25) * troopDmgMult()),
       cooldown: 0, targetId: null, ownerId: ownerId || 'p0',
-      order: { kind: 'attackmove', x: hwc.x, z: hwc.z } };
+      order: { kind: 'attackmove', x: rally.x, z: rally.z } };
     st.troops.push(t);
     evq.push({ t: 'boom', x: t.x, z: t.z, color: def.color || '#a5f3fc', n: 6 });
     return t;
@@ -2602,7 +2749,7 @@ NB.createSim = function(sectorDef, opts){
       q.t -= dt;
       if (q.t <= 0){
         st.trainQueue.splice(i, 1);
-        var t = spawnTroop(q.type, q.ownerId);
+        var t = spawnTroop(q.type, q.ownerId, q.squadId);
         if (t){
           var def = troopDef(q.type) || {};
           announce(String(def.name || q.type).toUpperCase() + ' READY',
@@ -2629,6 +2776,141 @@ NB.createSim = function(sectorDef, opts){
       z: Math.max(1, Math.min(ROWS * CELL - 1, num(z, t.z)))
     };
     return { ok: true };
+  }
+  /* Squad order: every alive troop of the squad owned by the player gets
+   * the order; move/attackmove spreads them in a loose line perpendicular
+   * to the direction of travel. */
+  function squadOrder(squadId, kind, x, z, playerId){
+    playerId = playerId || 'p0';
+    if (!TROOP_ORDER_KINDS[kind]) return { ok: false, reason: 'order' };
+    if (st.over) return { ok: false, reason: 'over' };
+    var sq = squadById(squadId);
+    if (!sq) return { ok: false, reason: 'squad' };
+    var members = [];
+    for (var i = 0; i < st.troops.length; i++){
+      var t = st.troops[i];
+      if (t.squadId === squadId && t.ownerId === playerId) members.push(t);
+    }
+    if (!members.length) return { ok: false, reason: 'empty' };
+    var tx = Math.max(1, Math.min(COLS * CELL - 1, num(x, members[0].x)));
+    var tz = Math.max(1, Math.min(ROWS * CELL - 1, num(z, members[0].z)));
+    /* squad centroid -> travel direction -> perpendicular for the line */
+    var cx = 0, cz = 0, i;
+    for (i = 0; i < members.length; i++){ cx += members[i].x; cz += members[i].z; }
+    cx /= members.length; cz /= members.length;
+    var dx = tx - cx, dz = tz - cz;
+    var dl = Math.sqrt(dx * dx + dz * dz);
+    var px = 0, pz = 0;
+    if (dl > 0.5){ px = -dz / dl; pz = dx / dl; }
+    else { px = 1; pz = 0; }
+    var spacing = CELL * 1.3;
+    for (i = 0; i < members.length; i++){
+      var off = (i - (members.length - 1) / 2) * spacing;
+      /* deterministic stagger: alternate rows step back slightly */
+      var back = (i % 2) * spacing * 0.45;
+      members[i].order = {
+        kind: kind,
+        x: tx + px * off - (dl > 0.5 ? dx / dl : 0) * back,
+        z: tz + pz * off - (dl > 0.5 ? dz / dl : 0) * back
+      };
+    }
+    return { ok: true, ordered: members.length };
+  }
+  /* Reinforce: queue replacements for a squad's dead slots, using the
+   * squad's dominant troop type (ties -> rifleman). One tap. */
+  function reinforceSquad(squadId, playerId){
+    playerId = playerId || 'p0';
+    var sq = squadById(squadId);
+    if (!sq) return { ok: false, reason: 'squad' };
+    if (st.over) return { ok: false, reason: 'over' };
+    var blocked = buildBlocked();
+    if (blocked) return { ok: false, reason: blocked };
+    var alive = squadTroops(squadId).length;
+    var queued = squadQueued(squadId);
+    var missing = CFG.SQUAD_CAP - alive - queued;
+    if (missing <= 0) return { ok: false, reason: 'full' };
+    /* dominant type among alive + queued */
+    var counts = {};
+    var i, t;
+    for (i = 0; i < st.troops.length; i++){
+      t = st.troops[i];
+      if (t.squadId === squadId) counts[t.type] = (counts[t.type] || 0) + 1;
+    }
+    for (i = 0; i < st.trainQueue.length; i++){
+      var q = st.trainQueue[i];
+      if (q.squadId === squadId) counts[q.type] = (counts[q.type] || 0) + 1;
+    }
+    var bestType = 'rifleman', bestN = -1;
+    var order = NB.TROOP_ORDER || [];
+    for (i = 0; i < order.length; i++){
+      var n = counts[order[i]] || 0;
+      if (n > bestN){ bestN = n; bestType = order[i]; }
+    }
+    var okCount = 0, lastReason = null;
+    for (i = 0; i < missing; i++){
+      var r = trainTroop(bestType, playerId, squadId);
+      if (r.ok) okCount++;
+      else { lastReason = r.reason; break; }
+    }
+    if (!okCount) return { ok: false, reason: lastReason || 'reinforce' };
+    return { ok: true, queued: okCount, type: bestType };
+  }
+  /* Troop research: weapon (+dmg) / armor (+maxHp), 2 tiers each.
+   * Scientists speed the research clock. */
+  function researchTroopUpgrade(track, playerId){
+    playerId = playerId || 'p0';
+    if (track !== 'weapon' && track !== 'armor')
+      return { ok: false, reason: 'track' };
+    if (st.over) return { ok: false, reason: 'over' };
+    var blocked = buildBlocked();
+    if (blocked) return { ok: false, reason: blocked };
+    var tier = st.troopUpg[track] || 0;
+    if (tier >= 2) return { ok: false, reason: 'upgmax' };
+    if (st.troopResearch) return { ok: false, reason: 'busy' };
+    var cost = (CFG.TROOP_UPGRADE_COST || [])[tier] || { gold: 200, metal: 20 };
+    if (st.gold < cost.gold) return { ok: false, reason: 'gold' };
+    if (st.metal < cost.metal) return { ok: false, reason: 'metal' };
+    st.gold -= cost.gold;
+    st.metal = Math.max(0, st.metal - cost.metal);
+    var scientists = (st.pop.classes && st.pop.classes.scientist) || 0;
+    var total = Math.max(num(CFG.TROOP_RESEARCH_MIN, 15),
+      num(CFG.TROOP_RESEARCH_BASE, 45) *
+      (1 - num(CFG.TROOP_RESEARCH_PER_SCIENTIST, 0.08) * scientists));
+    st.troopResearch = { track: track, t: total, total: total, tier: tier + 1 };
+    announce('RESEARCH: ' + track.toUpperCase() + ' MK' + (tier + 1),
+             'the lab is on it (' + Math.ceil(total) + 's)', '#c4b5fd');
+    return { ok: true, track: track, tier: tier + 1, duration: total };
+  }
+  function troopResearchTick(dt){
+    var r = st.troopResearch;
+    if (!r) return;
+    r.t -= dt;
+    if (r.t > 0) return;
+    st.troopResearch = null;
+    st.troopUpg[r.track] = r.tier;
+    if (r.track === 'weapon'){
+      /* existing troops get the new guns too */
+      var dmult = troopDmgMult();
+      for (var i = 0; i < st.troops.length; i++){
+        var tw = st.troops[i];
+        var dw = troopDef(tw.type) || {};
+        tw.dmg = Math.round(num(dw.dmg, 25) * dmult);
+      }
+    }
+    if (r.track === 'armor'){
+      /* existing troops grow into the new plate: scale current HP too */
+      var mult = troopHpMult();
+      for (var i = 0; i < st.troops.length; i++){
+        var t = st.troops[i];
+        var def = troopDef(t.type) || {};
+        var newMax = Math.round(num(def.hp, 100) * mult);
+        t.hp = Math.min(newMax, Math.round(t.hp / Math.max(1, t.maxHp) * newMax));
+        t.maxHp = newMax;
+      }
+    }
+    announce(r.track.toUpperCase() + ' MK' + r.tier + ' FIELDED',
+             r.track === 'weapon' ? 'troop damage up' : 'troop plating up',
+             '#c4b5fd');
   }
   function damageTroop(t, amount){
     if (!t || t.hp <= 0) return;
@@ -2668,7 +2950,12 @@ NB.createSim = function(sectorDef, opts){
         t.cooldown -= dt;
         if (t.cooldown <= 0){
           t.cooldown = num(def.fireInterval, 0.9);
-          damageEnemy(best, num(def.dmg, 25) * dmgM, { troop: t });
+          var bmult = 1;
+          var bvs = def.bonusVs || [];
+          if (best.type && bvs.indexOf(best.type) >= 0)
+            bmult = num(def.bonusMult, 1.5);
+          damageEnemy(best, num(t.dmg, 25) * dmgM * bmult,
+                      { troop: t });
           evq.push({ t: 'beam', x1: t.x, z1: t.z, x2: best.x, z2: best.z,
                      color: def.color || '#a5f3fc' });
         }
@@ -2686,7 +2973,9 @@ NB.createSim = function(sectorDef, opts){
 
   /* ---------- intent protocol ---------- */
   var BUILD_KINDS = { buildTower: 1, buildWall: 1, buildReactor: 1, upgrade: 1, branch: 1,
-                    buildExtractor: 1, buildHydro: 1, buildHab: 1, trainTroop: 1 };
+                    buildExtractor: 1, buildHydro: 1, buildHab: 1, buildBarracks: 1,
+                    trainTroop: 1, setRally: 1, squadOrder: 1, troopUpgrade: 1,
+                    reinforce: 1 };
 
   function applyIntent(intent){
     intent = intent || {};
@@ -2707,10 +2996,15 @@ NB.createSim = function(sectorDef, opts){
       case 'buildExtractor': return buildEcon('extractor', num(intent.cx, -1), num(intent.cz, -1), playerId);
       case 'buildHydro': return buildEcon('hydro', num(intent.cx, -1), num(intent.cz, -1), playerId);
       case 'buildHab': return buildEcon('hab', num(intent.cx, -1), num(intent.cz, -1), playerId);
+      case 'buildBarracks': return buildBarracks(num(intent.cx, -1), num(intent.cz, -1), playerId);
       case 'assignClass': return assignClass(intent.cls, num(intent.n, 0));
       case 'governor': return setGovernor(!!intent.on);
-      case 'trainTroop': return trainTroop(intent.type, playerId);
+      case 'trainTroop': return trainTroop(intent.type, playerId, intent.squadId);
       case 'troopOrder': return troopOrder(intent.id, intent.order, num(intent.x, 0), num(intent.z, 0), playerId);
+      case 'squadOrder': return squadOrder(intent.squadId, intent.order, num(intent.x, 0), num(intent.z, 0), playerId);
+      case 'setRally': return setRally(num(intent.instId, -1), num(intent.x, 0), num(intent.z, 0), playerId);
+      case 'troopUpgrade': return researchTroopUpgrade(intent.track, playerId);
+      case 'reinforce': return reinforceSquad(intent.squadId, playerId);
       case 'upgrade': return upgrade(num(intent.instId, -1), playerId);
       case 'branch': return chooseBranch(num(intent.instId, -1), intent.which, playerId);
       case 'sell': return sell(num(intent.instId, -1), playerId);
@@ -2790,11 +3084,12 @@ NB.createSim = function(sectorDef, opts){
       }
     }
 
-    /* colony economy: farming, staffing, workers, rangers, research */
+    /* colony economy: farming, staffing, workers, troops, research */
     economyTick(dt);
     workerTick(dt);
     troopTick(dt);
     trainQueueTick(dt);
+    troopResearchTick(dt);
 
     if (!st.waveActive && st.waveIndex < st.wavesTotal &&
         !st.pendingEvent && !st.pendingEdict){
@@ -2932,14 +3227,41 @@ NB.createSim = function(sectorDef, opts){
       extractors: econSnap(st.extractors),
       hydros: econSnap(st.hydros),
       habs: econSnap(st.habs),
+      barracks: econSnap(st.barracks).map(function(b){
+        var src = null;
+        for (var i = 0; i < st.barracks.length; i++){
+          if (st.barracks[i].instId === b.instId){ src = st.barracks[i]; break; }
+        }
+        b.rally = src && src.rally ? { x: Math.round(src.rally.x * 10) / 10,
+                                       z: Math.round(src.rally.z * 10) / 10 } : null;
+        return b;
+      }),
+      squads: st.squads.map(function(s){
+        var alive = 0, order = null;
+        for (var i = 0; i < st.troops.length; i++){
+          if (st.troops[i].squadId === s.id){
+            alive++;
+            if (!order && st.troops[i].order) order = st.troops[i].order.kind;
+          }
+        }
+        return { id: s.id, name: s.name, barracksId: s.barracksId,
+                 alive: alive, queued: squadQueued(s.id), cap: CFG.SQUAD_CAP,
+                 order: order };
+      }),
+      troopUpg: { weapon: st.troopUpg.weapon || 0, armor: st.troopUpg.armor || 0 },
+      troopResearch: st.troopResearch ?
+        { track: st.troopResearch.track, tier: st.troopResearch.tier,
+          pct: Math.round((1 - st.troopResearch.t / st.troopResearch.total) * 100) } : null,
+      troopUpkeep: Math.round((st.troopUpkeep || 0) * 100) / 100,
       workers: st.workers.map(function(w){
         return { id: w.id, x: Math.round(w.x * 100) / 100, z: Math.round(w.z * 100) / 100,
                  state: w.state };
       }),
       troops: st.troops.map(function(t){
-        return { id: t.id, type: t.type, x: Math.round(t.x * 100) / 100,
+        return { id: t.id, type: t.type, squadId: t.squadId,
+                 x: Math.round(t.x * 100) / 100,
                  z: Math.round(t.z * 100) / 100,
-                 hp: Math.ceil(t.hp), maxHp: t.maxHp, ownerId: t.ownerId,
+                 hp: Math.ceil(t.hp), maxHp: t.maxHp, dmg: t.dmg, ownerId: t.ownerId,
                  targetId: t.targetId,
                  order: t.order ? { kind: t.order.kind,
                                     x: Math.round(t.order.x * 100) / 100,
@@ -3043,9 +3365,15 @@ NB.createSim = function(sectorDef, opts){
   sim.buildHydro = function(cx, cz, playerId){ return buildEcon('hydro', cx, cz, playerId); };
   sim.buildHab = function(cx, cz, playerId){ return buildEcon('hab', cx, cz, playerId); };
   sim.canPlaceEcon = function(kind, cx, cz){ return canPlaceEcon(kind, cx, cz); };
+  sim.buildBarracks = function(cx, cz, playerId){ return buildBarracks(cx, cz, playerId); };
+  sim.canPlaceBarracks = function(cx, cz){ return canPlaceBarracks(cx, cz); };
+  sim.setRally = function(instId, x, z, playerId){ return setRally(instId, x, z, playerId); };
+  sim.squadOrder = function(squadId, kind, x, z, playerId){ return squadOrder(squadId, kind, x, z, playerId); };
+  sim.reinforceSquad = function(squadId, playerId){ return reinforceSquad(squadId, playerId); };
+  sim.researchTroopUpgrade = function(track, playerId){ return researchTroopUpgrade(track, playerId); };
+  sim.trainTroop = function(type, playerId, squadId){ return trainTroop(type, playerId, squadId); };
   sim.assignClass = function(cls, n){ return assignClass(cls, n); };
   sim.setGovernor = function(on){ return setGovernor(on); };
-  sim.trainTroop = function(type, playerId){ return trainTroop(type, playerId); };
   sim.troopOrder = function(id, kind, x, z, playerId){ return troopOrder(id, kind, x, z, playerId); };
   sim.popCap = popCap;
   sim.addPopulation = addPopulation;
@@ -3073,6 +3401,35 @@ NB.createSim = function(sectorDef, opts){
   sim.gridSize = gridSize;
   sim.previewWave = previewWave;
   sim.setSpeed = setSpeed;
+  /* test/debug helpers: headless tests only, never wired to UI or netplay */
+  sim.debugGive = function(g, m, f){
+    st.gold += num(g, 0); st.metal += num(m, 0); st.food += num(f, 0);
+    return true;
+  };
+  sim.debugSpawnEnemy = function(type, x, z){
+    var def = ENEMIES[type];
+    if (!def) return null;
+    var e = {
+      id: ++sim.nextEnemyId, type: type, def: def,
+      cx: x / CELL, cz: z / CELL, x: num(x, 60), z: num(z, 60),
+      speed: num(def.speed, 3),
+      hp: num(def.hp, 10), maxHp: num(def.hp, 10),
+      bounty: Math.max(1, Math.round(num(def.bounty, 1))),
+      golden: false, melee: num(def.melee, 5),
+      affinity: def.affinity || null, insulated: false,
+      slowUntil: 0, slowFactor: 1, frozenUntil: 0, stunUntil: 0, untargetUntil: 0,
+      shield: 0, maxShield: 0, healT: 0, phaseT: 6, spawnT: 8, allyShieldT: 4,
+      enraged: false, dead: false, fieldVuln: null, dist: 0, hitT: 0
+    };
+    st.enemies.push(e);
+    return e;
+  };
+  sim.debugDamageTroop = function(id, dmg){
+    for (var i = 0; i < st.troops.length; i++){
+      if (st.troops[i].id === id){ damageTroop(st.troops[i], num(dmg, 0)); return true; }
+    }
+    return false;
+  };
   sim.togglePause = togglePause;
   sim.snapshot = snapshot;
   sim.drainEvents = drainEvents;
@@ -3099,6 +3456,8 @@ NB.createSim = function(sectorDef, opts){
              classes: { laborer: 0, engineer: 0, soldier: 0, scientist: 0 },
              governor: true, growT: 0, research: 0, starveT: 0, surplusT: 0,
              idleLaborers: 0 };
+  /* the Spire trains the first volunteers: every run starts with one squad */
+  st.squads.push({ id: 'sq-spire', name: 'Spire Guard', barracksId: null });
   recomputeFlow();
   recomputeDark();
   allocatePower();

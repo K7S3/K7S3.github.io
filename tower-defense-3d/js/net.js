@@ -294,7 +294,10 @@ var Net = {
           cx: msg.cx, cz: msg.cz, towerId: msg.towerId,
           x1: msg.x1, z1: msg.z1, x2: msg.x2, z2: msg.z2,
           instId: msg.instId, which: msg.which,
-          choiceId: msg.choiceId, edictId: msg.edictId, n: msg.n
+          choiceId: msg.choiceId, edictId: msg.edictId, n: msg.n,
+          type: msg.type, order: msg.order, id: msg.id,
+          x: msg.x, z: msg.z, cls: msg.cls,
+          track: msg.track, squadId: msg.squadId
         });
       } catch (e){
         res = { ok: false, reason: 'exception' };
@@ -631,7 +634,10 @@ var Net = {
           cx: intent.cx, cz: intent.cz, towerId: intent.towerId,
           x1: intent.x1, z1: intent.z1, x2: intent.x2, z2: intent.z2,
           instId: intent.instId, which: intent.which,
-          choiceId: intent.choiceId, edictId: intent.edictId, n: intent.n
+          choiceId: intent.choiceId, edictId: intent.edictId, n: intent.n,
+          type: intent.type, order: intent.order, id: intent.id,
+          x: intent.x, z: intent.z, cls: intent.cls,
+          track: intent.track, squadId: intent.squadId
         });
       } catch (e){
         res = { ok: false, reason: 'exception' };
@@ -648,7 +654,10 @@ var Net = {
                     x1: intent.x1, z1: intent.z1, x2: intent.x2, z2: intent.z2,
                     instId: intent.instId, which: intent.which,
                     choiceId: intent.choiceId, edictId: intent.edictId,
-                    n: intent.n };
+                    n: intent.n,
+                    type: intent.type, order: intent.order, id: intent.id,
+                    x: intent.x, z: intent.z, cls: intent.cls,
+                    track: intent.track, squadId: intent.squadId };
         try {
           Net.guestConn.send(msg);
         } catch (e){

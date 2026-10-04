@@ -49,6 +49,7 @@
       <div class="hud-stat" title="Metal (scrap extractors)"><span class="ico metal-dot"></span><span id="hud-metal-v" class="num">0</span><span id="hud-metal-r" class="rate"></span></div>
       <div class="hud-stat" title="Food (hydroponics)"><span class="ico food-ico">&#127806;</span><span id="hud-food-v" class="num">0</span><span id="hud-food-r" class="rate"></span></div>
       <div class="hud-stat" title="Population (tap for colony panel)" id="hud-pop-wrap" role="button" tabindex="0"><span class="ico pop-ico">&#128101;</span><span id="hud-pop-v" class="num">0/0</span></div>
+      <div class="hud-stat" title="Army (tap for army panel)" id="hud-army-wrap" role="button" tabindex="0"><span class="ico army-ico">&#9876;</span><span id="hud-army-v" class="num">0/6</span></div>
       <div class="hud-stat" title="Command Spire integrity">
         <span class="ico heart">&#9670;</span>
         <div class="bar hq-bar" aria-hidden="true"><div id="hud-hq-fill" class="fill"></div></div>
@@ -180,6 +181,44 @@
       <div id="troop-stats" class="stat-grid"></div>
       <div class="panel-head sub"><h3>Order mode (then tap battlefield)</h3></div>
       <div class="seg" id="troop-order-modes" role="group" aria-label="Troop order mode"></div>
+    </section>
+
+    <!-- Barracks -->
+    <section id="panel-barracks" class="panel holo hidden" aria-label="Barracks">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2 id="barracks-name">Barracks</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-barracks" aria-label="Close">&times;</button>
+      </div>
+      <div class="hp-line"><div class="bar"><div id="barracks-hp-fill" class="fill"></div></div><span id="barracks-hp-v"></span></div>
+      <div id="barracks-squad-line" class="econ-line"></div>
+      <div class="panel-head sub"><h3>Train troops</h3></div>
+      <div id="barracks-train-list" class="train-list"></div>
+      <div id="barracks-queue" class="train-list"></div>
+      <div class="panel-head sub"><h3>Upgrades</h3></div>
+      <div id="barracks-upgrades" class="train-list"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-rally" class="btn wide">Set rally point</button>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="btn-reinforce" class="btn wide">Reinforce squad</button>
+      </div>
+    </section>
+
+    <!-- Army overview -->
+    <section id="panel-army" class="panel holo hidden" aria-label="Army">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="panel-head">
+        <h2>Army</h2>
+        <button type="button" class="btn icon-btn panel-close" data-close="panel-army" aria-label="Close">&times;</button>
+      </div>
+      <div id="army-upkeep-line" class="econ-line"></div>
+      <div id="army-squads" class="train-list"></div>
+      <div class="btn-row">
+        <button type="button" id="btn-select-all-troops" class="btn wide">Select all troops</button>
+      </div>
+      <div class="panel-head sub"><h3>Order mode (then tap battlefield)</h3></div>
+      <div class="seg" id="army-order-modes" role="group" aria-label="Army order mode"></div>
     </section>
 
     <!-- Command Spire panel -->

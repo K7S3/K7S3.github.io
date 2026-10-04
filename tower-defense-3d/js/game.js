@@ -510,7 +510,12 @@ var Game = {
       node:'Extractor must be within 3 cells of a scrap node.',
       soldier:'No soldiers in the pool: assign colonists as soldiers first.',
       cap:'Unit cap reached.', class:'Unknown class.', troop:'Unknown troop.',
-      order:'Unknown order kind.', owner:'That unit is not yours.'
+      order:'Unknown order kind.', owner:'That unit is not yours.',
+      barracks:'Barracks not found.', squad:'Squad not found.',
+      squadcap:'Squad is full (6 troops).', upgmax:'Already at max tier.',
+      busy:'Research already in progress.', track:'Unknown research track.',
+      empty:'Squad has no troops in the field.', full:'Squad is already full.',
+      reinforce:'Cannot reinforce right now.'
     };
     return map[reason] || 'Order refused.';
   },
@@ -580,9 +585,11 @@ var Game = {
   buildEconAt: function(kind, cx, cz){
     var res;
     var intentKind = kind === 'extractor' ? 'buildExtractor' :
-                     kind === 'hydro' ? 'buildHydro' : 'buildHab';
+                     kind === 'hydro' ? 'buildHydro' :
+                     kind === 'barracks' ? 'buildBarracks' : 'buildHab';
     var label = kind === 'extractor' ? 'extractor' :
-                kind === 'hydro' ? 'hydroponics' : 'hab module';
+                kind === 'hydro' ? 'hydroponics' :
+                kind === 'barracks' ? 'barracks' : 'hab module';
     if (this.netMode === 'guest'){
       this.sendIntent({ kind: intentKind, cx: cx, cz: cz });
       return;
@@ -675,6 +682,164 @@ var Game = {
     var res = this.sendIntent({ kind: 'troopOrder', id: id, order: kind, x: x, z: z });
     if (res && res.ok){ this.snd('click'); }
     else if (res && !res.remote){ this.snd('error'); }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  /* ---------------- squads & barracks ---------------- */
+
+  trainTroopAt: function(type, squadId){
+    var res = this.sendIntent({ kind: 'trainTroop', type: type, squadId: squadId });
+    if (res && res.ok){ this.snd('upgrade'); this.ui.toast('Training ' + type, 'mustering'); }
+    else if (res && !res.remote){ this.snd('error'); this.ui.toast('Cannot train', this.reasonText(res && res.reason)); }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  setRallyMode: function(barracksId){
+    this.placeMode = { kind: 'rally', barracksId: barracksId };
+    this.snd('click');
+    this.ui.toast('Set rally point', 'tap the battlefield where new troops muster');
+  },
+
+  setRally: function(barracksId, x, z){
+    var res = this.sendIntent({ kind: 'setRally', instId: barracksId, x: x, z: z });
+    if (res && res.ok){
+      this.snd('click');
+      this.placeMode = null;
+      this.ui.toast('Rally set', 'new troops will muster there');
+    } else if (res && !res.remote){ this.snd('error'); }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  selectSquad: function(squadId){
+    this.selection = { kind: 'squad', squadId: squadId };
+    this.view.selected = this.selection;
+    this.snd('click');
+    this.ui.openArmy();
+  },
+
+  selectAllTroops: function(){
+    var snap = this.lastSnap || {};
+    var mine = [];
+    var troops = snap.troops || [];
+    for (var i = 0; i < troops.length; i++){
+      if (troops[i].ownerId === this.playerId) mine.push(troops[i].id);
+    }
+    if (!mine.length){ this.snd('error'); return; }
+    this.selection = { kind: 'troops', ids: mine };
+    this.view.selected = this.selection;
+    this.snd('click');
+    this.ui.openArmy();
+    this.ui.toast('Army selected', mine.length + ' troops under your command');
+  },
+
+  orderSelectedSquad: function(clientX, clientY){
+    var sel = this.selection;
+    if (!sel || sel.kind !== 'squad') return false;
+    var kind = this.troopOrderKind || 'attackmove';
+    /* tapping an enemy: focus-fire the squad there */
+    var enemyId = this.pickEnemyAt(clientX, clientY);
+    var p;
+    if (enemyId != null){
+      var e = this.enemyById(enemyId);
+      if (e){ p = { x: e.x, z: e.z }; kind = 'attackmove'; }
+    }
+    if (!p){
+      if (kind === 'hold'){
+        /* hold in place: order at squad centroid */
+        var c = this.squadCentroid(sel.squadId);
+        if (c) p = c; else return false;
+      } else {
+        p = this.groundPoint(clientX, clientY);
+        if (!p) return false;
+      }
+    }
+    this.sendSquadOrder(sel.squadId, kind, p.x, p.z);
+    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
+      try { this.renderer.moveMarker(p.x, p.z, kind); } catch (e2){}
+    }
+    return true;
+  },
+
+  squadCentroid: function(squadId){
+    var snap = this.lastSnap || {};
+    var troops = snap.troops || [];
+    var cx = 0, cz = 0, n = 0;
+    for (var i = 0; i < troops.length; i++){
+      if (troops[i].squadId === squadId){ cx += troops[i].x; cz += troops[i].z; n++; }
+    }
+    return n ? { x: cx / n, z: cz / n } : null;
+  },
+
+  /* multi-select order: loose-line formation across all selected troops */
+  orderMultiSelect: function(clientX, clientY){
+    var sel = this.selection;
+    if (!sel || sel.kind !== 'troops' || !sel.ids || !sel.ids.length) return false;
+    var kind = this.troopOrderKind || 'attackmove';
+    var p = this.groundPoint(clientX, clientY);
+    if (!p) return false;
+    var snap = this.lastSnap || {};
+    var troops = snap.troops || [];
+    var members = [];
+    for (var i = 0; i < troops.length; i++){
+      if (sel.ids.indexOf(troops[i].id) >= 0) members.push(troops[i]);
+    }
+    if (!members.length) return false;
+    var cx = 0, cz = 0, i;
+    for (i = 0; i < members.length; i++){ cx += members[i].x; cz += members[i].z; }
+    cx /= members.length; cz /= members.length;
+    var dx = p.x - cx, dz = p.z - cz;
+    var dl = Math.sqrt(dx * dx + dz * dz);
+    var px = dl > 0.5 ? -dz / dl : 1, pz = dl > 0.5 ? dx / dl : 0;
+    var spacing = 2.6;
+    for (i = 0; i < members.length; i++){
+      var off = (i - (members.length - 1) / 2) * spacing;
+      var back = (i % 2) * spacing * 0.45;
+      this.sendIntent({ kind: 'troopOrder', id: members[i].id, order: kind,
+        x: p.x + px * off - (dl > 0.5 ? dx / dl : 0) * back,
+        z: p.z + pz * off - (dl > 0.5 ? dz / dl : 0) * back });
+    }
+    this.snd('click');
+    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
+      try { this.renderer.moveMarker(p.x, p.z, kind); } catch (e){}
+    }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+    return true;
+  },
+
+  sendSquadOrder: function(squadId, kind, x, z){
+    var res = this.sendIntent({ kind: 'squadOrder', squadId: squadId, order: kind, x: x, z: z });
+    if (res && res.ok){ this.snd('click'); }
+    else if (res && !res.remote){ this.snd('error'); }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  reinforceSquad: function(squadId){
+    var res = this.sendIntent({ kind: 'reinforce', squadId: squadId });
+    if (res && res.ok){
+      this.snd('upgrade');
+      this.ui.toast('Reinforcing', res.queued + ' ' + (res.type || 'troop') + '(s) mustering');
+    } else if (res && !res.remote){
+      this.snd('error');
+      this.ui.toast('Cannot reinforce', this.reasonText(res && res.reason));
+    }
+    this.lastSnap = this.safeSnapshot();
+    this.ui.updateHUD(this.lastSnap);
+  },
+
+  researchTroopUpgrade: function(track){
+    var res = this.sendIntent({ kind: 'troopUpgrade', track: track });
+    if (res && res.ok){
+      this.snd('upgrade');
+      this.ui.toast('Researching', track + ' MK' + res.tier + ' (' + Math.ceil(res.duration) + 's)');
+    } else if (res && !res.remote){
+      this.snd('error');
+      this.ui.toast('Cannot research', this.reasonText(res && res.reason));
+    }
     this.lastSnap = this.safeSnapshot();
     this.ui.updateHUD(this.lastSnap);
   },
@@ -942,6 +1107,7 @@ var Game = {
       { kind:'extractor', arr: snap.extractors || [], idf: function(r){ return r.instId; } },
       { kind:'hydro', arr: snap.hydros || [], idf: function(r){ return r.instId; } },
       { kind:'hab', arr: snap.habs || [], idf: function(r){ return r.instId; } },
+      { kind:'barracks', arr: snap.barracks || [], idf: function(r){ return r.instId; } },
       { kind:'wall', arr: snap.walls || [], idf: function(r){ return r.id; } }
     ];
     for (var l = 0; l < lists.length; l++){
@@ -972,6 +1138,7 @@ var Game = {
       if (hit.kind === 'tower') this.ui.openTower(hit.ref);
       else if (hit.kind === 'wall') this.ui.openWall(hit.ref);
       else if (hit.kind === 'reactor') this.ui.openReactor(hit.ref);
+      else if (hit.kind === 'barracks') this.ui.openBarracks(hit.ref);
       return true;
     }
     return false;
@@ -999,6 +1166,10 @@ var Game = {
         var er = this.sim.canPlaceEcon ? this.sim.canPlaceEcon(mode.kind, cell.cx, cell.cz)
                                        : { ok: false };
         valid = !!(er && er.ok);
+      } else if (mode.kind === 'barracks'){
+        var br = this.sim.canPlaceBarracks ? this.sim.canPlaceBarracks(cell.cx, cell.cz)
+                                           : { ok: false };
+        valid = !!(br && br.ok);
       }
     } catch (e){ valid = false; }
     this.view.ghost = { cells: [{ cx: cell.cx, cz: cell.cz }], valid: valid };
@@ -1223,7 +1394,8 @@ var Game = {
       return;
     }
     if (mode && (mode.kind === 'tower' || mode.kind === 'reactor' ||
-                 mode.kind === 'extractor' || mode.kind === 'hydro' || mode.kind === 'hab')){
+                 mode.kind === 'extractor' || mode.kind === 'hydro' ||
+                 mode.kind === 'hab' || mode.kind === 'barracks')){
       var cell = this.groundCell(clientX, clientY);
       if (!cell) return;
       if (mode.kind === 'tower') this.buildAt(cell.cx, cell.cz, mode.towerId);
@@ -1231,9 +1403,23 @@ var Game = {
       else this.buildEconAt(mode.kind, cell.cx, cell.cz);
       return;
     }
+    /* rally mode: tap the battlefield to set the selected Barracks' rally */
+    if (mode && mode.kind === 'rally'){
+      var p = this.groundPoint(clientX, clientY);
+      if (p) this.setRally(mode.barracksId, p.x, p.z);
+      return;
+    }
     /* troop selected: tap ground to order it (tap enemy = attack-move there) */
     if (this.selection && this.selection.kind === 'troop'){
       if (this.orderSelectedTroop(clientX, clientY)) return;
+    }
+    /* squad selected: tap ground to order the whole squad */
+    if (this.selection && this.selection.kind === 'squad'){
+      if (this.orderSelectedSquad(clientX, clientY)) return;
+    }
+    /* multi-select (select-all): order every selected troop in formation */
+    if (this.selection && this.selection.kind === 'troops'){
+      if (this.orderMultiSelect(clientX, clientY)) return;
     }
     /* no placement mode: interactive world objects first */
     if (this.tapWorld(clientX, clientY)) return;

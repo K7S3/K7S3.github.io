@@ -1704,7 +1704,8 @@ NB.Renderer3D = function(canvas){
   var econ = {};  /* instId -> entry */
 
   function econAccent(kind){
-    return kind === 'extractor' ? 0xff9f43 : kind === 'hydro' ? 0x4ade80 : 0xa78bfa;
+    return kind === 'extractor' ? 0xff9f43 : kind === 'hydro' ? 0x4ade80 :
+           kind === 'barracks' ? 0xa3e635 : 0xa78bfa;
   }
 
   function buildEconEntry(kind, t, snap){
@@ -1747,6 +1748,19 @@ NB.Renderer3D = function(canvas){
       }
       g.add(box(2.7, 0.18, 2.7, gunmetal, 0, 1.78, 0));
       anim = { glowMat: glowMat };
+    } else if (kind === 'barracks'){
+      /* muster hall: low armory block + parade yard + banner poles */
+      g.add(box(3.0, 1.4, 2.2, gunmetal, 0, 0.7, -0.6));
+      g.add(box(3.2, 0.25, 2.4, darkMetal, 0, 0.12, -0.6));
+      g.add(box(3.02, 0.35, 2.22, glowMat, 0, 1.05, -0.6)); /* insignia strip */
+      g.add(box(2.6, 0.12, 1.8, darkMetal, 0, 0.06, 1.4));   /* parade pad */
+      for (var bi = 0; bi < 2; bi++){
+        var bx = bi === 0 ? -1.4 : 1.4;
+        g.add(cyl(0.06, 0.06, 2.2, darkMetal, bx, 1.1, 1.9, 6));
+        var banner = box(0.5, 0.8, 0.04, glowMat, bx + 0.28, 1.7, 1.9);
+        g.add(banner);
+      }
+      anim = { glowMat: glowMat };
     } else { /* hab */
       g.add(box(2.4, 1.7, 2.0, gunmetal, 0, 0.85, 0));
       g.add(box(2.6, 0.3, 2.2, darkMetal, 0, 0.15, 0));
@@ -1770,7 +1784,8 @@ NB.Renderer3D = function(canvas){
     var lists = [
       { kind: 'extractor', arr: arr(snap && snap.extractors) },
       { kind: 'hydro', arr: arr(snap && snap.hydros) },
-      { kind: 'hab', arr: arr(snap && snap.habs) }
+      { kind: 'hab', arr: arr(snap && snap.habs) },
+      { kind: 'barracks', arr: arr(snap && snap.barracks) }
     ];
     var seen = {}, li, i, t;
     for (li = 0; li < lists.length; li++){
@@ -1811,6 +1826,43 @@ NB.Renderer3D = function(canvas){
         scene.remove(econ[k].hit);
         delete econ[k];
       }
+    }
+    updateRallyFlags(snap);
+  }
+
+  /* Rally flags: one small muster pennant per Barracks at its rally point. */
+  var rallyFlags = {};
+  function updateRallyFlags(snap){
+    var seen = {};
+    var list = arr(snap && snap.barracks);
+    for (var i = 0; i < list.length; i++){
+      var b = list[i];
+      if (!b || b.instId == null || !b.rally) continue;
+      seen[b.instId] = 1;
+      var f = rallyFlags[b.instId];
+      if (!f){
+        var g = new THREE.Group();
+        g.add(cyl(0.05, 0.05, 1.8, darkMetal, 0, 0.9, 0, 6));
+        var flagMat = new THREE.MeshBasicMaterial({ color: 0xa3e635,
+          side: THREE.DoubleSide });
+        var flag = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45), flagMat);
+        flag.position.set(0.38, 1.5, 0);
+        g.add(flag);
+        var ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.0, 20),
+          new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true,
+            opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.12;
+        g.add(ring);
+        scene.add(g);
+        f = rallyFlags[b.instId] = { group: g, flag: flag,
+                                     seed: Math.random() * 10 };
+      }
+      f.group.position.set(b.rally.x, groundY(b.rally.x, b.rally.z), b.rally.z);
+      f.flag.rotation.y = Math.sin(time * 2 + f.seed) * 0.35;
+    }
+    for (var k2 in rallyFlags){
+      if (!seen[k2]){ scene.remove(rallyFlags[k2].group); delete rallyFlags[k2]; }
     }
   }
 
@@ -2827,20 +2879,34 @@ NB.Renderer3D = function(canvas){
     var g = new THREE.Group();
     var ML = (globalThis.NB && NB.ModelLib) || null;
     var model = null;
+    var T = (globalThis.NB && NB.TROOPS) || {};
+    var tdef = T[t.type] || {};
     try {
-      var T = (globalThis.NB && NB.TROOPS) || {};
-      var def = T[t.type] || {};
-      model = ML ? ML.structureModel(def.model || 'engineer') : null;
+      model = ML ? ML.structureModel(tdef.model || 'engineer') : null;
     } catch (e){ model = null; }
-    if (model && model.group) g.add(model.group);
-    else g.add(box(0.7, 1.4, 0.7, gunmetal, 0, 0.7, 0));
-    /* rifle prop */
-    var rifle = box(0.1, 0.1, 1.1, darkMetal, 0.35, 1.0, 0.4);
-    g.add(rifle);
+    var tscale = num(tdef.scale, 1);
+    if (model && model.group){
+      model.group.scale.setScalar(tscale);
+      g.add(model.group);
+    }
+    else g.add(box(0.7 * tscale, 1.4 * tscale, 0.7 * tscale, gunmetal, 0, 0.7 * tscale, 0));
+    /* weapon prop: rifle for line troops, heavy cannon for breachers */
+    var wkind = tdef.weapon || 'rifle';
+    var gun;
+    if (wkind === 'cannon'){
+      gun = box(0.22 * tscale, 0.22 * tscale, 1.5 * tscale, darkMetal,
+                0.4 * tscale, 1.0 * tscale, 0.5 * tscale);
+      /* muzzle brake */
+      g.add(box(0.3 * tscale, 0.3 * tscale, 0.25 * tscale, gunmetal,
+                0.4 * tscale, 1.0 * tscale, 1.2 * tscale));
+    } else {
+      gun = box(0.1, 0.1, 1.1, darkMetal, 0.35, 1.0, 0.4);
+    }
+    g.add(gun);
     /* class accent: glowing visor band */
     var accentMat = new THREE.MeshStandardMaterial({ color: 0x111111,
       emissive: troopAccent(t.type), emissiveIntensity: 2.0, roughness: 0.4 });
-    var visor = box(0.5, 0.12, 0.1, accentMat, 0, 1.45, 0.28);
+    var visor = box(0.5 * tscale, 0.12, 0.1, accentMat, 0, 1.45 * tscale, 0.28 * tscale);
     g.add(visor);
     /* selection ring (visible when this troop is selected) */
     var selRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.1, 24),
@@ -2882,8 +2948,14 @@ NB.Renderer3D = function(canvas){
       var firing = t.targetId != null;
       e.muzzleT = firing ? 0.12 : Math.max(0, e.muzzleT - dt);
       e.accentMat.emissiveIntensity = e.muzzleT > 0 ? 4.0 : 2.0;
-      /* selection ring */
-      var sel = view && view.selected && view.selected.kind === 'troop' && view.selected.id === t.id;
+      /* selection ring: single troop, squad, or multi-select */
+      var vsel = view && view.selected;
+      var sel = false;
+      if (vsel){
+        if (vsel.kind === 'troop' && vsel.id === t.id) sel = true;
+        else if (vsel.kind === 'squad' && vsel.squadId === t.squadId) sel = true;
+        else if (vsel.kind === 'troops' && vsel.ids && vsel.ids.indexOf(t.id) >= 0) sel = true;
+      }
       e.selRing.visible = !!sel;
       if (sel) e.selRing.material.opacity = 0.6 + 0.3 * Math.sin(time * 5);
       e.ownerRing.material.color.set(playerColor(snap, t.ownerId));

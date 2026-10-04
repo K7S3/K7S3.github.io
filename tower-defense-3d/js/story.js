@@ -151,7 +151,8 @@ chapters: [
       'We were close enough to taste it, and the swarm knew it. The Dreadnought ' +
       'walked through everything we built and kept walking. The other arcologies ' +
       'heard about this one too. Give them a better story next time.',
-    codexUnlocks: ['uplink-network', 'overseer-dara-okafor'],
+    codexUnlocks: ['uplink-network', 'overseer-dara-okafor', 'the-barracks',
+                   'rifleman-corps', 'breacher-corps'],
     rustLines: [
       'YOUR VICTORY IS A STATISTICAL ANOMALY. WE CORRECT ANOMALIES.'
     ]
@@ -289,6 +290,25 @@ codex: [
       'list of every name the war has cost. She controls the civilian ' +
       'stores, which makes her the Commander\u2019s quartermaster, auditor, ' +
       'and conscience. Cross her on the people, and the gold stops flowing.' },
+  { id: 'the-barracks',
+    title: 'The Barracks',
+    body: 'When the turrets could not be everywhere, the colony started ' +
+      'training its own. Every Barracks musters one squad of six, sets ' +
+      'their rally point, and keeps their boots filled. Volunteers, all: ' +
+      'farmers, welders, teachers. The Overseer reads every casualty list ' +
+      'aloud at muster. Nobody has ever asked her to stop.' },
+  { id: 'rifleman-corps',
+    title: 'Rifleman Corps',
+    body: 'The backbone of the Bastion militia. Steady, cheap to field, ' +
+      'and lethal against the swarm in the open. Riflemen hold lines; ' +
+      'they do not chase glory, which is why they come home more often ' +
+      'than the Rangers they serve beside.' },
+  { id: 'breacher-corps',
+    title: 'Breacher Corps',
+    body: 'Walking siege engines in salvaged plate, carrying shaped ' +
+      'charges tuned for hardened Rust armor. A Breacher squad is the ' +
+      'answer to the question the Dreadnoughts ask. Slow, expensive, ' +
+      'and utterly uninterested in running away.' },
   { id: 'pulse-turret',
     title: 'Pulse Turret',
     body: 'The Bastion\u2019s workhorse: a human-crewed emplacement firing ' +

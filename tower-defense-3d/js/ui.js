@@ -274,6 +274,16 @@ var UI = {
       var pw = $('hud-pop-wrap');
       if (pw) pw.style.borderColor = snap.starving ? '#ff5a36' : '';
     }
+    /* army: fielded / cap, upkeep eats into the food rate */
+    var av = $('hud-army-v');
+    if (av){
+      var fielded = (snap.troops || []).length + (snap.training || []).length;
+      av.textContent = fielded + '/' + (snap.troopCap || 6);
+      var armyUp = snap.troopUpkeep || 0;
+      var aw = $('hud-army-wrap');
+      if (aw) aw.title = 'Army (tap for army panel)' +
+        (armyUp > 0 ? ' - upkeep ' + armyUp.toFixed(2) + ' food/s' : '');
+    }
     var hqFrac = snap.hqMaxHp > 0 ? snap.hqHp / snap.hqMaxHp : 0;
     $('hud-hq-v').textContent = snap.hqHp + '/' + snap.hqMaxHp;
     $('hud-hq-fill').style.width = Math.max(0, Math.min(100, hqFrac * 100)) + '%';
@@ -362,6 +372,10 @@ var UI = {
         } else if (kind === 'hab'){
           active = !!(mode && mode.kind === 'hab');
           cant = snap.gold < ((NB.CONFIG && NB.CONFIG.HAB_COST) || 60);
+        } else if (kind === 'barracks'){
+          active = !!(mode && mode.kind === 'barracks');
+          cant = snap.gold < ((NB.CONFIG && NB.CONFIG.BARRACKS_COST) || 250) ||
+                 snap.metal < ((NB.CONFIG && NB.CONFIG.BARRACKS_METAL) || 15);
         } else if (kind === 'colony'){
           active = !$('panel-pop').classList.contains('hidden');
         } else if (kind === 'sell'){
@@ -383,6 +397,8 @@ var UI = {
         : mode.kind === 'extractor' ? 'Extractor (near a scrap node)'
         : mode.kind === 'hydro' ? 'Hydroponics Bay'
         : mode.kind === 'hab' ? 'Hab Module'
+        : mode.kind === 'barracks' ? 'Barracks (+6 troop cap)'
+        : mode.kind === 'rally' ? 'Rally point: tap the battlefield'
         : mode.kind === 'sell' ? 'Sell mode: click a structure' : mode.kind;
       hint.innerHTML = '';
       hint.appendChild(el('span', null, 'Placing ' + label + ' - click the battlefield. '));
@@ -398,10 +414,12 @@ var UI = {
       if (g.selection.kind === 'wall' && !$('panel-wall').classList.contains('hidden')) this.refreshWallPanel();
       if (g.selection.kind === 'reactor' && !$('panel-reactor').classList.contains('hidden')) this.refreshReactorPanel();
       if (g.selection.kind === 'troop' && !$('panel-troop').classList.contains('hidden')) this.refreshTroopPanel();
+      if (g.selection.kind === 'barracks' && !$('panel-barracks').classList.contains('hidden')) this.refreshBarracksPanel();
     }
     if (!$('panel-spire').classList.contains('hidden')) this.refreshSpirePanel();
     if (!$('panel-wave').classList.contains('hidden')) this.openWave();
     if (!$('panel-pop').classList.contains('hidden')) this.refreshPopPanel();
+    if (!$('panel-army').classList.contains('hidden')) this.refreshArmyPanel();
   },
 
   setMuteIcon: function(muted){
@@ -449,6 +467,9 @@ var UI = {
         'Food farm. Staff with laborers to feed the colony.');
     btn('hab', null, '#a78bfa', 'Hab', CFG.HAB_COST || 60,
         'Housing. +8 population cap per module.');
+    btn('barracks', null, '#a3e635', 'Barracks', CFG.BARRACKS_COST || 250,
+        'Muster hall. Trains Riflemen and Breachers, +6 troop cap each. ' +
+        'Costs ' + (CFG.BARRACKS_METAL || 15) + ' metal.');
     var col = btn('colony', null, '#7df9ff', 'Colony', null, 'Population, classes, and the ranger program.', true);
     col.addEventListener('click', function(){ self.openPop(); }, true);
     btn('sell', null, '#ff5a36', 'Sell', null, 'Click a structure to sell it.', true);
@@ -458,7 +479,7 @@ var UI = {
 
   /* ---------------- panels ---------------- */
 
-  PANELS: ['panel-tower','panel-wall','panel-reactor','panel-spire','panel-wave','panel-pop','panel-troop'],
+  PANELS: ['panel-tower','panel-wall','panel-reactor','panel-spire','panel-wave','panel-pop','panel-troop','panel-barracks','panel-army'],
 
   closePanels: function(){
     for (var i = 0; i < this.PANELS.length; i++){
@@ -805,6 +826,232 @@ var UI = {
     if (modes){
       modes.innerHTML = '';
       var self = this, g = this.game;
+      (NB.TROOP_ORDERS || ['move', 'attackmove', 'hold']).forEach(function(k){
+        var b = el('button', 'btn seg-btn' + (g.troopOrderKind === k ? ' active' : ''));
+        b.type = 'button';
+        b.textContent = k === 'move' ? 'Move' : k === 'attackmove' ? 'Attack-move' : 'Hold';
+        b.addEventListener('click', function(){ g.setTroopOrderKind(k); });
+        modes.appendChild(b);
+      });
+    }
+  },
+
+  /* ---------------- barracks ---------------- */
+
+  _barracksRef: null,
+
+  squadForBarracks: function(barracksInstId){
+    var snap = this.game && this.game.lastSnap;
+    var squads = (snap && snap.squads) || [];
+    for (var i = 0; i < squads.length; i++){
+      if (squads[i].barracksId === barracksInstId) return squads[i];
+    }
+    return null;
+  },
+
+  openBarracks: function(ref){
+    this._barracksRef = ref || null;
+    this.game.selection = { kind: 'barracks', id: ref && ref.instId, ref: ref };
+    this.refreshBarracksPanel();
+    this.openPanel('panel-barracks');
+  },
+
+  findBarracks: function(instId){
+    var snap = this.game && this.game.lastSnap;
+    var list = (snap && snap.barracks) || [];
+    for (var i = 0; i < list.length; i++){
+      if (list[i].instId === instId) return list[i];
+    }
+    return null;
+  },
+
+  refreshBarracksPanel: function(){
+    var g = this.game, snap = g.lastSnap || {};
+    var b = this._barracksRef && this.findBarracks(this._barracksRef.instId);
+    if (!b){ this.closePanels(); this._barracksRef = null; return; }
+    this._barracksRef = b;
+    $('barracks-hp-v').textContent = b.hp + ' / ' + b.maxHp;
+    var frac = b.maxHp > 0 ? b.hp / b.maxHp : 0;
+    $('barracks-hp-fill').style.width = Math.max(0, Math.min(100, frac * 100)) + '%';
+    var sq = this.squadForBarracks(b.instId);
+    var sl = $('barracks-squad-line');
+    if (sl){
+      sl.innerHTML = '';
+      if (sq){
+        sl.appendChild(el('span', null,
+          sq.name + ': ' + sq.alive + '/' + sq.cap + ' fielded' +
+          (sq.queued ? ' (+' + sq.queued + ' training)' : '') +
+          (sq.order ? ' - ' + sq.order : '')));
+      } else {
+        sl.appendChild(el('span', 'muted', 'No squad mustered here yet.'));
+      }
+    }
+    var list = $('barracks-train-list');
+    if (list){
+      list.innerHTML = '';
+      var self = this;
+      var TROOPS = NB.TROOPS || {};
+      var order = NB.TROOP_ORDER || Object.keys(TROOPS);
+      var pop = snap.pop || {};
+      var cls = pop.classes || {};
+      var fielded = (snap.troops || []).length + (snap.training || []).length;
+      order.forEach(function(type){
+        var def = TROOPS[type];
+        if (!def) return;
+        var row = el('div', 'train-row');
+        var dot = el('span', 'dot');
+        dot.style.color = def.color; dot.style.background = def.color;
+        row.appendChild(dot);
+        var info = el('div', 'class-info');
+        info.appendChild(el('b', null, def.name || type));
+        info.appendChild(el('span', 'class-desc',
+          (def.costGold || 0) + 'g + ' + (def.costFood || 0) + ' food + 1 soldier (' +
+          (def.trainTime || 0) + 's) - ' + (def.tag || '')));
+        row.appendChild(info);
+        var bb = el('button', 'btn', 'Train');
+        bb.type = 'button';
+        var squadFull = sq && (sq.alive + sq.queued) >= sq.cap;
+        var can = sq && !squadFull && (cls.soldier || 0) >= 1 &&
+                  (snap.gold || 0) >= (def.costGold || 0) &&
+                  (snap.food || 0) >= (def.costFood || 0) &&
+                  fielded < (snap.troopCap || 6);
+        bb.disabled = !can;
+        bb.title = !sq ? 'No squad here' : squadFull ? 'Squad full' : 'Train ' + (def.name || type);
+        (function(tp, sqId){
+          bb.addEventListener('click', function(){ g.trainTroopAt(tp, sqId); });
+        })(type, sq && sq.id);
+        row.appendChild(bb);
+        list.appendChild(row);
+      });
+    }
+    var ql = $('barracks-queue');
+    if (ql){
+      ql.innerHTML = '';
+      var tq = snap.training || [];
+      var TROOPS2 = NB.TROOPS || {};
+      for (var i = 0; i < tq.length; i++){
+        if (sq && tq[i].squadId && tq[i].squadId !== sq.id) continue;
+        var def2 = TROOPS2[tq[i].type] || {};
+        ql.appendChild(el('div', 'train-prog',
+          'Training ' + (def2.name || tq[i].type) + ': ' + tq[i].pct + '%'));
+      }
+    }
+    var ul = $('barracks-upgrades');
+    if (ul){
+      ul.innerHTML = '';
+      var upg = snap.troopUpg || { weapon: 0, armor: 0 };
+      var res = snap.troopResearch;
+      var tracks = [
+        ['weapon', 'Weapon', '+25% troop damage per tier'],
+        ['armor', 'Armor', '+30% troop HP per tier']
+      ];
+      tracks.forEach(function(pair){
+        var track = pair[0], tier = upg[track] || 0;
+        var row = el('div', 'train-row');
+        var dot = el('span', 'dot');
+        dot.style.color = '#c4b5fd'; dot.style.background = '#c4b5fd';
+        row.appendChild(dot);
+        var info = el('div', 'class-info');
+        info.appendChild(el('b', null, pair[1] + ' MK' + (tier + 1)));
+        var cost = ((NB.CONFIG || {}).TROOP_UPGRADE_COST || [])[tier];
+        var busy = !!res;
+        var label;
+        if (tier >= 2) label = 'MAX TIER';
+        else if (res && res.track === track) label = 'Researching ' + res.pct + '%';
+        else if (busy) label = 'Lab busy';
+        else label = pair[2] + ' - ' + (cost ? cost.gold + 'g + ' + cost.metal + ' metal' : '');
+        info.appendChild(el('span', 'class-desc', label));
+        row.appendChild(info);
+        var rb = el('button', 'btn', tier >= 2 ? 'MAX' : 'Research');
+        rb.type = 'button';
+        rb.disabled = tier >= 2 || busy ||
+          (snap.gold || 0) < (cost ? cost.gold : 0) ||
+          (snap.metal || 0) < (cost ? cost.metal : 0);
+        rb.title = 'Scientists speed research';
+        (function(tr){ rb.addEventListener('click', function(){ g.researchTroopUpgrade(tr); }); })(track);
+        row.appendChild(rb);
+        ul.appendChild(row);
+      });
+    }
+    var rfb = $('btn-reinforce');
+    if (rfb && sq){
+      var missing = sq.cap - sq.alive - sq.queued;
+      rfb.textContent = missing > 0 ? 'Reinforce squad (' + missing + ' empty)' : 'Squad full';
+      rfb.disabled = missing <= 0;
+    }
+  },
+
+  /* ---------------- army overview ---------------- */
+
+  openArmy: function(){
+    this.refreshArmyPanel();
+    this.openPanel('panel-army');
+  },
+
+  refreshArmyPanel: function(){
+    var g = this.game, snap = g.lastSnap || {};
+    var ul = $('army-upkeep-line');
+    if (ul){
+      ul.innerHTML = '';
+      var fielded = (snap.troops || []).length;
+      var training = (snap.training || []).length;
+      var up = snap.troopUpkeep || 0;
+      ul.appendChild(el('span', null,
+        'Fielded ' + fielded + '/' + (snap.troopCap || 6) +
+        (training ? ' (+' + training + ' training)' : '') +
+        (up > 0 ? ' - upkeep ' + up.toFixed(2) + ' food/s' : '')));
+    }
+    var list = $('army-squads');
+    if (list){
+      list.innerHTML = '';
+      var squads = snap.squads || [];
+      var troops = snap.troops || [];
+      var TROOPS = NB.TROOPS || {};
+      squads.forEach(function(sq){
+        var row = el('div', 'train-row');
+        var dot = el('span', 'dot');
+        dot.style.color = '#a3e635'; dot.style.background = '#a3e635';
+        row.appendChild(dot);
+        var info = el('div', 'class-info');
+        info.appendChild(el('b', null, sq.name || sq.id));
+        var hp = 0, maxHp = 0, mix = {};
+        for (var i = 0; i < troops.length; i++){
+          if (troops[i].squadId === sq.id){
+            hp += troops[i].hp; maxHp += troops[i].maxHp;
+            mix[troops[i].type] = (mix[troops[i].type] || 0) + 1;
+          }
+        }
+        var mixStr = Object.keys(mix).map(function(tp){
+          return ((TROOPS[tp] || {}).name || tp) + ' x' + mix[tp];
+        }).join(', ') || 'empty';
+        var dead = Math.max(0, sq.cap - sq.alive - sq.queued);
+        info.appendChild(el('span', 'class-desc',
+          sq.alive + '/' + sq.cap + (sq.queued ? ' (+' + sq.queued + ' training)' : '') +
+          (dead > 0 ? ' - ' + dead + ' empty' : '') + ' - ' + mixStr +
+          (sq.order ? ' - ' + sq.order : '')));
+        var bar = el('div', 'bar slim');
+        var fill = el('div', 'fill');
+        fill.style.width = (maxHp > 0 ? Math.max(0, Math.min(100, hp / maxHp * 100)) : 0) + '%';
+        bar.appendChild(fill);
+        info.appendChild(bar);
+        row.appendChild(info);
+        var sb = el('button', 'btn', 'Command');
+        sb.type = 'button';
+        sb.disabled = sq.alive <= 0;
+        sb.title = 'Select this squad, then tap the battlefield to order it';
+        (function(sqId){ sb.addEventListener('click', function(){ g.selectSquad(sqId); }); })(sq.id);
+        row.appendChild(sb);
+        var sel = g.selection;
+        if (sel && sel.kind === 'squad' && sel.squadId === sq.id) row.classList.add('active');
+        list.appendChild(row);
+      });
+      if (!squads.length){
+        list.appendChild(el('div', 'muted', 'No squads yet. Build a Barracks to muster troops.'));
+      }
+    }
+    var modes = $('army-order-modes');
+    if (modes){
+      modes.innerHTML = '';
       (NB.TROOP_ORDERS || ['move', 'attackmove', 'hold']).forEach(function(k){
         var b = el('button', 'btn seg-btn' + (g.troopOrderKind === k ? ' active' : ''));
         b.type = 'button';
@@ -1404,6 +1651,24 @@ var UI = {
         if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPop(); }
       });
     }
+    var armyWrap = $('hud-army-wrap');
+    if (armyWrap){
+      var openArmy = function(){ self.openArmy(); };
+      armyWrap.addEventListener('click', openArmy);
+      armyWrap.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openArmy(); }
+      });
+    }
+    this.on('btn-select-all-troops', function(){ g().selectAllTroops(); });
+    this.on('btn-rally', function(){
+      var b = self._barracksRef;
+      if (b) g().setRallyMode(b.instId);
+    });
+    this.on('btn-reinforce', function(){
+      var b = self._barracksRef;
+      var sq = b && self.squadForBarracks(b.instId);
+      if (sq) g().reinforceSquad(sq.id);
+    });
     this.on('btn-overclock', function(){ g().toggleOverclock(); });
     this.on('btn-spire-upgrade', function(){ g().upgradeSpire(); });
 

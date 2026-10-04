@@ -357,6 +357,66 @@ var TRIGGERS = [
     return v[Math.floor(Math.random() * v.length)];
   } },
 
+{ id:'idle_troops', priority:115, cooldownSec:90,
+  when: function(s){
+    var troops = arr(s.troops);
+    if (!troops.length) return false;
+    if (!arr(s.enemies).length) return false; /* no fight on: standing by is fine */
+    for (var i = 0; i < troops.length; i++){
+      if (troops[i].targetId) return false; /* somebody's fighting */
+    }
+    return true;
+  },
+  line: function(s){
+    var v = [
+      'Your troops are standing around while the Rust advances. Give them an attack-move.',
+      'The field is hot and the squads are idle. Point them at the problem, Commander.',
+      'Idle rifles lose wars. Your troops need orders while enemies are on the field.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'squad_depleted', priority:118, cooldownSec:120,
+  when: function(s){
+    var squads = arr(s.squads);
+    for (var i = 0; i < squads.length; i++){
+      var sq = squads[i];
+      if (sq.alive > 0 && sq.alive + sq.queued < sq.cap) return true;
+    }
+    return false;
+  },
+  line: function(s){
+    var v = [
+      'A squad has empty boots. Reinforce at the Barracks before the next push.',
+      'Casualties leave gaps. The Barracks can reinforce a depleted squad in one tap.',
+      'One of your squads is understrength. Reinforcements are waiting at the Barracks.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
+{ id:'breacher_suggested', priority:112, cooldownSec:120,
+  when: function(s){
+    if (!arr(s.barracks).length) return false;
+    var troops = arr(s.troops);
+    for (var i = 0; i < troops.length; i++){
+      if (troops[i].type === 'breacher') return false;
+    }
+    var armored = 0;
+    var list = arr(s.enemies);
+    for (var j = 0; j < list.length; j++){
+      if ((NB.ARMORED_TYPES || []).indexOf(list[j].type) >= 0) armored++;
+    }
+    return armored >= 3;
+  },
+  line: function(s){
+    var v = [
+      'Hardened armor on the field. Breachers with shaped charges would crack it open.',
+      'That is a lot of plate out there. Time to muster Breachers at the Barracks.',
+      'Rifles will chip that armor all day. Breachers end the argument.'
+    ];
+    return v[Math.floor(Math.random() * v.length)];
+  } },
+
 { id:'idle', priority:999, cooldownSec:120,
   when: function(s){
     return !s.waveActive && arr(s.enemies).length === 0 && !(s.surge || {}).active;
