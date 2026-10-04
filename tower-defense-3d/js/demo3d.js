@@ -27,9 +27,9 @@ function DemoVista(canvas){
   this.scene.fog = new THREE.Fog(0x04060d, 70, 200);
   this.camera = new THREE.PerspectiveCamera(52, 1, 0.5, 500);
 
-  var hemi = new THREE.HemisphereLight(0x3a5a8a, 0x05070f, 1.0);
+  var hemi = new THREE.HemisphereLight(0x7a8cb8, 0x2a2018, 1.5);
   this.scene.add(hemi);
-  var dir = new THREE.DirectionalLight(0x88aaff, 0.6);
+  var dir = new THREE.DirectionalLight(0xaaccff, 1.0);
   dir.position.set(40, 80, 20);
   this.scene.add(dir);
   var amber = new THREE.PointLight(0xffb347, 1.6, 70);

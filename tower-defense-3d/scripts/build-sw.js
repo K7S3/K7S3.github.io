@@ -12,12 +12,12 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const CACHE_VERSION = 'novabastion-3d-beta1';
+const CACHE_VERSION = 'novabastion-3d-beta2';
 
 /* Walk the app shell: game code, styles, vendored libs + fonts, icons, manifest.
  * Excluded: dev scripts (build tooling, not game assets), test files, and the
  * store screenshots (listing art, never fetched by the game itself). */
-const SHELL_DIRS = ['css', 'js', 'icons'];
+const SHELL_DIRS = ['css', 'js', 'icons', 'assets'];
 const EXCLUDE = [
   path.join('js', 'tests'),   // unit tests, not runtime
   'scripts',                  // build tooling

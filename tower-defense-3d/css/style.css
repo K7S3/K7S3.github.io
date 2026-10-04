@@ -390,3 +390,8 @@ h1,h2,.kicker,.btn{font-family:var(--label);letter-spacing:0.06em}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:0.01ms !important}
 }
+
+/* display brightness slider (pause menu) */
+.slider-row{display:flex;align-items:center;gap:12px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+.slider-row label{font-size:13px;letter-spacing:0.08em;color:#9fb4cc}
+.slider-row input[type=range]{width:180px;accent-color:#37e6ff;cursor:pointer}

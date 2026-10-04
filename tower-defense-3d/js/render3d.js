@@ -92,6 +92,7 @@ NB.Renderer3D = function(canvas){
   var iraSmall = null, iraBig = null, iraShimmer = null;
   var uplinkGroup = null, hexRings = [], edgeRing = null, edgeGlow = null, lightCone = null;
   var hemi = null, sun = null, spireLight = null, flashLight = null, flashSprite = null;
+  var baseExposure = 1.38, baseHemi = 0.95, baseSun = 1.2, brightnessV = 1;
   var wallMesh = null;
   var enemyPools = {};   /* type -> {mesh, cap} */
   var eyeMesh = null, legMesh = null, shieldMesh = null;
@@ -132,19 +133,24 @@ NB.Renderer3D = function(canvas){
     try { dpr = num(globalThis.devicePixelRatio, 1); } catch (e) {}
     renderer.setPixelRatio(Math.min(dpr, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    /* brightness system: base exposure for a clearly-readable scene;
+       setBrightness(v) scales it (v=1 is the default). */
+    baseExposure = 1.38;
+    renderer.toneMappingExposure = baseExposure;
 
     scene = new THREE.Scene();
     fogBase = new THREE.Color(0x0a0c14);
     fogSurge = new THREE.Color(0x1c0a0c);
     scene.background = new THREE.Color(0x05060b);
-    scene.fog = new THREE.FogExp2(fogBase.getHex(), 0.011);
+    scene.fog = new THREE.FogExp2(fogBase.getHex(), 0.006);
 
     camera3 = new THREE.PerspectiveCamera(52, 16 / 9, 0.5, 900);
 
-    hemi = new THREE.HemisphereLight(0x5a6a9a, 0x201510, 0.55);
+    hemi = new THREE.HemisphereLight(0x8a9ac0, 0x3a2c20, 0.95);
+    baseHemi = 0.95;
     scene.add(hemi);
-    sun = new THREE.DirectionalLight(0xffd9a0, 0.75);
+    sun = new THREE.DirectionalLight(0xffd9a0, 1.2);
+    baseSun = 1.2;
     sun.position.set(70, 110, 35);
     scene.add(sun);
     spireLight = new THREE.PointLight(0xffb347, 1.6, 70, 2);
@@ -204,6 +210,30 @@ NB.Renderer3D = function(canvas){
     surgeManual.i = clamp(num(intensity01, 0.8), 0, 1);
   };
   r.setStorm = r.setSurge; /* legacy alias */
+
+  /* Display brightness (accessibility + phone-in-sunlight). v=1 is the
+     art-directed default; range 0.55..1.8. Persists via UI save. */
+  r.setBrightness = function(v){
+    v = clamp(num(v, 1), 0.55, 1.8);
+    brightnessV = v;
+    try {
+      if (renderer) renderer.toneMappingExposure = baseExposure * v;
+      if (hemi) hemi.intensity = baseHemi * (0.55 + 0.45 * v);
+      if (sun) sun.intensity = baseSun * (0.55 + 0.45 * v);
+    } catch (e){}
+    return v;
+  };
+  r.getBrightness = function(){ return brightnessV; };
+  /* test hook: lighting params for luminance-band assertions */
+  r.debugLighting = function(){
+    return {
+      exposure: renderer ? renderer.toneMappingExposure : 0,
+      hemi: hemi ? hemi.intensity : 0,
+      sun: sun ? sun.intensity : 0,
+      fogDensity: 0.006,
+      brightness: brightnessV
+    };
+  };
 
   /* ================= camera ================= */
   function camAxes(outF, outR){
@@ -372,7 +402,7 @@ NB.Renderer3D = function(canvas){
 
     /* blocked terrain: instanced dark rubble */
     var rubGeo = new THREE.BoxGeometry(1, 1, 1);
-    var rubMat = new THREE.MeshStandardMaterial({ color: 0x1c1a20, roughness: 0.95, metalness: 0.05 });
+    var rubMat = new THREE.MeshStandardMaterial({ color: 0x35313c, roughness: 0.95, metalness: 0.05 });
     rubbleMesh = new THREE.InstancedMesh(rubGeo, rubMat, 700);
     rubbleMesh.frustumCulled = false;
     rubbleMesh.count = 0;
@@ -380,7 +410,7 @@ NB.Renderer3D = function(canvas){
 
     /* scattered rocks */
     var rockGeo = new THREE.IcosahedronGeometry(1, 0);
-    var rockMat = new THREE.MeshStandardMaterial({ color: 0x2b2733, roughness: 0.95 });
+    var rockMat = new THREE.MeshStandardMaterial({ color: 0x4c4557, roughness: 0.95 });
     rockMesh = new THREE.InstancedMesh(rockGeo, rockMat, 120);
     rockMesh.frustumCulled = false;
     var rng = mulberry(77);
@@ -399,7 +429,7 @@ NB.Renderer3D = function(canvas){
 
     /* ruined structures at the map edges: the world before */
     ruinGroup = new THREE.Group();
-    var ruinMat = new THREE.MeshStandardMaterial({ color: 0x191722, roughness: 0.9, metalness: 0.15 });
+    var ruinMat = new THREE.MeshStandardMaterial({ color: 0x322e3d, roughness: 0.9, metalness: 0.15 });
     var rr = mulberry(913);
     for (var q = 0; q < 14; q++){
       var g = new THREE.Group();
@@ -431,22 +461,22 @@ NB.Renderer3D = function(canvas){
     var cw = groundCanvas.width, ch = groundCanvas.height;
     var sx = cw / W, sz = ch / H;
     ctx.clearRect(0, 0, cw, ch);
-    /* base: charcoal with dusty brown patches */
+    /* base: dusty concrete/metal, lifted for readability (dramatic, not pitch black) */
     var grad = ctx.createLinearGradient(0, 0, cw, ch);
-    grad.addColorStop(0, '#242129');
-    grad.addColorStop(0.5, '#2b2620');
-    grad.addColorStop(1, '#211e28');
+    grad.addColorStop(0, '#3b3644');
+    grad.addColorStop(0.5, '#4c4237');
+    grad.addColorStop(1, '#3a3442');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cw, ch);
     var rng = mulberry(4242);
     for (var i = 0; i < 2600; i++){
       var gx = rng() * cw, gy = rng() * ch, gr = 1 + rng() * 7;
       var warm = rng() < 0.4;
-      ctx.fillStyle = warm ? 'rgba(74,58,40,0.10)' : 'rgba(12,10,16,0.12)';
+      ctx.fillStyle = warm ? 'rgba(120,95,65,0.12)' : 'rgba(30,26,36,0.14)';
       ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill();
     }
     /* metal plate seams */
-    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 2;
     var plate = 8 * CELL * sx;
     for (var px = 0; px <= cw; px += plate){
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, ch); ctx.stroke();
@@ -467,7 +497,7 @@ NB.Renderer3D = function(canvas){
     var br = blockedRects || [];
     for (var b = 0; b < br.length; b++){
       var r = normRect(br[b]);
-      ctx.fillStyle = 'rgba(8,7,10,0.85)';
+      ctx.fillStyle = 'rgba(20,17,24,0.85)';
       ctx.fillRect(r.x * CELL * sx, r.z * CELL * sz, r.w * CELL * sx, r.h * CELL * sz);
     }
     /* glowing red cracks near gates */
@@ -598,6 +628,15 @@ NB.Renderer3D = function(canvas){
     spire = new THREE.Group();
     var R = spireRefs;
 
+    /* base structure: real model when loaded, primitives otherwise */
+    var spireModel = null;
+    try {
+      var ML = (globalThis.NB && NB.ModelLib) || null;
+      spireModel = ML ? ML.structureModel('spire') : null;
+    } catch (e){ spireModel = null; }
+    if (spireModel && spireModel.group){
+      spire.add(spireModel.group);
+    } else {
     /* armored plinth + plated column */
     spire.add(box(7.5, 1.2, 7.5, darkMetal, 0, 0.6, 0));
     spire.add(box(6.2, 1.0, 6.2, gunmetal, 0, 1.6, 0));
@@ -636,6 +675,9 @@ NB.Renderer3D = function(canvas){
       spire.add(tip);
       R.tips.push(tip);
     }
+    }
+    if (!R.windows) R.windows = [];
+    if (!R.tips) R.tips = [];
 
     /* holographic crown: cyan cone + rings per spire tier */
     R.crown = new THREE.Group();
@@ -1094,10 +1136,31 @@ NB.Renderer3D = function(canvas){
     return s;
   }
 
+  /* Model-first tower visual: real GLB model when loaded, primitive fallback.
+     Returns {group, parts} like TOWER_BUILDERS. */
+  function buildTowerVisual(id, A){
+    var ML = (globalThis.NB && NB.ModelLib) || null;
+    if (ML){
+      try {
+        var m = ML.towerModel(id);
+        if (m && m.group){
+          var g = new THREE.Group();
+          g.add(m.group);
+          /* team-color accent nub so allegiance still reads instantly */
+          var nub = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), A);
+          nub.position.set(0, (m.height || 3) * 0.62, 0);
+          g.add(nub);
+          return { group: g, parts: { muzzle: m.muzzle, model: true } };
+        }
+      } catch (e){}
+    }
+    return TOWER_BUILDERS[id](A);
+  }
+
   function buildTowerEntry(t, snap){
     var id = TOWER_IDS.indexOf(t.id) >= 0 ? t.id : 'pulse';
     var A = accentMat(towerColor(id));
-    var built = TOWER_BUILDERS[id](A);
+    var built = buildTowerVisual(id, A);
     var g = built.group;
     var p = structWorld(t);
     g.position.set(p.x, 0, p.z);
@@ -1155,6 +1218,16 @@ NB.Renderer3D = function(canvas){
     } else {
       e.group.position.y = groundY(e.x, e.z);
       e.scaffold.visible = false;
+    }
+    /* model recoil: whole-model kick opposite the facing direction */
+    var P0 = e.parts;
+    if (P0 && P0.model && e.recoil > 0.001){
+      var rk = e.recoil * 0.5;
+      e.group.position.x = e.x + Math.sin(e.angle) * rk;
+      e.group.position.z = e.z - Math.cos(e.angle) * rk;
+    } else if (P0 && P0.model){
+      e.group.position.x = e.x;
+      e.group.position.z = e.z;
     }
     /* muzzle flash detection: cooldown jumping up means a shot was fired */
     var cd = num(t.cooldown, 0);
@@ -1243,9 +1316,15 @@ NB.Renderer3D = function(canvas){
   }
 
   /* ================= walls ================= */
+  var wallHasModel = false;
   function buildWalls(){
-    var geo = new THREE.BoxGeometry(1.9, 1.7, 1.9);
-    var mat = new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0.45 });
+    var ML = (globalThis.NB && NB.ModelLib) || null;
+    var geo = null;
+    try { geo = ML ? ML.geometryFor('struct_wall') : null; } catch (e){ geo = null; }
+    wallHasModel = !!geo;
+    if (!geo) geo = new THREE.BoxGeometry(1.9, 1.7, 1.9);
+    var mat = new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0.45,
+      vertexColors: wallHasModel });
     wallMesh = new THREE.InstancedMesh(geo, mat, 1600);
     wallMesh.frustumCulled = false;
     wallMesh.count = 0;
@@ -1265,7 +1344,7 @@ NB.Renderer3D = function(canvas){
       seen[id] = 1;
       var p = structWorld(w);
       var frac = clamp(num(w.hp, 1) / Math.max(1, num(w.maxHp, 1)), 0, 1);
-      _v1.set(p.x, groundY(p.x, p.z) + 0.85, p.z);
+      _v1.set(p.x, groundY(p.x, p.z) + (wallHasModel ? 0 : 0.85), p.z);
       _q1.identity();
       _s1.set(1, 1, 1);
       _m1.compose(_v1, _q1, _s1);
@@ -1294,12 +1373,25 @@ NB.Renderer3D = function(canvas){
   function buildReactorEntry(t, snap){
     var g = new THREE.Group();
     var p = structWorld(t);
-    g.add(cyl(0.85, 1.05, 0.6, gunmetal, 0, 0.3, 0, 8));
     var coreMat = new THREE.MeshStandardMaterial({ color: 0x062a33,
       emissive: 0x22d3ee, emissiveIntensity: 1.8, roughness: 0.3 });
-    var core = cyl(0.5, 0.5, 1.0, coreMat, 0, 1.1, 0, 10);
-    g.add(core);
-    g.add(cyl(0.62, 0.62, 0.14, darkMetal, 0, 1.65, 0, 10));
+    /* real model when loaded, primitives otherwise */
+    var rmodel = null;
+    try {
+      var ML = (globalThis.NB && NB.ModelLib) || null;
+      rmodel = ML ? ML.structureModel('reactor') : null;
+    } catch (e){ rmodel = null; }
+    if (rmodel && rmodel.group){
+      g.add(rmodel.group);
+      var nub = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), coreMat);
+      nub.position.y = 2.6;
+      g.add(nub);
+    } else {
+      g.add(cyl(0.85, 1.05, 0.6, gunmetal, 0, 0.3, 0, 8));
+      var core = cyl(0.5, 0.5, 1.0, coreMat, 0, 1.1, 0, 10);
+      g.add(core);
+      g.add(cyl(0.62, 0.62, 0.14, darkMetal, 0, 1.65, 0, 10));
+    }
     var ownerRing = addOwnerRing(g, playerColor(snap, t.ownerId));
     var standby = addStandby(g);
     var hit = makeHitMesh('reactor', t.instId, 1.4, 3.2);
@@ -1368,19 +1460,24 @@ NB.Renderer3D = function(canvas){
 
   function buildEnemies(){
     var bodyCap = 500;
+    var ML = (globalThis.NB && NB.ModelLib) || null;
     for (var i = 0; i < ENEMY_TYPES.length; i++){
       var type = ENEMY_TYPES[i];
       if (BOSS_SET[type]) continue;
       var transparent = (type === 'phantom');
+      var mgeo = null;
+      try { mgeo = ML ? ML.enemyGeometry(type) : null; } catch (e){ mgeo = null; }
+      var hasModel = !!mgeo;
       var mat = new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0.5,
-        transparent: transparent, opacity: transparent ? 0.55 : 1 });
-      var mesh = new THREE.InstancedMesh(enemyBodyGeo(type), mat, bodyCap);
+        transparent: transparent, opacity: transparent ? 0.55 : 1,
+        vertexColors: hasModel });
+      var mesh = new THREE.InstancedMesh(mgeo || enemyBodyGeo(type), mat, bodyCap);
       mesh.frustumCulled = false;
       mesh.count = 0;
       scene.add(mesh);
       var tint = new THREE.Color(0x888888);
       try { tint.set(enemyDef(type).color || '#888888'); } catch (er) {}
-      enemyPools[type] = { mesh: mesh, cap: bodyCap, transparent: transparent, tint: tint };
+      enemyPools[type] = { mesh: mesh, cap: bodyCap, transparent: transparent, tint: tint, hasModel: hasModel };
     }
     /* shared eye-glows: hot red-orange */
     var eyeGeo = new THREE.BoxGeometry(0.17, 0.11, 0.07);
@@ -1507,8 +1604,11 @@ NB.Renderer3D = function(canvas){
         _s1.set(s, s, s);
         _m1.compose(_v1, _q1, _s1);
         mesh.setMatrixAt(k, _m1);
-        /* rusted body tinted by type, slowed blue, frozen pale, mites golden */
-        _c1.setHex(0x3a2c26).lerp(pool.tint, 0.28);
+        /* body tint: models carry baked vertex colors (keep near-white base so
+           they pop); primitives use the classic rust tint. Status effects
+           multiply on top in both cases. */
+        if (pool.hasModel) _c1.setHex(0xffffff);
+        else _c1.setHex(0x3a2c26).lerp(pool.tint, 0.28);
         if (t2 === 'mite') _c1.lerp(_c2.setHex(0xffc94d), 0.65);
         if (enemySlowed(en, tnow)) _c1.lerp(_c2.setHex(0x3b82f6), 0.55);
         if (enemyFrozen(en, tnow)) _c1.lerp(_c2.setHex(0xcfe8ff), 0.7);
@@ -1526,8 +1626,8 @@ NB.Renderer3D = function(canvas){
             eyeMesh.setMatrixAt(eyeI++, _m1);
           }
         }
-        /* legs for nearby skitters */
-        if (isSkitter && animLegs && legI + 4 < 3000){
+        /* legs for nearby skitters (skipped when a real model with legs is loaded) */
+        if (isSkitter && animLegs && !pool.hasModel && legI + 4 < 3000){
           var ddx = en.x - cam.tx, ddz = en.z - cam.tz;
           if (ddx * ddx + ddz * ddz < legDist2){
             for (var li = 0; li < 4; li++){
@@ -1585,7 +1685,24 @@ NB.Renderer3D = function(canvas){
       var def = enemyDef(type);
       if (def.glow) glowHex = def.glow;
     } catch (er) {}
-    if (type === 'dreadnought'){
+    /* real model when loaded: base + glow eyes; primitives otherwise */
+    var bossModel = null;
+    try {
+      var MLb = (globalThis.NB && NB.ModelLib) || null;
+      bossModel = MLb ? MLb.bossModel(type) : null;
+    } catch (e2){ bossModel = null; }
+    if (bossModel && bossModel.group){
+      g.add(bossModel.group);
+      anim.model = true;
+      anim.segs = []; anim.shards = []; anim.eyes = [];
+      anim.ring = null; anim.core = null; anim.jaw = null; anim.ering = null;
+      var bh = bossModel.height || 5;
+      for (var bei = 0; bei < 2; bei++){
+        var beye = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), eyeMat(glowHex));
+        beye.position.set(bei === 0 ? -1.1 : 1.1, bh * 0.62, bh * 0.28);
+        g.add(beye); anim.eyes.push(beye);
+      }
+    } else if (type === 'dreadnought'){
       var hull = new THREE.Mesh(new THREE.OctahedronGeometry(2.6), rust);
       hull.scale.set(1, 0.75, 1.25); hull.position.y = 2.4;
       g.add(hull);
@@ -1676,10 +1793,17 @@ NB.Renderer3D = function(canvas){
       if (A.ering) A.ering.rotation.y = -t * 1.1;
     } else {
       g.position.y = bgy;
-      for (var s2 = 0; s2 < A.segs.length; s2++){
-        A.segs[s2].position.x = Math.sin(t * 2.2 - s2 * 0.8) * 0.5;
+      if (A.segs){
+        for (var s2 = 0; s2 < A.segs.length; s2++){
+          A.segs[s2].position.x = Math.sin(t * 2.2 - s2 * 0.8) * 0.5;
+        }
       }
       if (A.jaw) A.jaw.rotation.x = 0.15 + Math.max(0, Math.sin(t * 3.1)) * 0.35;
+    }
+    if (A.model){
+      /* menacing hover-sway for model bosses */
+      g.position.y += Math.sin(t * 1.15) * 0.35;
+      g.rotation.z = Math.sin(t * 0.7) * 0.03;
     }
     if (A.eyes){
       var es = 1 + 0.18 * Math.sin(t * 6);
@@ -2236,10 +2360,17 @@ NB.Renderer3D = function(canvas){
   }
 
   /* ================= colonists: ambient life ================= */
+  var colonistHasModel = false;
   function buildColonists(){
     var cap = 12;
-    colonistBodies = new THREE.InstancedMesh(new THREE.CapsuleGeometry(0.16, 0.5, 3, 8),
-      new THREE.MeshStandardMaterial({ color: 0x6a6a55, roughness: 0.8 }), cap);
+    var ML = (globalThis.NB && NB.ModelLib) || null;
+    var cgeo = null;
+    try { cgeo = ML ? ML.geometryFor('struct_colonist') : null; } catch (e){ cgeo = null; }
+    colonistHasModel = !!cgeo;
+    colonistBodies = new THREE.InstancedMesh(
+      cgeo || new THREE.CapsuleGeometry(0.16, 0.5, 3, 8),
+      new THREE.MeshStandardMaterial({ color: 0x6a6a55, roughness: 0.8,
+        vertexColors: colonistHasModel }), cap);
     colonistHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6),
       new THREE.MeshStandardMaterial({ color: 0x8a6f5a, roughness: 0.8 }), cap);
     colonistBodies.frustumCulled = false; colonistHeads.frustumCulled = false;
@@ -2254,7 +2385,7 @@ NB.Renderer3D = function(canvas){
 
   function updateColonists(dt){
     var show = quality === 'high' && cam.dist < 75;
-    colonistBodies.visible = show; colonistHeads.visible = show;
+    colonistBodies.visible = show; colonistHeads.visible = show && !colonistHasModel;
     if (!show) return;
     for (var i = 0; i < colonists.length; i++){
       var c = colonists[i];
@@ -2283,7 +2414,7 @@ NB.Renderer3D = function(canvas){
       }
       var gy = groundY(c.x, c.z);
       var bob = Math.abs(Math.sin(time * 8 + c.phase)) * (c.wait > 0 ? 0.01 : 0.09);
-      _v1.set(c.x, gy + 0.62 + bob, c.z);
+      _v1.set(c.x, gy + (colonistHasModel ? bob : 0.62 + bob), c.z);
       _e1.set(0, c.heading || 0, 0); _q1.setFromEuler(_e1);
       _s1.set(1, 1, 1);
       _m1.compose(_v1, _q1, _s1);
@@ -2481,13 +2612,22 @@ NB.Renderer3D = function(canvas){
     toy.userData.isToy = true;
     /* hero engineer (hidden until snapshot.hero) */
     heroEng = new THREE.Group();
-    var hb = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.6, 3, 8),
-      new THREE.MeshStandardMaterial({ color: 0xb36a1f, roughness: 0.7 }));
-    hb.position.y = 0.66;
-    heroEng.add(hb);
-    var hh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), darkMetal);
-    hh.position.y = 1.32;
-    heroEng.add(hh);
+    var engModel = null;
+    try {
+      var ML3 = (globalThis.NB && NB.ModelLib) || null;
+      engModel = ML3 ? ML3.structureModel('engineer') : null;
+    } catch (e){ engModel = null; }
+    if (engModel && engModel.group){
+      heroEng.add(engModel.group);
+    } else {
+      var hb = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.6, 3, 8),
+        new THREE.MeshStandardMaterial({ color: 0xb36a1f, roughness: 0.7 }));
+      hb.position.y = 0.66;
+      heroEng.add(hb);
+      var hh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), darkMetal);
+      hh.position.y = 1.32;
+      heroEng.add(hh);
+    }
     heroTool = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.1),
       new THREE.MeshBasicMaterial({ color: 0x54e8ff }));
     heroTool.position.set(0.35, 0.9, 0.1);
@@ -2500,13 +2640,24 @@ NB.Renderer3D = function(canvas){
   function barrelMesh(){
     var g = new THREE.Group();
     var rust = new THREE.MeshStandardMaterial({ color: 0x6e3a24, roughness: 0.75, metalness: 0.45 });
-    g.add(cyl(0.55, 0.55, 1.3, rust, 0, 0.65, 0, 10));
-    var bandm = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.05, 6, 14), darkMetal);
-    bandm.rotation.x = Math.PI / 2; bandm.position.y = 0.95;
-    g.add(bandm);
+    var bmodel = null;
+    try {
+      var ML = (globalThis.NB && NB.ModelLib) || null;
+      bmodel = ML ? ML.structureModel('barrel') : null;
+    } catch (e){ bmodel = null; }
+    var lampY = 1.42;
+    if (bmodel && bmodel.group){
+      g.add(bmodel.group);
+      lampY = (bmodel.height || 1.4) + 0.12;
+    } else {
+      g.add(cyl(0.55, 0.55, 1.3, rust, 0, 0.65, 0, 10));
+      var bandm = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.05, 6, 14), darkMetal);
+      bandm.rotation.x = Math.PI / 2; bandm.position.y = 0.95;
+      g.add(bandm);
+    }
     var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6),
       new THREE.MeshBasicMaterial({ color: 0xff2a1a }));
-    lamp.position.y = 1.42;
+    lamp.position.y = lampY;
     g.add(lamp);
     g.userData.lamp = lamp;
     return g;
@@ -2514,10 +2665,22 @@ NB.Renderer3D = function(canvas){
 
   function crateMesh(){
     var g = new THREE.Group();
-    g.add(box(1.15, 1.15, 1.15, new THREE.MeshStandardMaterial({ color: 0x3d3a2e, roughness: 0.8 }), 0, 0.58, 0));
-    var glow = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.12, 1.18),
+    var cmodel = null;
+    try {
+      var ML2 = (globalThis.NB && NB.ModelLib) || null;
+      cmodel = ML2 ? ML2.structureModel('crate') : null;
+    } catch (e){ cmodel = null; }
+    var glowY = 1.18, glowS = 1.18;
+    if (cmodel && cmodel.group){
+      g.add(cmodel.group);
+      glowY = (cmodel.height || 1.2) + 0.06;
+      glowS = 1.0;
+    } else {
+      g.add(box(1.15, 1.15, 1.15, new THREE.MeshStandardMaterial({ color: 0x3d3a2e, roughness: 0.8 }), 0, 0.58, 0));
+    }
+    var glow = new THREE.Mesh(new THREE.BoxGeometry(glowS, 0.12, glowS),
       new THREE.MeshBasicMaterial({ color: 0xffb347 }));
-    glow.position.y = 1.18;
+    glow.position.y = glowY;
     g.add(glow);
     return g;
   }

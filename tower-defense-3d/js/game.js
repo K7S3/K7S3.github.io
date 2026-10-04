@@ -78,6 +78,9 @@ var Game = {
       this.renderer = NB.Renderer3D(canvas);
       if (this.renderer && typeof this.renderer.init === 'function') this.renderer.init();
       if (this.renderer) this.renderer.eventListener = function(e){ self._onEvent(e); };
+      if (this.renderer && typeof this.renderer.setBrightness === 'function'){
+        try { this.renderer.setBrightness((this.ui.save && this.ui.save.brightness) || 1); } catch (e){}
+      }
     } catch (e){
       this.renderer = null;
       var fb = document.getElementById('fallback');

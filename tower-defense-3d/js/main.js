@@ -72,8 +72,13 @@ function boot(){
     demo = null;
   }
 
-  /* let the loading screen breathe for a beat, then enter */
-  setTimeout(function(){
+  /* let the loading screen breathe for a beat, then enter.
+     Model preload runs in parallel with a hard timeout; the game boots
+     either way, falling back to primitives for anything not loaded. */
+  var bootStarted = false;
+  function enterGame(){
+    if (bootStarted) return;
+    bootStarted = true;
     if (tipTimer) clearInterval(tipTimer);
     try {
       NB.Game.init(canvas, demo);
@@ -81,7 +86,27 @@ function boot(){
       scriptMissing('The game controller failed to start: ' + String((e && e.message) || e));
       try { console.error(e); } catch (err){}
     }
-  }, 900);
+  }
+  function bootModelsThenGame(){
+    var ML = (globalThis.NB && NB.ModelLib) || null;
+    var bar = null;
+    try {
+      bar = document.querySelector('#screen-loading .loader-bar');
+    } catch (e){ bar = null; }
+    if (!ML || !ML.preload){ enterGame(); return; }
+    try {
+      ML.preload(function(done, total){
+        if (bar && total > 0){
+          try { bar.style.width = Math.round(done / total * 100) + '%'; } catch (e2){}
+        }
+      }, function(){
+        enterGame();
+      }, 10000);
+    } catch (e){
+      enterGame();
+    }
+  }
+  setTimeout(bootModelsThenGame, 900);
 }
 
 if (document.readyState === 'loading'){

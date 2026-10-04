@@ -37,7 +37,7 @@ var UI = {
   /* ---------------- save ---------------- */
 
   loadSave: function(){
-    var s = { stars:{}, unlocked:1, codex:[], iraMuted:false };
+    var s = { stars:{}, unlocked:1, codex:[], iraMuted:false, brightness:1 };
     try {
       var raw = localStorage.getItem(SAVE_KEY);
       if (raw){
@@ -47,6 +47,7 @@ var UI = {
           if (typeof p.unlocked === 'number' && p.unlocked >= 1) s.unlocked = Math.floor(p.unlocked);
           if (Array.isArray(p.codex)) s.codex = p.codex.filter(function(x){ return typeof x === 'string'; });
           if (typeof p.iraMuted === 'boolean') s.iraMuted = p.iraMuted;
+          if (typeof p.brightness === 'number' && isFinite(p.brightness)) s.brightness = Math.max(0.55, Math.min(1.8, p.brightness));
         }
       }
     } catch (e){}
@@ -88,6 +89,9 @@ var UI = {
     this.setIRAMuted(!!this.save.iraMuted);
     this.wireButtons();
     this.setMuteIcon(false);
+    /* brightness slider reflects the saved value; applied once the renderer exists */
+    var rng = $('rng-bright');
+    if (rng) rng.value = Math.round((this.save.brightness || 1) * 100);
   },
 
   /* ---------------- screens ---------------- */
@@ -200,6 +204,24 @@ var UI = {
     var b = $('btn-pause-ira');
     if (b) b.textContent = 'IRA Voice: ' + (m ? 'Off' : 'On');
     if (m) this.setIRA(null);
+  },
+
+  /* display brightness: persisted, applied to the 3D renderer */
+  setBrightness: function(v, fromSlider){
+    v = Math.max(0.55, Math.min(1.8, (typeof v === 'number' && isFinite(v)) ? v : 1));
+    this.save.brightness = v;
+    this.persist();
+    var r = this.game && this.game.renderer;
+    if (r && typeof r.setBrightness === 'function'){
+      try { r.setBrightness(v); } catch (e){}
+    }
+    if (!fromSlider){
+      var el = $('rng-bright');
+      if (el) el.value = Math.round(v * 100);
+    }
+  },
+  applyBrightness: function(){
+    this.setBrightness(this.save.brightness || 1);
   },
 
   /* ---------------- HUD ---------------- */
@@ -1142,6 +1164,15 @@ var UI = {
     this.on('btn-pause-restart', function(){ g().restart(); });
     this.on('btn-pause-howto', function(){ g().howtoReturn = 'pause'; self.show('screen-howto'); });
     this.on('btn-pause-ira', function(){ g().toggleIRAMute(); });
+    var rngB = $('rng-bright');
+    if (rngB){
+      rngB.addEventListener('input', function(){
+        self.setBrightness((parseInt(rngB.value, 10) || 100) / 100, true);
+      });
+      rngB.addEventListener('change', function(){
+        self.setBrightness((parseInt(rngB.value, 10) || 100) / 100, true);
+      });
+    }
     this.on('btn-quit', function(){ g().quitToLevels(); });
 
     this.on('btn-end-replay', function(){ g().endReplay(); });

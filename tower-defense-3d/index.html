@@ -374,6 +374,10 @@
           <button type="button" id="btn-pause-restart" class="btn big">Restart Sector</button>
           <button type="button" id="btn-pause-howto" class="btn big">How to Play</button>
           <button type="button" id="btn-pause-ira" class="btn big">IRA Voice: On</button>
+          <div class="slider-row">
+            <label for="rng-bright">Display brightness</label>
+            <input type="range" id="rng-bright" min="55" max="180" step="5" value="100" aria-label="Display brightness">
+          </div>
           <button type="button" id="btn-quit" class="btn big">Quit to Sectors</button>
         </div>
       </div>
@@ -414,6 +418,7 @@
 </div>
 
 <script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
 <script src="js/vendor/peerjs.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/towers.js"></script>
@@ -424,6 +429,7 @@
 <script src="js/ira.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/sim.js"></script>
+<script src="js/models3d.js"></script>
 <script src="js/render3d.js"></script>
 <script src="js/demo3d.js"></script>
 <script src="js/net.js"></script>
