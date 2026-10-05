@@ -67,6 +67,7 @@
     </div>
     <div class="hud-right">
       <button type="button" id="btn-wave" class="btn hud-btn wide" title="Preview the next wave">Wave</button>
+      <button type="button" id="btn-autoplay" class="btn hud-btn wide" title="Autoplay: a veteran AI plays as you" aria-pressed="false">Autoplay</button>
       <button type="button" id="btn-start-quick" class="btn hud-btn primary hidden" title="Start the next wave now">Start</button>
       <div class="seg" id="speed-seg" role="group" aria-label="Game speed">
         <button type="button" data-speed="1" class="seg-btn active">1x</button>
@@ -78,6 +79,9 @@
       <button type="button" id="btn-menu" class="btn hud-btn" title="Sectors menu">&#9776;</button>
     </div>
   </header>
+
+  <!-- Autoplay status banner (slim; the HUD toggle stays visible to switch off) -->
+  <div id="autoplay-banner" class="hidden" aria-live="polite">AUTOPLAY ON - tap anywhere to take over anytime</div>
 
   <!-- Blackout surge warning banner -->
   <div id="surge-banner" class="hidden" role="alert"></div>
@@ -91,6 +95,15 @@
     <div id="fallback" class="hidden" role="alert"></div>
     <div id="toast-wrap" aria-live="polite"></div>
     <div id="banner" class="hidden"><div id="banner-title"></div><div id="banner-sub"></div></div>
+
+    <!-- Camera rotate widget: tap or press-and-hold, for touch and mouse -->
+    <div id="rotate-widget" class="hidden" aria-label="Rotate camera">
+      <button type="button" id="btn-rot-l" class="rot-btn" aria-label="Rotate camera left">&#10226;</button>
+      <button type="button" id="btn-rot-r" class="rot-btn" aria-label="Rotate camera right">&#10227;</button>
+    </div>
+
+    <!-- First-run rotate hint chip -->
+    <div id="rotate-hint" class="hidden" aria-live="polite">Two-finger twist or Q/E to rotate</div>
 
     <!-- Build palette -->
     <nav id="palette" class="hidden" aria-label="Build palette">
@@ -307,6 +320,19 @@
       <div id="debrief-lines" class="story-lines"></div>
       <div class="btn-row center">
         <button type="button" id="btn-debrief-ok" class="btn primary big">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic confirm modal (destructive actions, e.g. selling a structure) -->
+  <div id="modal-confirm" class="modal hidden" role="dialog" aria-modal="true" aria-label="Confirm">
+    <div class="modal-card holo pop">
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <h2 id="confirm-title">Confirm</h2>
+      <p id="confirm-body" class="event-text"></p>
+      <div class="btn-row">
+        <button type="button" id="btn-confirm-cancel" class="btn">Cancel</button>
+        <button type="button" id="btn-confirm-ok" class="btn danger">Confirm</button>
       </div>
     </div>
   </div>

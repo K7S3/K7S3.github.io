@@ -101,7 +101,10 @@ NB.Renderer3D = function(canvas){
   var sparks = null, smoke = null, ash = null, debris = null;
   var rings = [];        /* shockwave pool */
   var craterMesh = null, craterIdx = 0;
-  var ghostMeshes = [], ghostMats = {};
+  var ghostPlates = [], ghostPlateGeo = null, ghostPlateTex = null,
+      ghostPlateMat = null, ghostGrid = null, ghostGridMat = null;
+  var ghostFade = 0, ghostColor = null, ghostTargetColor = null;
+  var GHOST_PLATE_CAP = 24;
   var selRing = null, hoverBox = null;
   var colonistBodies = null, colonistHeads = null, colonists = [];
   var cineSprite = null, cineCanvas = null, cineCtx = null, cineTex = null;
@@ -301,18 +304,25 @@ NB.Renderer3D = function(canvas){
     zoomBy: function(mult){
       mult = num(mult, 1);
       cam.ddist = clamp(cam.ddist * mult, 22, 110);
-      if (cam.cine) cam.cine.tdist = cam.ddist;
+      cam.cine = null; /* any player input skips a running cinematic */
     },
     rotateBy: function(rad){
       cam.daz += num(rad, 0);
+      cam.cine = null; /* any player input skips a running cinematic */
+    },
+    cancelCine: function(){
+      cam.cine = null;
     },
     reset: function(hx, hz){
       hx = num(hx, hqPos.x); hz = num(hz, hqPos.z);
-      cam.dtx = cam.tx = hx; cam.dtz = cam.tz = hz;
-      cam.ddist = cam.dist = 88;
-      cam.dpol = cam.pol = 58 * Math.PI / 180;
-      cam.daz = cam.az = 0;
+      cam.tx = cam.dtx = hx; cam.tz = cam.dtz = hz;
+      /* cinematic sector-start intro: begin far/high with a slight azimuth
+         offset, then sweep in to the resting framing. Skippable: any
+         rotateBy/panBy/zoomBy cancels cam.cine. */
+      cam.dist = 110; cam.pol = 38 * Math.PI / 180; cam.az = -0.35;
+      cam.ddist = cam.dist; cam.dpol = cam.pol; cam.daz = 0;
       cam.cine = null;
+      r.camera.cinematicTo(hx, hz, 74, 3.2, 55);
     },
     cinematicTo: function(x, z, dist, dur, polarDeg){
       x = num(x, cam.tx); z = num(z, cam.tz);
@@ -737,8 +747,8 @@ NB.Renderer3D = function(canvas){
     for (var pz = 0; pz <= ch; pz += plate){
       ctx.beginPath(); ctx.moveTo(0, pz); ctx.lineTo(cw, pz); ctx.stroke();
     }
-    /* subtle per-cell grid */
-    ctx.strokeStyle = 'rgba(150,180,220,0.055)'; ctx.lineWidth = 1;
+    /* subtle per-cell grid: thin, soft cyan at low opacity */
+    ctx.strokeStyle = 'rgba(130,220,240,0.08)'; ctx.lineWidth = 1;
     var cell = CELL * sx;
     for (var cx = 0; cx <= cw; cx += cell){
       ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, ch); ctx.stroke();
@@ -2807,12 +2817,13 @@ NB.Renderer3D = function(canvas){
     geo.computeVertexNormals();
   }
 
-  /* ================= workers: sim-driven workforce =================
-   * Replaces the old ambient wanderers: every visible worker is a real
-   * sim laborer walking to its staffed building and working a harvest
-   * cycle. Orange vests via instance color. */
+  /* ================= workers + civilians: sim-driven people =================
+   * One InstancedMesh pair draws laborers AND idle civilians: every visible
+   * person is a real sim agent. People render on ALL quality tiers; lower
+   * tiers just draw fewer people instead of hiding them entirely. */
   var workerBodies = null, workerHeads = null, workerHasModel = false;
-  var WORKER_CAP = 40;
+  var PEOPLE_CAP = 56;   /* instanced slots: 40 laborers + 16 civilians */
+  var LABORER_CAP = 40;
   function buildWorkers(){
     var ML = (globalThis.NB && NB.ModelLib) || null;
     var cgeo = null;
@@ -2821,46 +2832,60 @@ NB.Renderer3D = function(canvas){
     var bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8,
       vertexColors: workerHasModel });
     workerBodies = new THREE.InstancedMesh(
-      cgeo || new THREE.CapsuleGeometry(0.16, 0.5, 3, 8), bodyMat, WORKER_CAP);
+      cgeo || new THREE.CapsuleGeometry(0.16, 0.5, 3, 8), bodyMat, PEOPLE_CAP);
     workerHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 8, 6),
-      new THREE.MeshStandardMaterial({ color: 0x8a6f5a, roughness: 0.8 }), WORKER_CAP);
+      new THREE.MeshStandardMaterial({ color: 0x8a6f5a, roughness: 0.8 }), PEOPLE_CAP);
     workerBodies.frustumCulled = false; workerHeads.frustumCulled = false;
-    /* laborer orange vest tint */
-    var tint = new THREE.Color(0xd88a3a);
-    for (var i = 0; i < WORKER_CAP; i++) workerBodies.setColorAt(i, tint);
-    if (workerBodies.instanceColor) workerBodies.instanceColor.needsUpdate = true;
+    /* per-instance tints (orange vests / soft cyan) are set in updateWorkers */
     scene.add(workerBodies); scene.add(workerHeads);
   }
 
   var _wc = null;
   function updateWorkers(snap, dt){
     var list = arr(snap && snap.workers);
-    var show = quality === 'high' && cam.dist < 105 && list.length > 0;
-    workerBodies.visible = show; workerHeads.visible = show && !workerHasModel;
+    var civs = arr(snap && snap.civilians);
+    /* quality governs how many people we draw, never whether they show up */
+    var tierCap = quality === 'low' ? 16 : quality === 'medium' ? 28 : PEOPLE_CAP;
+    var nW = Math.min(list.length, LABORER_CAP, tierCap);
+    var nC = Math.min(civs.length, PEOPLE_CAP - LABORER_CAP, Math.max(0, tierCap - nW));
+    var n = nW + nC;
+    var show = n > 0;
+    workerBodies.visible = show;
+    workerHeads.visible = show && !workerHasModel;
     if (!show) return;
     if (!_wc) _wc = new THREE.Color();
-    var n = Math.min(list.length, WORKER_CAP);
     for (var i = 0; i < n; i++){
-      var w = list[i];
-      var working = w.state === 'working';
-      var gy = groundY(w.x, w.z);
-      /* harvest bob: rhythmic dip while working, walk bob otherwise */
-      var bob = working ? Math.abs(Math.sin(time * 7 + i * 1.7)) * 0.12
-                        : Math.abs(Math.sin(time * 9 + i * 2.3)) * 0.07;
-      _v1.set(w.x, gy + (workerHasModel ? bob : 0.62 + bob), w.z);
+      var isCiv = i >= nW;
+      var p = isCiv ? civs[i - nW] : list[i];
+      var wstate = p.state || '';
+      var working = !isCiv && wstate === 'working';
+      var gy = groundY(p.x, p.z);
+      /* walk bob while moving; idle sway / rhythmic dip while standing/working */
+      var walk = isCiv ? wstate === 'wander' : (wstate === 'toWork' || wstate === 'idle');
+      var bob = walk ? Math.abs(Math.sin(time * 9 + i * 2.3)) * 0.07
+                     : Math.abs(Math.sin(time * 7 + i * 1.7)) * 0.10;
+      /* model base sits at y=0; capsule fallback base was floating, fixed */
+      if (workerHasModel) _v1.set(p.x, gy + bob, p.z);
+      else _v1.set(p.x, gy + 0.41 + bob, p.z);
       _e1.set(0, (i * 2.39) % 6.28, working ? Math.sin(time * 7 + i) * 0.12 : 0);
       _q1.setFromEuler(_e1);
       _s1.set(1, 1, 1);
       _m1.compose(_v1, _q1, _s1);
       workerBodies.setMatrixAt(i, _m1);
-      _v1.set(w.x, gy + 1.18 + bob, w.z);
-      _m1.compose(_v1, _q1, _s1);
-      workerHeads.setMatrixAt(i, _m1);
+      /* laborers: orange vests; civilians: soft cyan */
+      _wc.setHex(isCiv ? 0x7fd4e8 : 0xd88a3a);
+      workerBodies.setColorAt(i, _wc);
+      if (!workerHasModel){
+        _v1.set(p.x, gy + 1.02 + bob, p.z);
+        _m1.compose(_v1, _q1, _s1);
+        workerHeads.setMatrixAt(i, _m1);
+      }
     }
     workerBodies.count = n;
     workerHeads.count = n;
     workerBodies.instanceMatrix.needsUpdate = true;
     workerHeads.instanceMatrix.needsUpdate = true;
+    if (workerBodies.instanceColor) workerBodies.instanceColor.needsUpdate = true;
   }
 
   /* ================= troops: player-controlled infantry =================
@@ -3024,37 +3049,112 @@ NB.Renderer3D = function(canvas){
   };
 
 
-  /* ================= ghost / selection / hover / focus ================= */
+  /* ============ ghost (holographic build grid) / selection / hover / focus ============
+   * Thin glowing plates per ghost cell (flat radial-glow quads hovering
+   * just above the terrain, not chunky boxes) plus a soft pulsing
+   * LineSegments grid over the build area. Everything fades in/out;
+   * nothing pops. Geometries/materials are shared; no per-frame alloc. */
+  function ghostGlowTexture(){
+    var cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    var ctx = cv.getContext('2d');
+    var g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.55, 'rgba(255,255,255,0.38)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(cv);
+  }
   function buildGhost(){
-    ghostMats.valid = new THREE.MeshBasicMaterial({ color: 0x2bff88, transparent: true,
-      opacity: 0.45, depthWrite: false });
-    ghostMats.invalid = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true,
-      opacity: 0.45, depthWrite: false });
-    for (var i = 0; i < 24; i++){
-      var m = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.5, 1.9), ghostMats.valid);
+    ghostColor = new THREE.Color(0x35ffa0);
+    ghostTargetColor = new THREE.Color(0x35ffa0);
+    ghostPlateTex = ghostGlowTexture();
+    ghostPlateGeo = new THREE.PlaneGeometry(2, 2);
+    ghostPlateGeo.rotateX(-Math.PI / 2);
+    ghostPlateMat = new THREE.MeshBasicMaterial({ map: ghostPlateTex,
+      color: ghostColor.getHex(), transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false });
+    for (var i = 0; i < GHOST_PLATE_CAP; i++){
+      var m = new THREE.Mesh(ghostPlateGeo, ghostPlateMat);
       m.visible = false;
+      m.renderOrder = 20;
+      m.frustumCulled = false;
       scene.add(m);
-      ghostMeshes.push(m);
+      ghostPlates.push(m);
     }
+    /* holographic tactical grid: thin sector-cyan lines, additive */
+    var gg = new THREE.BufferGeometry();
+    var gp = [];
+    for (var k = -6; k <= 6; k += 2){
+      gp.push(k, 0, -6, k, 0, 6);
+      gp.push(-6, 0, k, 6, 0, k);
+    }
+    gg.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3));
+    ghostGridMat = new THREE.LineBasicMaterial({ color: 0x7df9ff,
+      transparent: true, opacity: 0, blending: THREE.AdditiveBlending,
+      depthWrite: false });
+    ghostGrid = new THREE.LineSegments(gg, ghostGridMat);
+    ghostGrid.visible = false;
+    ghostGrid.renderOrder = 19;
+    ghostGrid.frustumCulled = false;
+    scene.add(ghostGrid);
   }
 
-  function updateGhost(view){
+  var ghostLastGX = 0, ghostLastGZ = 0;
+  function updateGhost(view, dt){
     var gh = view && view.ghost;
     var cells = (gh && gh.cells) || [];
-    var n = Math.min(cells.length, ghostMeshes.length);
-    for (var i = 0; i < ghostMeshes.length; i++){
-      var m = ghostMeshes[i];
+    var placing = cells.length > 0;
+    /* centroid of the ghost footprint; game.js and sim.wallCells write
+       cx/cz; accept x/z too */
+    var n = Math.min(cells.length, ghostPlates.length);
+    var cx = 0, cz = 0, i, c;
+    for (i = 0; i < n; i++){
+      c = cells[i];
+      var ccx = (c.cx != null) ? c.cx : num(c.x, 0);
+      var ccz = (c.cz != null) ? c.cz : num(c.z, 0);
+      var wx = (ccx + 0.5) * CELL;
+      var wz = (ccz + 0.5) * CELL;
+      cx += wx; cz += wz;
+    }
+    if (n > 0){
+      cx /= n; cz /= n;
+      ghostLastGX = cx; ghostLastGZ = cz;
+    }
+    var step = dt || 0.016;
+    ghostFade += ((placing ? 1 : 0) - ghostFade) * (1 - Math.exp(-10 * step));
+    if (ghostFade < 0.02){
+      if (!placing) ghostFade = 0;
+      for (var h = 0; h < ghostPlates.length; h++) ghostPlates[h].visible = false;
+      ghostGrid.visible = false;
+      return;
+    }
+    /* smooth color transition: cyan-green valid, red invalid */
+    ghostTargetColor.setHex(gh && gh.valid ? 0x35ffa0 : 0xff4455);
+    ghostColor.lerp(ghostTargetColor, 1 - Math.exp(-8 * step));
+    ghostPlateMat.color.copy(ghostColor);
+    var valid = !!(gh && gh.valid);
+    /* gentle pulse; invalid pulses faster for urgency */
+    var pulse = valid ? 0.55 + 0.15 * Math.sin(time * 2.5)
+                      : 0.55 + 0.25 * Math.sin(time * 7);
+    ghostPlateMat.opacity = ghostFade * pulse;
+    for (i = 0; i < ghostPlates.length; i++){
+      var m = ghostPlates[i];
       if (i < n){
-        var c = cells[i];
-        /* game.js and sim.wallCells write cx/cz; accept x/z too */
-        var ccx = (c.cx != null) ? c.cx : num(c.x, 0);
-        var ccz = (c.cz != null) ? c.cz : num(c.z, 0);
-        var wx = (ccx + 0.5) * CELL, wz = (ccz + 0.5) * CELL;
-        m.position.set(wx, groundY(wx, wz) + 0.75, wz);
-        m.material = (gh && gh.valid) ? ghostMats.valid : ghostMats.invalid;
+        c = cells[i];
+        var qx = (((c.cx != null) ? c.cx : num(c.x, 0)) + 0.5) * CELL;
+        var qz = (((c.cz != null) ? c.cz : num(c.z, 0)) + 0.5) * CELL;
+        m.position.set(qx, groundY(qx, qz) + 0.14, qz);
         m.visible = true;
       } else m.visible = false;
     }
+    /* grid: centroid snapped to cell boundaries, hovering above terrain */
+    var gx = Math.round(ghostLastGX / CELL) * CELL,
+        gz = Math.round(ghostLastGZ / CELL) * CELL;
+    ghostGrid.position.set(gx, groundY(gx, gz) + 0.18, gz);
+    ghostGridMat.opacity = ghostFade * (0.26 + 0.12 * Math.sin(time * 3));
+    ghostGrid.visible = true;
   }
 
   function buildSelection(){
@@ -3545,7 +3645,7 @@ NB.Renderer3D = function(canvas){
     updateWorkers(snap, sdt);
     updateTroops(snap, sdt);
     updateProps(snap, sdt);
-    updateGhost(view);
+    updateGhost(view, sdt);
     updateSelection(view);
     updateFocus(view);
     applyCinematic(view);

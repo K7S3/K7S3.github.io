@@ -250,7 +250,7 @@ NB.createSim = function(sectorDef, opts){
     pop: null,
     scrap: [],
     extractors: [], hydros: [], habs: [], barracks: [],
-    workers: [], troops: [], trainQueue: [],
+    workers: [], civilians: [], troops: [], trainQueue: [],
     squads: [],                 /* {id, name, barracksId} — one per Barracks + Spire Guard */
     troopUpg: { weapon: 0, armor: 0 },  /* research tiers 0..2 */
     troopResearch: null,        /* {track, t, total} while researching */
@@ -2229,7 +2229,10 @@ NB.createSim = function(sectorDef, opts){
    * ages early). The auto-governor staffs jobs by priority so the player
    * can focus on the fight; manual assignment disables it.
    * ============================================================ */
-  var nextWorkerId = 0, nextTroopId = 0;
+  var nextWorkerId = 0, nextTroopId = 0, nextCivId = 0;
+  /* visible idle civilians: ambient colonists near the Spire/Habs so the
+     sector feels alive before any economy buildings are staffed */
+  var CIVILIAN_CAP = 14, CIVILIAN_SPEED = 2.2;
 
   function popCap(){
     var habs = 0;
@@ -2568,6 +2571,51 @@ NB.createSim = function(sectorDef, opts){
       } else if (w.state === 'working'){
         /* harvest cycle: rhythmic work motion; resources tick globally */
         w.phase += dt * 6;
+      }
+    }
+  }
+
+  /* ---------- civilians: idle ambient colonists ---------- */
+  function civAnchor(){
+    /* prefer the Spire, drift to a Hab module sometimes */
+    if (st.habs.length && rnd() < 0.35){
+      var hb = st.habs[(rnd() * st.habs.length) | 0];
+      if (hb && hb.x != null) return { x: hb.x, z: hb.z };
+    }
+    return hqCenterWorld();
+  }
+  function civTick(dt){
+    /* civilians cover the whole non-worker population (at sector start: everyone) */
+    var want = Math.max(0, Math.min(CIVILIAN_CAP, st.pop.total - st.workers.length));
+    while (st.civilians.length < want){
+      var a0 = civAnchor();
+      st.civilians.push({ id: 'c' + (++nextCivId),
+        x: a0.x + (rnd() - 0.5) * 12, z: a0.z + (rnd() - 0.5) * 12,
+        tx: a0.x, tz: a0.z, state: 'idle',
+        phase: rnd() * 6.28, wait: 0.5 + rnd() * 2 });
+    }
+    if (st.civilians.length > want) st.civilians.length = want;
+    for (var i = 0; i < st.civilians.length; i++){
+      var c = st.civilians[i];
+      c.phase += dt * 6;
+      if (c.state === 'idle'){
+        c.wait -= dt;
+        if (c.wait <= 0){
+          var a = civAnchor();
+          var ang = rnd() * 6.28, r = 4 + rnd() * 12;
+          c.tx = a.x + Math.cos(ang) * r;
+          c.tz = a.z + Math.sin(ang) * r;
+          c.state = 'wander';
+        }
+      } else {
+        var dx = c.tx - c.x, dz = c.tz - c.z;
+        var d = Math.sqrt(dx * dx + dz * dz);
+        if (d < 0.5){ c.state = 'idle'; c.wait = 1 + rnd() * 3.5; }
+        else {
+          var sp = CIVILIAN_SPEED * dt, step = Math.min(sp, d);
+          c.x += dx / d * step;
+          c.z += dz / d * step;
+        }
       }
     }
   }
@@ -3087,6 +3135,7 @@ NB.createSim = function(sectorDef, opts){
     /* colony economy: farming, staffing, workers, troops, research */
     economyTick(dt);
     workerTick(dt);
+    civTick(dt);
     troopTick(dt);
     trainQueueTick(dt);
     troopResearchTick(dt);
@@ -3256,6 +3305,10 @@ NB.createSim = function(sectorDef, opts){
       workers: st.workers.map(function(w){
         return { id: w.id, x: Math.round(w.x * 100) / 100, z: Math.round(w.z * 100) / 100,
                  state: w.state };
+      }),
+      civilians: st.civilians.map(function(c){
+        return { id: c.id, x: Math.round(c.x * 100) / 100, z: Math.round(c.z * 100) / 100,
+                 state: c.state };
       }),
       troops: st.troops.map(function(t){
         return { id: t.id, type: t.type, squadId: t.squadId,

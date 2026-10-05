@@ -69,6 +69,8 @@ var UI = {
     if (want > this.save.unlocked) this.save.unlocked = want;
     this.persist();
     this.buildLevels();
+    /* a sector victory marks the player as a veteran: no more tutorial hints */
+    try { localStorage.setItem('nb_veteran', '1'); } catch (e){}
   },
 
   unlockCodex: function(ids){
@@ -110,6 +112,13 @@ var UI = {
     if (hud) hud.classList.toggle('hidden', !inGame);
     if (pal) pal.classList.toggle('hidden', !inGame);
     if (ira && !inGame) ira.classList.add('hidden');
+    var rw = $('rotate-widget');
+    if (rw) rw.classList.toggle('hidden', !inGame);
+    if (inGame) this.updateAutoplayBtn(this.game && this.game.autoplay);
+    else {
+      var ab = $('autoplay-banner');
+      if (ab) ab.classList.add('hidden');
+    }
     if (!inGame){ this.closePanels(); this.hideModals(); }
   },
 
@@ -121,7 +130,7 @@ var UI = {
     return false;
   },
 
-  MODALS: ['modal-event','modal-edict','modal-briefing','modal-debrief'],
+  MODALS: ['modal-event','modal-edict','modal-briefing','modal-debrief','modal-confirm'],
 
   anyModalOpen: function(){
     for (var i = 0; i < this.MODALS.length; i++){
@@ -179,6 +188,39 @@ var UI = {
       b.classList.remove('show');
       setTimeout(function(){ b.classList.add('hidden'); }, 400);
     }, ms || 2200);
+  },
+
+  /* ---------------- autoplay toggle + slim banner ---------------- */
+
+  updateAutoplayBtn: function(on){
+    on = !!on;
+    var g = this.game;
+    var b = $('btn-autoplay');
+    if (b){
+      var guest = !!(g && g.netMode === 'guest');
+      b.classList.toggle('hidden', guest);
+      b.classList.toggle('autoplay-on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    var ban = $('autoplay-banner');
+    if (ban){
+      var show = on && !(g && g.netMode === 'guest') && !!(g && g.mode === 'game');
+      ban.classList.toggle('hidden', !show);
+    }
+  },
+
+  /* ---------------- generic confirm modal ---------------- */
+
+  _confirmCb: null,
+
+  showConfirm: function(title, body, okLabel, onOk){
+    var t = $('confirm-title'), bo = $('confirm-body'), ok = $('btn-confirm-ok');
+    if (t) t.textContent = title || 'Confirm';
+    if (bo) bo.textContent = body || '';
+    if (ok) ok.textContent = okLabel || 'Confirm';
+    this._confirmCb = (typeof onOk === 'function') ? onOk : null;
+    var m = $('modal-confirm');
+    if (m) m.classList.remove('hidden');
   },
 
   /* ---------------- IRA line ---------------- */
@@ -1174,6 +1216,7 @@ var UI = {
     }
     $('btn-wave-start').disabled = snap.waveActive || snap.pendingEvent || snap.pendingEdict;
     $('btn-wave-early').disabled = !snap.waveActive;
+    if (!g.tipOnce('nb_hint_wave')) this.toast('Press Start Wave when ready');
     this.openPanel('panel-wave');
   },
 
@@ -1620,6 +1663,43 @@ var UI = {
     this.on('btn-mute', function(){ g().toggleMute(); });
     this.on('btn-wave', function(){ self.openWave(); });
     this.on('btn-start-quick', function(){ g().startWave(); });
+    this.on('btn-autoplay', function(){ var gg = g(); if (gg) gg.setAutoplay(!gg.autoplay); });
+    this.on('btn-confirm-ok', function(){
+      var m = $('modal-confirm');
+      if (m) m.classList.add('hidden');
+      var cb = self._confirmCb;
+      self._confirmCb = null;
+      if (cb) cb();
+    });
+    this.on('btn-confirm-cancel', function(){
+      var m = $('modal-confirm');
+      if (m) m.classList.add('hidden');
+      self._confirmCb = null;
+    });
+    /* rotate widget: tap steps, press-and-hold rotates continuously */
+    (function(){
+      var bindRot = function(id, dir){
+        var b = $(id);
+        if (!b) return;
+        var iv = null;
+        var stop = function(){ if (iv){ clearInterval(iv); iv = null; } };
+        b.addEventListener('pointerdown', function(ev){
+          ev.preventDefault();
+          var gg = g();
+          if (gg && typeof gg.rotStep === 'function') gg.rotStep(dir);
+          stop();
+          iv = setInterval(function(){
+            var gg2 = g();
+            if (gg2 && typeof gg2.rotStep === 'function') gg2.rotStep(dir);
+          }, 90);
+        });
+        b.addEventListener('pointerup', stop);
+        b.addEventListener('pointerleave', stop);
+        b.addEventListener('pointercancel', stop);
+      };
+      bindRot('btn-rot-l', 1);
+      bindRot('btn-rot-r', -1);
+    })();
     this.on('btn-wave-start', function(){ g().startWave(); });
     this.on('btn-wave-early', function(){ g().callEarly(); });
 

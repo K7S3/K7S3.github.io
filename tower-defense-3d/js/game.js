@@ -54,6 +54,11 @@ var Game = {
   _iraLast: 0,
   _lastKillSnd: 0,
   _simFailed: false,
+  /* autoplay: a veteran AI Commander plays as the player (local only) */
+  autoplay: false,
+  _autoCmd: null,
+  _autoAnnLast: 0,
+  _autoWaveArmed: -1,
   _down: null,
   _wallDrag: null,
   _rotDrag: null,
@@ -107,6 +112,10 @@ var Game = {
     this.ui.show('screen-title');
     this.ui.updateTitleButton();
     this.setIRAMuteUI();
+    /* autoplay toggle persists across sessions; the commander is created
+     * per sector in _beginSector */
+    try { this.autoplay = localStorage.getItem('nb_autoplay') === '1'; }
+    catch (e){ this.autoplay = false; }
     requestAnimationFrame(this._loop);
   },
 
@@ -177,6 +186,7 @@ var Game = {
     this.placeMode = null;
     this.selection = null;
     this._ended = false;
+    this._autoCmd = null; /* toggle flag persists; the commander is per-sector */
     this.view = { ghost: null, selected: null };
     if (this.demo && this.renderer){
       try { this.demo.start(); } catch (e){}
@@ -247,6 +257,13 @@ var Game = {
     this.lastSnap = this.safeSnapshot();
     this.ui.updateHUD(this.lastSnap);
     this.ui.toast(this.sector.name || ('Sector ' + (i + 1)), this.sector.tagline || '');
+    /* autoplay persists across sectors: build a fresh commander for the new sim */
+    if (this.autoplay && this.netMode !== 'guest') this._makeAutoCmd();
+    this._autoWaveArmed = -1;
+    this.ui.updateAutoplayBtn(this.autoplay);
+    /* first-run teaching: build hint + rotate hint chip (veterans skip) */
+    if (!this.tipOnce('nb_hint_build')) this.ui.toast('Tap a tower card, then tap the ground to build');
+    this._maybeShowRotateHint();
   },
 
   restart: function(){
@@ -671,16 +688,15 @@ var Game = {
     var p = this.groundPoint(clientX, clientY);
     if (!p) return false;
     this.sendTroopOrder(sel.id, kind, p.x, p.z);
-    /* move marker feedback */
-    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
-      try { this.renderer.moveMarker(p.x, p.z, kind); } catch (e){}
-    }
     return true;
   },
 
   sendTroopOrder: function(id, kind, x, z){
     var res = this.sendIntent({ kind: 'troopOrder', id: id, order: kind, x: x, z: z });
-    if (res && res.ok){ this.snd('click'); }
+    if (res && res.ok){
+      this.snd('click');
+      this.orderMarker(x, z, kind);
+    }
     else if (res && !res.remote){ this.snd('error'); }
     this.lastSnap = this.safeSnapshot();
     this.ui.updateHUD(this.lastSnap);
@@ -718,6 +734,7 @@ var Game = {
     this.view.selected = this.selection;
     this.snd('click');
     this.ui.openArmy();
+    if (!this.tipOnce('nb_hint_squad')) this.ui.toast('Tap ground to move troops, tap enemies to focus fire');
   },
 
   selectAllTroops: function(){
@@ -757,9 +774,6 @@ var Game = {
       }
     }
     this.sendSquadOrder(sel.squadId, kind, p.x, p.z);
-    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
-      try { this.renderer.moveMarker(p.x, p.z, kind); } catch (e2){}
-    }
     return true;
   },
 
@@ -812,7 +826,10 @@ var Game = {
 
   sendSquadOrder: function(squadId, kind, x, z){
     var res = this.sendIntent({ kind: 'squadOrder', squadId: squadId, order: kind, x: x, z: z });
-    if (res && res.ok){ this.snd('click'); }
+    if (res && res.ok){
+      this.snd('click');
+      this.orderMarker(x, z, kind);
+    }
     else if (res && !res.remote){ this.snd('error'); }
     this.lastSnap = this.safeSnapshot();
     this.ui.updateHUD(this.lastSnap);
@@ -870,7 +887,22 @@ var Game = {
     this.ui.updateHUD(this.lastSnap);
   },
 
+  /* sell is destructive: confirm first, then run the real sell */
   sellSelected: function(){
+    var sel = this.selection;
+    if (!sel) return;
+    var self = this;
+    var name = '';
+    try {
+      var ref = sel.ref || {};
+      name = ref.name || ref.id || '';
+    } catch (e){}
+    this.ui.showConfirm('Sell structure',
+      (name ? name + ' - ' : '') + 'sell for scrap? This cannot be undone.',
+      'Sell', function(){ self._doSellSelected(); });
+  },
+
+  _doSellSelected: function(){
     var sel = this.selection;
     if (!sel) return;
     if (this.netMode === 'guest'){ this.sendIntent({ kind:'sell', instId:sel.id }); return; }
@@ -1051,6 +1083,85 @@ var Game = {
   toggleIRAMute: function(){
     this.ui.setIRAMuted(!this.ui.save.iraMuted);
     this.snd('click');
+  },
+
+  /* ---------------- autoplay ---------------- */
+
+  /* One-time tutorial tips: returns true when the tip was already shown
+   * (or should never nag: veterans skip everything). */
+  tipOnce: function(key){
+    try {
+      if (localStorage.getItem('nb_veteran') === '1') return true;
+      if (localStorage.getItem(key) === '1') return true;
+      localStorage.setItem(key, '1');
+    } catch (e){ return true; }
+    return false;
+  },
+
+  setAutoplay: function(on){
+    on = !!on;
+    this.autoplay = on;
+    try { localStorage.setItem('nb_autoplay', on ? '1' : '0'); } catch (e){}
+    if (!on){
+      this._autoCmd = null;
+      this._autoWaveArmed = -1;
+    } else if (this.mode === 'game' && this.netMode !== 'guest' && this.sim){
+      this._makeAutoCmd();
+    }
+    this.snd(on ? 'upgrade' : 'click');
+    this.ui.updateAutoplayBtn(on);
+    this.ui.toast(on ? 'Autoplay ON' : 'Autoplay OFF',
+      on ? 'a veteran AI plays as you - tap anywhere to take over' : '',
+      on ? '#ffb347' : '');
+  },
+
+  _makeAutoCmd: function(){
+    this._autoCmd = null;
+    if (!this.sim || !NB.AI || typeof NB.AI.Commander !== 'function') return;
+    var p = this.playerById(this.playerId) || {};
+    try {
+      /* acts AS the player: commander.id === playerId so every intent
+       * validates through the same rules and costs as player input */
+      this._autoCmd = new NB.AI.Commander(this.sim,
+        { id: this.playerId, name: 'Autoplay', color: p.color || PLAYER_COLORS[0],
+          doctrine: 'vanguard' },
+        { difficulty: 'veteran' });
+    } catch (e){ this._autoCmd = null; }
+  },
+
+  /* Driven from the game loop right after sim.update (local only, never
+   * guest). The commander self-throttles (veteran acts every 1.2s); player
+   * input keeps working alongside it. */
+  _tickAutoplay: function(dt){
+    if (!this.autoplay || this.mode !== 'game' || !this.sim) return;
+    var snap = this.lastSnap;
+    if (snap && (snap.paused || snap.over)) return;
+    if (!this._autoCmd) this._makeAutoCmd();
+    var cmd = this._autoCmd;
+    if (!cmd) return;
+    try { cmd.tick(dt); } catch (e){}
+    /* commander announces -> toasts, throttled to max 1 per 4s */
+    var evs = null;
+    try { evs = cmd.drainEvents(); } catch (e){}
+    if (evs && evs.length){
+      var now = this.timeNow();
+      if (now - (this._autoAnnLast || 0) >= 4){
+        this._autoAnnLast = now;
+        var e0 = evs[0];
+        if (e0 && e0.t === 'announce'){
+          this.ui.toast(String(e0.text || ''), e0.sub || '', e0.color || '#7df9ff');
+        }
+      }
+    }
+    /* auto-start waves while autoplay is on (once per wave; the sim also
+     * auto-starts when intermission hits 0) */
+    if (snap && !snap.waveActive && !snap.over && !snap.paused && (snap.intermission || 0) > 2){
+      var wi = snap.waveIndex | 0;
+      if (this._autoWaveArmed !== wi){
+        this._autoWaveArmed = wi;
+        try { this.startWave(); } catch (e){}
+      }
+    }
   },
 
   /* ---------------- input ---------------- */
@@ -1255,6 +1366,41 @@ var Game = {
 
   _pointers: {},
 
+  /* stepped rotate for the on-screen widget / gamepad fallback */
+  rotStep: function(dir){
+    if (this.mode !== 'game' || !this.renderer || !this.renderer.camera) return;
+    try { this.renderer.camera.rotateBy(0.18 * (dir || 1)); } catch (e){}
+    this._noteRotate();
+  },
+
+  /* mark the rotate gesture as discovered: dismiss the first-run hint chip */
+  _noteRotate: function(){
+    var h = document.getElementById('rotate-hint');
+    if (h && !h.classList.contains('hidden')) h.classList.add('hidden');
+    try {
+      if (localStorage.getItem('nb_rotate_hint') !== '1'){
+        localStorage.setItem('nb_rotate_hint', '1');
+      }
+    } catch (e){}
+  },
+
+  _maybeShowRotateHint: function(){
+    var h = document.getElementById('rotate-hint');
+    if (!h) return;
+    var seen = true;
+    try { seen = localStorage.getItem('nb_rotate_hint') === '1'; } catch (e){}
+    if (seen) return;
+    h.classList.remove('hidden');
+    setTimeout(function(){ if (h) h.classList.add('hidden'); }, 6000);
+  },
+
+  /* move-order feedback marker (shared by all troop-order paths) */
+  orderMarker: function(x, z, kind){
+    if (this.renderer && typeof this.renderer.moveMarker === 'function'){
+      try { this.renderer.moveMarker(x, z, kind); } catch (e){}
+    }
+  },
+
   onPointerDown: function(ev){
     if (this.mode !== 'game') return;
     if (this.ui.anyScreenOpen() || this.ui.anyModalOpen()) return;
@@ -1263,7 +1409,8 @@ var Game = {
     if (n === 2){
       var ids = Object.keys(this._pointers);
       var a = this._pointers[ids[0]], b = this._pointers[ids[1]];
-      this._pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) };
+      this._pinch = { d: Math.hypot(a.x - b.x, a.y - b.y),
+                      a: Math.atan2(b.y - a.y, b.x - a.x) };
       this._down = null; this._wallDrag = null; this._rotDrag = null;
       return;
     }
@@ -1295,10 +1442,24 @@ var Game = {
     if (ids.length === 2 && this._pinch){
       var a = this._pointers[ids[0]], b = this._pointers[ids[1]];
       var d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (this._pinch.d > 0 && this.renderer){
-        try { this.renderer.camera.zoomBy(this._pinch.d / Math.max(1, d)); } catch (e){}
+      var ang = Math.atan2(b.y - a.y, b.x - a.x);
+      if (this.renderer){
+        if (this._pinch.d > 0){
+          try { this.renderer.camera.zoomBy(this._pinch.d / Math.max(1, d)); } catch (e){}
+        }
+        /* two-finger twist rotates; works together with pinch zoom */
+        if (this._pinch.a != null){
+          var dAng = ang - this._pinch.a;
+          while (dAng > Math.PI) dAng -= Math.PI * 2;
+          while (dAng < -Math.PI) dAng += Math.PI * 2;
+          if (dAng !== 0){
+            try { this.renderer.camera.rotateBy(-dAng); } catch (e){}
+            this._noteRotate();
+          }
+        }
       }
       this._pinch.d = d;
+      this._pinch.a = ang;
       return;
     }
     if (this._rotDrag){
@@ -1578,8 +1739,8 @@ var Game = {
     if (ev.key === '1') this.setSpeed(1);
     else if (ev.key === '2') this.setSpeed(2);
     else if (ev.key === '3') this.setSpeed(3);
-    else if (ev.key === 'q' || ev.key === 'Q'){ try { this.renderer.camera.rotateBy(0.18); } catch (e){} }
-    else if (ev.key === 'e' || ev.key === 'E'){ try { this.renderer.camera.rotateBy(-0.18); } catch (e){} }
+    else if (ev.key === 'q' || ev.key === 'Q'){ try { this.renderer.camera.rotateBy(0.18); } catch (e){} this._noteRotate(); }
+    else if (ev.key === 'e' || ev.key === 'E'){ try { this.renderer.camera.rotateBy(-0.18); } catch (e){} this._noteRotate(); }
   },
 
   /* ---------------- rich hover tooltips ---------------- */
@@ -1936,6 +2097,8 @@ var Game = {
           }
         }
         this.drainAndRoute();
+        /* autoplay: veteran AI plays as the player (local only, never guest) */
+        if (this.netMode !== 'guest') this._tickAutoplay(dt);
         try { this.renderer.draw(this.sim, this.view, dt); } catch (e){}
         snap = this.safeSnapshot();
         this.lastSnap = snap;
