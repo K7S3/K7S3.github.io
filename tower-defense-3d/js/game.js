@@ -1358,10 +1358,52 @@ var Game = {
 
     window.addEventListener('keydown', function(ev){ self.onKey(ev); });
     window.addEventListener('resize', function(){
-      if (self.renderer && typeof self.renderer.resize === 'function'){
-        try { self.renderer.resize(); } catch (e){}
-      }
+      /* debounce: orientation changes can fire several resizes in a row */
+      if (self._rszT) clearTimeout(self._rszT);
+      self._rszT = setTimeout(function(){
+        self._rszT = null;
+        if (self.renderer && typeof self.renderer.resize === 'function'){
+          try { self.renderer.resize(); } catch (e){}
+        }
+      }, 120);
     });
+    /* HUD/palette show/hide changes the canvas CSS box without a window
+       resize (e.g. entering a game). Watch the canvas itself. */
+    try {
+      if (typeof ResizeObserver !== 'undefined'){
+        var cv0 = document.getElementById('game');
+        if (cv0){
+          var lastW = 0, lastH = 0;
+          new ResizeObserver(function(){
+            var w = cv0.clientWidth, h = cv0.clientHeight;
+            if (w === lastW && h === lastH) return;
+            lastW = w; lastH = h;
+            if (self._crszT) clearTimeout(self._crszT);
+            self._crszT = setTimeout(function(){
+              self._crszT = null;
+              if (self.renderer && typeof self.renderer.resize === 'function'){
+                try { self.renderer.resize(); } catch (e){}
+              }
+            }, 120);
+          }).observe(cv0);
+        }
+      }
+    } catch (e){}
+    /* iOS Safari URL-bar show/hide changes the visual viewport without a
+       window resize; keep the canvas glued to the real visible area. */
+    try {
+      if (window.visualViewport){
+        window.visualViewport.addEventListener('resize', function(){
+          if (self._vrszT) clearTimeout(self._vrszT);
+          self._vrszT = setTimeout(function(){
+            self._vrszT = null;
+            if (self.renderer && typeof self.renderer.resize === 'function'){
+              try { self.renderer.resize(); } catch (e){}
+            }
+          }, 120);
+        });
+      }
+    } catch (e){}
   },
 
   _pointers: {},
@@ -1390,6 +1432,12 @@ var Game = {
     var seen = true;
     try { seen = localStorage.getItem('nb_rotate_hint') === '1'; } catch (e){}
     if (seen) return;
+    /* touch devices get touch-only wording (no Q/E keyboard reference) */
+    try {
+      if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)){
+        h.textContent = 'Two-finger twist to rotate \u2022 drag to pan \u2022 pinch to zoom';
+      }
+    } catch (e){}
     h.classList.remove('hidden');
     setTimeout(function(){ if (h) h.classList.add('hidden'); }, 6000);
   },

@@ -207,13 +207,17 @@ NB.Renderer3D = function(canvas){
     } catch (e){}
 
     inited = true;
-    var w = num(cv.width, 800), h = num(cv.height, 600);
-    r.resize(w, h);
+    r.resize();
     return r;
   };
 
   r.resize = function(w, h){
-    w = Math.max(1, num(w, 800)); h = Math.max(1, num(h, 600));
+    /* When called without args (e.g. window resize / orientation change),
+       measure the canvas's actual CSS size. Never feed buffer pixels here:
+       setSize multiplies by the pixel ratio itself. */
+    var cw = 0, ch = 0;
+    try { cw = canvas.clientWidth || 0; ch = canvas.clientHeight || 0; } catch (e) {}
+    w = Math.max(1, num(w, cw || 800)); h = Math.max(1, num(h, ch || 600));
     if (!inited) return;
     try { renderer.setSize(w, h, false); } catch (e) {}
     camera3.aspect = w / h;
