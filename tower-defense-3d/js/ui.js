@@ -443,8 +443,9 @@ var UI = {
         : mode.kind === 'rally' ? 'Rally point: tap the battlefield'
         : mode.kind === 'sell' ? 'Sell mode: click a structure' : mode.kind;
       hint.innerHTML = '';
-      hint.appendChild(el('span', null, 'Placing ' + label + ' - click the battlefield. '));
-      hint.appendChild(el('span', 'cancel', 'Right-click / Esc to cancel'));
+      var mobHint = NB.Mobile && NB.Mobile.active;
+      hint.appendChild(el('span', null, 'Placing ' + label + (mobHint ? ' - tap the battlefield. ' : ' - click the battlefield. ')));
+      hint.appendChild(el('span', 'cancel', mobHint ? 'Tap \u2715 to cancel' : 'Right-click / Esc to cancel'));
       hint.classList.remove('hidden');
     } else {
       hint.classList.add('hidden');

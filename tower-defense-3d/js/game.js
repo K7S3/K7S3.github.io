@@ -109,6 +109,9 @@ var Game = {
       try { NB.Gamepad.attach(this); } catch (e){}
     }
     this.ui.initRefinement();
+    /* mobile touch layer: builds its own DOM, mirrors the desktop HUD.
+       No-op on desktop; NB.Mobile may be absent in test builds. */
+    try { if (NB.Mobile && typeof NB.Mobile.init === 'function') NB.Mobile.init(); } catch (e){}
     this.ui.show('screen-title');
     this.ui.updateTitleButton();
     this.setIRAMuteUI();
@@ -250,6 +253,15 @@ var Game = {
         this.renderer.camera.reset(hq.x, hq.z);
       } catch (e){}
     }
+    /* mobile: fixed isometric-ish framing that fits the whole battlefield
+       on a portrait phone; skips the dramatic desktop intro sweep */
+    if (NB.Mobile && NB.Mobile.active && this.renderer && this.renderer.camera){
+      try {
+        var msnap = this.safeSnapshot();
+        var mh = (msnap && msnap.hq) || { x: 64, z: 40 };
+        this.renderer.camera.cinematicTo(mh.x, mh.z, 92, 0.5, 52);
+      } catch (e){}
+    }
     this.ui.closePanels();
     this.ui.hideModals();
     this.ui.show(null);
@@ -263,7 +275,8 @@ var Game = {
     this.ui.updateAutoplayBtn(this.autoplay);
     /* first-run teaching: build hint + rotate hint chip (veterans skip) */
     if (!this.tipOnce('nb_hint_build')) this.ui.toast('Tap a tower card, then tap the ground to build');
-    this._maybeShowRotateHint();
+    /* the rotate hint chip is hidden on mobile (fixed camera framing) */
+    if (!(NB.Mobile && NB.Mobile.active)) this._maybeShowRotateHint();
   },
 
   restart: function(){
@@ -1491,6 +1504,14 @@ var Game = {
       var a = this._pointers[ids[0]], b = this._pointers[ids[1]];
       var d = Math.hypot(a.x - b.x, a.y - b.y);
       var ang = Math.atan2(b.y - a.y, b.x - a.x);
+      if (NB.Mobile && NB.Mobile.active){
+        /* mobile layer: fixed framing, so pinch-zoom and twist-rotate are
+           disabled (kept on desktop). Track the fingers so the gesture
+           state stays consistent, then no-op. */
+        this._pinch.d = d;
+        this._pinch.a = ang;
+        return;
+      }
       if (this.renderer){
         if (this._pinch.d > 0){
           try { this.renderer.camera.zoomBy(this._pinch.d / Math.max(1, d)); } catch (e){}

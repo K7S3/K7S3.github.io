@@ -206,7 +206,7 @@ NB.createSim = function(sectorDef, opts){
   var st = {
     gold: num(sd.startGold, 300),
     waveIndex: 0, wavesTotal: waves.length,
-    waveActive: false, intermission: CFG.INTERMISSION,
+    waveActive: false, intermission: (NB.mobileIntermissionSecs ? (NB.mobileIntermissionSecs() || CFG.INTERMISSION) : CFG.INTERMISSION),
     enemies: [], towers: [], walls: [], reactors: [],
     projectiles: [], beams: [],
     time: 0, speed: num(opts.speed, 1) || 1, paused: false,
@@ -1814,7 +1814,7 @@ NB.createSim = function(sectorDef, opts){
       announce('BASTION HOLDS', st.stars + ' stars', '#ffd34d');
     } else {
       st.waveIndex = cleared + 1;
-      st.intermission = CFG.INTERMISSION;
+      st.intermission = (NB.mobileIntermissionSecs ? (NB.mobileIntermissionSecs() || CFG.INTERMISSION) : CFG.INTERMISSION);
       /* ages advance at wave thirds */
       var n = st.wavesTotal;
       var newAge = st.waveIndex >= Math.floor(2 * n / 3) ? 2

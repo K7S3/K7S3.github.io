@@ -1,0 +1,220 @@
+/* Nova Bastion 3D - mobile UI layer.
+ *
+ * Everything in this file is scoped under body.mobile-ui, so the desktop
+ * layout is never affected. The DOM for the mobile controls is built by
+ * js/mobile.js (NB.Mobile) at boot; the full desktop HUD/palette stay in
+ * the DOM because ui.js updates their fields every frame.
+ */
+
+/* base: the mobile layer is invisible unless body.mobile-ui is set */
+#m-hud, #m-bar, #m-sheet-backdrop, #m-cancel { display: none; }
+
+body.mobile-ui #hud { display: none !important; }
+body.mobile-ui #palette { display: none !important; }
+body.mobile-ui #rotate-widget { display: none !important; }
+body.mobile-ui #rotate-hint { display: none !important; }
+/* desktop detail panels are replaced by the mobile bottom sheet */
+body.mobile-ui #panel-tower,
+body.mobile-ui #panel-wall,
+body.mobile-ui #panel-reactor { display: none !important; }
+
+/* ---------- slim top strip ---------- */
+body.mobile-ui #m-hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 44px;
+  max-height: 9vh;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: rgba(6, 12, 20, 0.88);
+  border-bottom: 1px solid rgba(125, 249, 255, 0.25);
+  color: #dfeef2;
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.mobile-ui #m-hud .m-ico.gold { color: #ffd34d; }
+body.mobile-ui #m-hud .m-ico.hq { color: #7df9ff; }
+body.mobile-ui #m-hud .m-sep { color: rgba(125, 249, 255, 0.35); }
+body.mobile-ui #m-hud .m-inter { color: #ffb347; font-weight: 400; font-size: 13px; }
+
+/* ---------- floating cancel-placement button ---------- */
+body.mobile-ui #m-cancel {
+  position: fixed;
+  right: 12px;
+  bottom: calc(196px + env(safe-area-inset-bottom, 0px));
+  z-index: 61;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 90, 54, 0.8);
+  background: rgba(20, 8, 6, 0.92);
+  color: #ff8a6b;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+body.mobile-ui #m-cancel.hidden { display: none; }
+body.mobile-ui #m-cancel:active { transform: scale(0.92); }
+
+/* ---------- bottom action bar ---------- */
+body.mobile-ui #m-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: rgba(6, 12, 20, 0.92);
+  border-top: 1px solid rgba(125, 249, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.mobile-ui .m-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+body.mobile-ui .m-btn {
+  flex: 1 1 0;
+  min-height: 56px;
+  min-width: 56px;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: rgba(14, 26, 38, 0.95);
+  color: #dfeef2;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 6px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  touch-action: manipulation;
+}
+body.mobile-ui .m-btn .cost { color: #ffd34d; font-weight: 700; font-size: 12px; }
+body.mobile-ui .m-btn .sub { color: #8fa8b3; font-weight: 400; font-size: 10px; }
+body.mobile-ui .m-btn.active {
+  border-color: #ffd34d;
+  background: rgba(48, 38, 10, 0.95);
+  box-shadow: 0 0 0 1px #ffd34d inset;
+}
+body.mobile-ui .m-btn:active { transform: scale(0.96); }
+body.mobile-ui .m-btn:disabled { opacity: 0.45; }
+body.mobile-ui .m-btn.primary {
+  border-color: rgba(255, 211, 77, 0.7);
+  background: rgba(58, 44, 8, 0.95);
+  color: #ffd34d;
+  font-size: 14px;
+}
+body.mobile-ui .m-btn.danger {
+  border-color: rgba(255, 90, 54, 0.7);
+  background: rgba(46, 14, 8, 0.95);
+  color: #ff8a6b;
+}
+body.mobile-ui .m-btn.more { flex: 0 0 64px; font-size: 14px; }
+
+/* ---------- bottom sheet ---------- */
+body.mobile-ui #m-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 68;
+  display: block;
+  background: rgba(0, 0, 0, 0.45);
+}
+body.mobile-ui #m-sheet-backdrop.hidden { display: none; }
+body.mobile-ui #m-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 69;
+  max-height: 62vh;
+  overflow-y: auto;
+  background: #0a1420;
+  border-top: 2px solid rgba(125, 249, 255, 0.35);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(105%);
+  transition: transform 0.22s ease-out;
+  -webkit-user-select: none;
+  user-select: none;
+}
+body.mobile-ui #m-sheet.open { transform: translateY(0); }
+body.mobile-ui #m-sheet-handle {
+  width: 44px; height: 5px;
+  border-radius: 3px;
+  background: rgba(125, 249, 255, 0.4);
+  margin: 2px auto 10px;
+}
+body.mobile-ui #m-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+body.mobile-ui #m-sheet-title {
+  color: #ffd34d;
+  font-size: 16px;
+  font-weight: 700;
+}
+body.mobile-ui #m-sheet-close {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: rgba(14, 26, 38, 0.95);
+  color: #dfeef2;
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+body.mobile-ui #m-sheet-body .m-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+body.mobile-ui #m-sheet-body .m-btn { min-height: 64px; }
+body.mobile-ui #m-sheet-body .insp-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  margin: 8px 0 12px;
+  color: #9fb8c2;
+  font-size: 13px;
+}
+body.mobile-ui #m-sheet-body .insp-stats b { color: #dfeef2; font-weight: 600; }
+body.mobile-ui #m-sheet-body .insp-actions {
+  display: flex;
+  gap: 8px;
+}
+body.mobile-ui #m-sheet-body .insp-actions .m-btn { min-height: 60px; font-size: 14px; }
+body.mobile-ui #m-sheet-body .insp-actions .m-btn.primary { flex: 3; }
+body.mobile-ui #m-sheet-body .insp-actions .m-btn.danger { flex: 2; }
+body.mobile-ui #m-sheet-body .branch-row { display: flex; gap: 8px; margin-top: 8px; }
+body.mobile-ui #m-sheet-body .branch-row .m-btn { min-height: 64px; }
+
+/* place-hint stays readable on small screens */
+body.mobile-ui #place-hint {
+  top: 50px;
+  font-size: 13px;
+  max-width: 92vw;
+  white-space: normal;
+  text-align: center;
+}
+
+/* keep toasts/banners clear of the bottom bar */
+body.mobile-ui #toast-wrap { bottom: 210px; }
+body.mobile-ui #surge-banner { top: 48px; }
+/* the in-flow IRA line sits below the fixed top strip instead of under it */
+body.mobile-ui #ira-line { margin-top: 44px; }
